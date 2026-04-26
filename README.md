@@ -71,6 +71,22 @@ src/
   Refresh simulates a 900 ms delay and updates the timestamp — no network
   calls happen.
 
+## Deployment (Cloudflare Workers via OpenNext)
+
+The project ships with a committed `wrangler.jsonc` and `open-next.config.ts`,
+so Cloudflare's auto-migration step has nothing to generate. The deploy
+pipeline is:
+
+```bash
+npm run deploy   # runs `opennextjs-cloudflare build && opennextjs-cloudflare deploy`
+```
+
+Worker name (`cgchecklist`) is pinned in both `package.json` and
+`wrangler.jsonc` to avoid the service-binding mismatch that occurs when
+auto-migration reads a different name from npm vs the Cloudflare project.
+
+If you change the Worker name on Cloudflare, update both files together.
+
 ## Roadmap (after this milestone)
 
 1. Wire the company resolver + source discovery (server-side, Firecrawl).

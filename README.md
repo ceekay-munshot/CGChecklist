@@ -81,6 +81,27 @@ pipeline is:
 npm run deploy   # runs `opennextjs-cloudflare build && opennextjs-cloudflare deploy`
 ```
 
+### Cloudflare Workers Builds (CI) configuration
+
+In the Cloudflare dashboard under **Workers & Pages → cgchecklist → Settings →
+Builds**, set the **Deploy command** to:
+
+```
+npm run deploy
+```
+
+Do **not** leave it on the default `npx wrangler deploy`. The default triggers
+`@opennextjs/cloudflare migrate` on every CI run, which overwrites
+`wrangler.jsonc` from a template that re-introduces a `WORKER_SELF_REFERENCE`
+service binding. If `package.json.name` ever drifts from the actual Worker
+name on Cloudflare, that binding points at a non-existent service and the
+deploy fails with API error code 10143.
+
+`npm run deploy` calls `opennextjs-cloudflare deploy` directly and respects
+the committed `wrangler.jsonc` as-is.
+
+### Worker name pinning
+
 Worker name (`cgchecklist`) is pinned in both `package.json` and
 `wrangler.jsonc` to avoid the service-binding mismatch that occurs when
 auto-migration reads a different name from npm vs the Cloudflare project.

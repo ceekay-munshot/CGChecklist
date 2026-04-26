@@ -1,0 +1,7 @@
+# Copy this file to .dev.vars for local Cloudflare Workers dev (wrangler dev / npm run preview).
+# .dev.vars is gitignored — never commit secrets.
+
+NEXTJS_ENV=development
+
+# Firecrawl API key — required once the server-side data layer is wired up.
+# FIRECRAWL_API_KEY=

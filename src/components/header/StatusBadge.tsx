@@ -1,55 +1,31 @@
 "use client";
 
-import { Badge, Dot, type BadgeTone } from "@/components/ui/Badge";
-import type { DataStatus } from "@/lib/types/company";
+import { Badge, Dot } from "@/components/ui/Badge";
+import { useCompany } from "@/lib/state/CompanyContext";
 
-const STATUS_MAP: Record<
-  DataStatus,
-  { label: string; tone: BadgeTone; description: string }
-> = {
-  idle: {
-    label: "No data",
-    tone: "muted",
-    description: "Awaiting first refresh",
-  },
-  loading: {
-    label: "Refreshing",
-    tone: "info",
-    description: "Pulling sources",
-  },
-  ready: {
-    label: "Ready",
-    tone: "good",
-    description: "Sources resolved",
-  },
-  partial: {
-    label: "Partial",
-    tone: "warn",
-    description: "Some sources missing",
-  },
-  stale: {
-    label: "Stale",
-    tone: "warn",
-    description: "Refresh recommended",
-  },
-  error: {
-    label: "Error",
-    tone: "risk",
-    description: "Last refresh failed",
-  },
-};
+const STATUS_LABEL = {
+  idle: "No data",
+  loading: "Refreshing…",
+  partial: "Partial",
+  ready: "Ready",
+  error: "Error",
+} as const;
 
-export function StatusBadge({ status }: { status: DataStatus }) {
-  const meta = STATUS_MAP[status];
+const STATUS_TONE = {
+  idle: "neutral",
+  loading: "info",
+  partial: "warn",
+  ready: "good",
+  error: "risk",
+} as const;
+
+export function StatusBadge() {
+  const { state } = useCompany();
+  const tone = STATUS_TONE[state.status];
   return (
-    <div className="inline-flex items-center gap-2">
-      <Badge tone={meta.tone}>
-        <Dot tone={meta.tone} />
-        {meta.label}
-      </Badge>
-      <span className="text-xs text-[var(--color-text-muted)]">
-        {meta.description}
-      </span>
-    </div>
+    <Badge tone={tone}>
+      <Dot tone={tone} />
+      {STATUS_LABEL[state.status]}
+    </Badge>
   );
 }

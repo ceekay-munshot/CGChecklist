@@ -3,74 +3,48 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type TabDefinition = {
-  href: string;
-  label: string;
-  description: string;
-};
-
-const TABS: TabDefinition[] = [
-  {
-    href: "/governance",
-    label: "Corporate Governance",
-    description: "Checklist score across board, audit, disclosures",
-  },
-  {
-    href: "/beneish",
-    label: "Beneish M-Score",
-    description: "Earnings manipulation likelihood",
-  },
-  {
-    href: "/altman",
-    label: "Altman Z-Score",
-    description: "Financial distress probability",
-  },
-];
+const TABS = [
+  { href: "/governance", label: "Corporate Governance Score", short: "Governance" },
+  { href: "/beneish", label: "Beneish M-Score", short: "Beneish" },
+  { href: "/altman", label: "Altman Z-Score", short: "Altman" },
+] as const;
 
 export function TabNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-6">
-        {TABS.map((tab) => {
-          const isActive =
-            pathname === tab.href || pathname?.startsWith(tab.href + "/");
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              prefetch
-              className={
-                "group relative flex flex-col gap-0.5 px-4 py-3 text-sm transition " +
-                (isActive
-                  ? "text-[var(--color-text-primary)]"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")
-              }
-            >
-              <span
-                className={
-                  "font-medium tracking-tight " +
-                  (isActive ? "" : "group-hover:text-[var(--color-text-primary)]")
-                }
-              >
-                {tab.label}
-              </span>
-              <span className="text-[11px] text-[var(--color-text-muted)]">
-                {tab.description}
-              </span>
-              <span
-                aria-hidden
-                className={
-                  "absolute inset-x-2 bottom-0 h-[2px] rounded-t-sm " +
-                  (isActive
-                    ? "bg-[var(--color-teal-500)]"
-                    : "bg-transparent")
-                }
-              />
-            </Link>
-          );
-        })}
+    <nav
+      aria-label="Dashboard tabs"
+      className="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]"
+    >
+      <div className="mx-auto max-w-screen-2xl px-2 sm:px-6">
+        <ul className="flex gap-1 overflow-x-auto">
+          {TABS.map((tab) => {
+            const active = pathname === tab.href;
+            return (
+              <li key={tab.href}>
+                <Link
+                  href={tab.href}
+                  className={`focus-ring relative inline-flex h-12 items-center px-3 text-sm font-medium transition-colors sm:px-4 ${
+                    active
+                      ? "text-[var(--color-fg)]"
+                      : "text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+                  }`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <span className="sm:hidden">{tab.short}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span
+                    aria-hidden
+                    className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full transition-colors ${
+                      active ? "bg-[var(--color-accent)]" : "bg-transparent"
+                    }`}
+                  />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </nav>
   );

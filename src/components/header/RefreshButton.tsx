@@ -1,35 +1,47 @@
 "use client";
 
-type RefreshButtonProps = {
-  onRefresh: () => void;
-  isRefreshing: boolean;
-  disabled?: boolean;
-};
+import { useCompany } from "@/lib/state/CompanyContext";
 
-export function RefreshButton({
-  onRefresh,
-  isRefreshing,
-  disabled,
-}: RefreshButtonProps) {
+export function RefreshButton() {
+  const { state, refresh } = useCompany();
+  const isLoading = state.status === "loading";
+
   return (
     <button
       type="button"
-      onClick={onRefresh}
-      disabled={disabled || isRefreshing}
-      className={
-        "inline-flex h-9 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition " +
-        "bg-[var(--color-teal-600)] text-white hover:bg-[var(--color-teal-700)] " +
-        "disabled:cursor-not-allowed disabled:bg-[var(--color-blue-muted-300)] disabled:text-white/80"
-      }
+      onClick={() => {
+        void refresh();
+      }}
+      disabled={isLoading}
+      className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-fg-inverse)] shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span
-        aria-hidden
-        className={
-          "inline-block h-3.5 w-3.5 rounded-full border-2 border-white/70 border-t-transparent " +
-          (isRefreshing ? "animate-spin" : "border-t-white/70")
-        }
-      />
-      {isRefreshing ? "Refreshing…" : "Refresh Data"}
+      {isLoading ? (
+        <>
+          <Spinner />
+          Refreshing
+        </>
+      ) : (
+        <>Refresh data</>
+      )}
     </button>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="h-4 w-4 animate-spin"
+      fill="none"
+    >
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path
+        d="M14 8a6 6 0 0 0-6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

@@ -1,12 +1,13 @@
 import type { Exchange } from "@/lib/types/company";
 
 export const EXCHANGES: Exchange[] = [
-  { code: "NSE", label: "NSE — National Stock Exchange of India", countryCode: "IN" },
-  { code: "BSE", label: "BSE — Bombay Stock Exchange", countryCode: "IN" },
-  { code: "NASDAQ", label: "NASDAQ", countryCode: "US" },
-  { code: "NYSE", label: "NYSE — New York Stock Exchange", countryCode: "US" },
-  { code: "LSE", label: "LSE — London Stock Exchange", countryCode: "GB" },
-  { code: "HKEX", label: "HKEX — Hong Kong Exchange", countryCode: "HK" },
-  { code: "TSE", label: "TSE — Tokyo Stock Exchange", countryCode: "JP" },
-  { code: "SGX", label: "SGX — Singapore Exchange", countryCode: "SG" },
+  { code: "NSE", label: "National Stock Exchange of India", country: "IN" },
+  { code: "BSE", label: "Bombay Stock Exchange", country: "IN" },
+  { code: "NYSE", label: "New York Stock Exchange", country: "US" },
+  { code: "NASDAQ", label: "Nasdaq", country: "US" },
+  { code: "LSE", label: "London Stock Exchange", country: "GB" },
+  { code: "HKEX", label: "Hong Kong Exchange", country: "HK" },
+  { code: "TSE", label: "Tokyo Stock Exchange", country: "JP" },
+  { code: "ASX", label: "Australian Securities Exchange", country: "AU" },
+  { code: "OTHER", label: "Other / Not listed", country: "OTHER" },
 ];

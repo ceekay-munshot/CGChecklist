@@ -1,39 +1,52 @@
-/**
- * Domain types describing the company being analysed.
- * Kept independent of UI/state so calculation modules can import them
- * without pulling React.
- */
+export type ExchangeCode =
+  | "NSE"
+  | "BSE"
+  | "NYSE"
+  | "NASDAQ"
+  | "LSE"
+  | "HKEX"
+  | "TSE"
+  | "ASX"
+  | "OTHER";
 
-export type Exchange = {
-  code: string;
+export type CountryCode =
+  | "IN"
+  | "US"
+  | "GB"
+  | "HK"
+  | "JP"
+  | "AU"
+  | "SG"
+  | "OTHER";
+
+export interface Exchange {
+  code: ExchangeCode;
   label: string;
-  countryCode: string;
-};
+  country: CountryCode;
+}
 
-export type Country = {
-  code: string;
+export interface Country {
+  code: CountryCode;
   label: string;
-};
+}
 
-export type CompanyQuery = {
+export interface CompanyIdentity {
   name: string;
   ticker: string;
-  exchangeCode: string;
-  countryCode: string;
-};
-
-export type ResolvedCompany = {
-  query: CompanyQuery;
-  /** Canonical identifier resolved by the company-resolver service. */
-  id: string | null;
-  /** ISO timestamp of the most recent successful refresh. */
-  lastRefreshedAt: string | null;
-};
+  exchange: ExchangeCode | "";
+  country: CountryCode | "";
+}
 
 export type DataStatus =
   | "idle"
   | "loading"
-  | "ready"
   | "partial"
-  | "stale"
+  | "ready"
   | "error";
+
+export interface CompanyState {
+  identity: CompanyIdentity;
+  status: DataStatus;
+  lastRefreshedAt: string | null;
+  message: string | null;
+}

@@ -17,20 +17,17 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Governance & Forensic Scorecard",
   description:
-    "Buy-side governance and forensic accounting scorecard for public listed companies.",
+    "Buy-side forensic and governance scorecard for public listed companies.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full">{children}</body>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
 }

@@ -1,16 +1,12 @@
-import type { GovernanceModule } from "@/lib/types/scores";
+import type { GovernanceScore } from "@/lib/types/scores";
 
-/**
- * Empty governance module — used as the initial state before any
- * data is fetched. Real values will land here from the calculation layer.
- */
-export const EMPTY_GOVERNANCE: GovernanceModule = {
+export const EMPTY_GOVERNANCE: GovernanceScore = {
   summary: {
-    band: "unknown",
     value: null,
+    verdict: "unknown",
     label: "Awaiting data",
-    rationale:
-      "Enter a company and click Refresh Data. The governance score will be computed from filings, IR pages, and exchange disclosures.",
+    description:
+      "Refresh data to compute the corporate governance score across board, audit, disclosures, related parties, and capital allocation.",
   },
   checkpoints: [],
 };

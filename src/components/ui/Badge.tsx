@@ -1,22 +1,14 @@
-import type { ReactNode } from "react";
+import type { Verdict } from "@/lib/types/scores";
 
-export type BadgeTone =
-  | "neutral"
-  | "info"
-  | "good"
-  | "warn"
-  | "risk"
-  | "muted";
+type Tone = Verdict | "neutral" | "info";
 
-const TONE_STYLES: Record<BadgeTone, string> = {
-  neutral:
-    "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] border-[var(--color-border)]",
-  info: "bg-[var(--color-info-50)] text-[var(--color-info-500)] border-[var(--color-info-50)]",
-  good: "bg-[var(--color-good-50)] text-[var(--color-good-600)] border-[var(--color-good-50)]",
-  warn: "bg-[var(--color-warn-50)] text-[var(--color-warn-600)] border-[var(--color-warn-50)]",
-  risk: "bg-[var(--color-risk-50)] text-[var(--color-risk-600)] border-[var(--color-risk-50)]",
-  muted:
-    "bg-transparent text-[var(--color-text-muted)] border-[var(--color-border)]",
+const TONE_CLASSES: Record<Tone, string> = {
+  good: "bg-good-50 text-good-700 ring-good-100",
+  warn: "bg-warn-50 text-warn-700 ring-warn-100",
+  risk: "bg-risk-50 text-risk-700 ring-risk-100",
+  unknown: "bg-mist-100 text-mist-700 ring-mist-200",
+  neutral: "bg-mist-100 text-mist-700 ring-mist-200",
+  info: "bg-teal-50 text-teal-700 ring-teal-100",
 };
 
 export function Badge({
@@ -24,36 +16,32 @@ export function Badge({
   children,
   className = "",
 }: {
-  tone?: BadgeTone;
-  children: ReactNode;
+  tone?: Tone;
+  children: React.ReactNode;
   className?: string;
 }) {
   return (
     <span
-      className={
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide " +
-        TONE_STYLES[tone] +
-        " " +
-        className
-      }
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${TONE_CLASSES[tone]} ${className}`}
     >
       {children}
     </span>
   );
 }
 
-export function Dot({ tone = "neutral" }: { tone?: BadgeTone }) {
-  const colour =
-    tone === "good"
-      ? "bg-[var(--color-good-500)]"
-      : tone === "warn"
-        ? "bg-[var(--color-warn-500)]"
-        : tone === "risk"
-          ? "bg-[var(--color-risk-500)]"
-          : tone === "info"
-            ? "bg-[var(--color-info-500)]"
-            : "bg-[var(--color-blue-muted-300)]";
+export function Dot({ tone = "neutral" }: { tone?: Tone }) {
+  const dotColor: Record<Tone, string> = {
+    good: "bg-good-500",
+    warn: "bg-warn-500",
+    risk: "bg-risk-500",
+    unknown: "bg-mist-400",
+    neutral: "bg-mist-400",
+    info: "bg-teal-500",
+  };
   return (
-    <span className={"inline-block h-1.5 w-1.5 rounded-full " + colour} />
+    <span
+      aria-hidden
+      className={`inline-block h-1.5 w-1.5 rounded-full ${dotColor[tone]}`}
+    />
   );
 }

@@ -6,62 +6,64 @@ import {
   useContext,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
+import type {
+  CompanyIdentity,
+  CompanyState,
+  DataStatus,
+} from "@/lib/types/company";
+import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
 
-import { EMPTY_COMPANY_QUERY } from "@/lib/mock/sampleCompany";
-import type { CompanyQuery, DataStatus } from "@/lib/types/company";
-
-type CompanyContextValue = {
-  query: CompanyQuery;
-  setQuery: (next: CompanyQuery) => void;
-  patchQuery: (patch: Partial<CompanyQuery>) => void;
-
-  status: DataStatus;
-  lastRefreshedAt: string | null;
-  isRefreshing: boolean;
-
+interface CompanyContextValue {
+  state: CompanyState;
+  setIdentity: (
+    patch: Partial<CompanyIdentity>,
+  ) => void;
   refresh: () => Promise<void>;
-};
+}
 
 const CompanyContext = createContext<CompanyContextValue | null>(null);
 
-export function CompanyProvider({ children }: { children: ReactNode }) {
-  const [query, setQuery] = useState<CompanyQuery>(EMPTY_COMPANY_QUERY);
-  const [status, setStatus] = useState<DataStatus>("idle");
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+const INITIAL_STATE: CompanyState = {
+  identity: EMPTY_COMPANY,
+  status: "idle",
+  lastRefreshedAt: null,
+  message: null,
+};
 
-  const patchQuery = useCallback((patch: Partial<CompanyQuery>) => {
-    setQuery((prev) => ({ ...prev, ...patch }));
+export function CompanyProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [state, setState] = useState<CompanyState>(INITIAL_STATE);
+
+  const setIdentity = useCallback((patch: Partial<CompanyIdentity>) => {
+    setState((prev) => ({
+      ...prev,
+      identity: { ...prev.identity, ...patch },
+    }));
   }, []);
 
   const refresh = useCallback(async () => {
-    /*
-      Placeholder refresh flow.
-      Real implementation will call:
-        resolveCompany -> discoverSources -> adapters -> calculations -> dataQuality
-      For now we just simulate a short loading delay so the UI plumbing is real.
-    */
-    setIsRefreshing(true);
-    setStatus("loading");
+    setState((prev) => ({ ...prev, status: "loading", message: null }));
     await new Promise((resolve) => setTimeout(resolve, 900));
-    setLastRefreshedAt(new Date().toISOString());
-    setStatus("ready");
-    setIsRefreshing(false);
+    setState((prev) => {
+      const status: DataStatus = isComplete(prev.identity) ? "partial" : "idle";
+      return {
+        ...prev,
+        status,
+        lastRefreshedAt: new Date().toISOString(),
+        message: isComplete(prev.identity)
+          ? "Mock refresh complete. Real data adapters are not wired yet."
+          : "Enter company name, ticker, exchange, and country to refresh.",
+      };
+    });
   }, []);
 
   const value = useMemo<CompanyContextValue>(
-    () => ({
-      query,
-      setQuery,
-      patchQuery,
-      status,
-      lastRefreshedAt,
-      isRefreshing,
-      refresh,
-    }),
-    [query, patchQuery, status, lastRefreshedAt, isRefreshing, refresh]
+    () => ({ state, setIdentity, refresh }),
+    [state, setIdentity, refresh],
   );
 
   return (
@@ -69,10 +71,19 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useCompany(): CompanyContextValue {
+export function useCompany() {
   const ctx = useContext(CompanyContext);
   if (!ctx) {
     throw new Error("useCompany must be used inside <CompanyProvider>");
   }
   return ctx;
+}
+
+function isComplete(identity: CompanyIdentity) {
+  return Boolean(
+    identity.name.trim() &&
+      identity.ticker.trim() &&
+      identity.exchange &&
+      identity.country,
+  );
 }

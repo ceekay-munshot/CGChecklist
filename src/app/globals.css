@@ -1,154 +1,121 @@
 @import "tailwindcss";
 
-/*
-  Design system for the Governance & Forensic Scorecard.
-  Buy-side investor aesthetic: navy + teal + muted blue + soft grey,
-  with semantic green / amber / red for risk signalling.
-*/
+@theme {
+  --color-navy-50: #eef2f7;
+  --color-navy-100: #d6dfeb;
+  --color-navy-200: #a9bbd2;
+  --color-navy-300: #7c97b9;
+  --color-navy-400: #4f73a0;
+  --color-navy-500: #324e7a;
+  --color-navy-600: #243b62;
+  --color-navy-700: #1a2c4a;
+  --color-navy-800: #122036;
+  --color-navy-900: #0a1422;
+  --color-navy-950: #060d18;
 
-:root {
-  /* Surface */
-  --color-canvas: #f5f7fa;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f1f5f9;
-  --color-surface-sunken: #e9eef5;
-  --color-border: #dbe2ec;
-  --color-border-strong: #c2cbd9;
+  --color-teal-50: #ecf7f6;
+  --color-teal-100: #c8e6e3;
+  --color-teal-200: #94cdc7;
+  --color-teal-300: #5fb3aa;
+  --color-teal-400: #2f988e;
+  --color-teal-500: #16776f;
+  --color-teal-600: #105f59;
+  --color-teal-700: #0c4844;
+  --color-teal-800: #08322f;
 
-  /* Brand */
-  --color-navy-50: #eef2f8;
-  --color-navy-100: #d6dfee;
-  --color-navy-200: #aabbd8;
-  --color-navy-400: #4a6594;
-  --color-navy-600: #1f3866;
-  --color-navy-700: #142a52;
-  --color-navy-800: #0f2142;
-  --color-navy-900: #0b1a36;
+  --color-mist-50: #f7f9fc;
+  --color-mist-100: #eef2f8;
+  --color-mist-200: #dde4ee;
+  --color-mist-300: #c1cbdc;
+  --color-mist-400: #9aa6bc;
+  --color-mist-500: #6f7d97;
+  --color-mist-600: #525f78;
+  --color-mist-700: #3d485d;
+  --color-mist-800: #2a3344;
+  --color-mist-900: #1a2030;
 
-  --color-teal-100: #cdece9;
-  --color-teal-300: #6ec4bd;
-  --color-teal-500: #149a91;
-  --color-teal-600: #0e7a72;
-  --color-teal-700: #0b5e58;
+  --color-good-50: #ecf6ee;
+  --color-good-100: #cae7d0;
+  --color-good-500: #2f9c50;
+  --color-good-600: #237a3e;
+  --color-good-700: #1a5d30;
 
-  --color-blue-muted-100: #dde6f1;
-  --color-blue-muted-300: #94a8c4;
-  --color-blue-muted-500: #4a6c95;
-  --color-blue-muted-700: #314a6a;
+  --color-warn-50: #fdf3e0;
+  --color-warn-100: #f8dfa8;
+  --color-warn-500: #c98a16;
+  --color-warn-600: #9d6c10;
+  --color-warn-700: #76520c;
 
-  /* Text */
-  --color-text-primary: #0b1a36;
-  --color-text-secondary: #3a4a64;
-  --color-text-muted: #64748b;
-  --color-text-inverse: #f5f7fa;
-
-  /* Semantic */
-  --color-good-50: #e8f5ee;
-  --color-good-500: #15803d;
-  --color-good-600: #126b34;
-  --color-warn-50: #fdf3e1;
-  --color-warn-500: #b45309;
-  --color-warn-600: #92400e;
   --color-risk-50: #fbe9e9;
-  --color-risk-500: #b91c1c;
-  --color-risk-600: #991b1b;
+  --color-risk-100: #f1bdbd;
+  --color-risk-500: #c43838;
+  --color-risk-600: #9a2929;
+  --color-risk-700: #731e1e;
 
-  /* Status badge tones */
-  --color-info-50: #e6efff;
-  --color-info-500: #1d4ed8;
+  --color-surface: #ffffff;
+  --color-surface-muted: var(--color-mist-50);
+  --color-surface-raised: #ffffff;
+  --color-border: var(--color-mist-200);
+  --color-border-strong: var(--color-mist-300);
 
-  /* Radius / shadow tokens */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --shadow-card: 0 1px 2px rgba(15, 33, 66, 0.04), 0 1px 1px rgba(15, 33, 66, 0.03);
-  --shadow-card-lg: 0 4px 16px rgba(15, 33, 66, 0.08), 0 1px 2px rgba(15, 33, 66, 0.04);
-}
+  --color-fg: var(--color-navy-900);
+  --color-fg-muted: var(--color-mist-600);
+  --color-fg-subtle: var(--color-mist-500);
+  --color-fg-inverse: #ffffff;
 
-@theme inline {
-  --color-canvas: var(--color-canvas);
-  --color-surface: var(--color-surface);
-  --color-surface-muted: var(--color-surface-muted);
-  --color-surface-sunken: var(--color-surface-sunken);
-  --color-border-app: var(--color-border);
-  --color-border-strong: var(--color-border-strong);
+  --color-accent: var(--color-teal-600);
+  --color-accent-hover: var(--color-teal-700);
+  --color-accent-soft: var(--color-teal-50);
 
-  --color-navy-50: var(--color-navy-50);
-  --color-navy-100: var(--color-navy-100);
-  --color-navy-200: var(--color-navy-200);
-  --color-navy-400: var(--color-navy-400);
-  --color-navy-600: var(--color-navy-600);
-  --color-navy-700: var(--color-navy-700);
-  --color-navy-800: var(--color-navy-800);
-  --color-navy-900: var(--color-navy-900);
-
-  --color-teal-100: var(--color-teal-100);
-  --color-teal-300: var(--color-teal-300);
-  --color-teal-500: var(--color-teal-500);
-  --color-teal-600: var(--color-teal-600);
-  --color-teal-700: var(--color-teal-700);
-
-  --color-bluem-100: var(--color-blue-muted-100);
-  --color-bluem-300: var(--color-blue-muted-300);
-  --color-bluem-500: var(--color-blue-muted-500);
-  --color-bluem-700: var(--color-blue-muted-700);
-
-  --color-text-primary: var(--color-text-primary);
-  --color-text-secondary: var(--color-text-secondary);
-  --color-text-muted: var(--color-text-muted);
-  --color-text-inverse: var(--color-text-inverse);
-
-  --color-good-50: var(--color-good-50);
-  --color-good-500: var(--color-good-500);
-  --color-good-600: var(--color-good-600);
-  --color-warn-50: var(--color-warn-50);
-  --color-warn-500: var(--color-warn-500);
-  --color-warn-600: var(--color-warn-600);
-  --color-risk-50: var(--color-risk-50);
-  --color-risk-500: var(--color-risk-500);
-  --color-risk-600: var(--color-risk-600);
-
-  --color-info-50: var(--color-info-50);
-  --color-info-500: var(--color-info-500);
+  --color-brand: var(--color-navy-700);
+  --color-brand-hover: var(--color-navy-800);
 
   --font-sans: var(--font-sans-app), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-mono-app), ui-monospace, "SFMono-Regular", Menlo,
-    Consolas, monospace;
+  --font-mono: var(--font-mono-app), ui-monospace, "JetBrains Mono",
+    SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius-card: 12px;
+  --radius-control: 8px;
 }
 
-html,
-body {
-  background: var(--color-canvas);
-  color: var(--color-text-primary);
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-surface-muted);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  *::selection {
+    background: var(--color-teal-100);
+    color: var(--color-navy-900);
+  }
+
+  input,
+  select,
+  button,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  [data-numeric] {
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum" 1;
+  }
 }
 
-body {
-  font-family: var(--font-sans-app), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-feature-settings: "ss01", "cv11";
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-/* Tabular numerals for any element marked with .tabular */
-.tabular {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
-}
-
-/* Custom scroll styling kept subtle */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong);
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-blue-muted-300);
-}
-::-webkit-scrollbar-track {
-  background: transparent;
+@layer utilities {
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
 }

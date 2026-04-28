@@ -6,5 +6,7 @@ export const COUNTRIES: Country[] = [
   { code: "GB", label: "United Kingdom" },
   { code: "HK", label: "Hong Kong" },
   { code: "JP", label: "Japan" },
+  { code: "AU", label: "Australia" },
   { code: "SG", label: "Singapore" },
+  { code: "OTHER", label: "Other" },
 ];

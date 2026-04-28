@@ -1,41 +1,59 @@
+import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PlaceholderModule } from "@/components/ui/PlaceholderModule";
 
 export default function GovernancePage() {
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-[var(--color-text-primary)]">
-            Corporate Governance Score
-          </h2>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Weighted checklist across board independence, audit quality,
-            disclosures, related parties, and capital allocation.
-          </p>
+    <div className="grid gap-5">
+      <Card>
+        <CardHeader
+          title="Corporate Governance Score"
+          description="Weighted checklist across board composition, audit, disclosures, related-party transactions, and capital allocation."
+          action={<Badge tone="unknown">Awaiting data</Badge>}
+        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Stat label="Composite score" value="—" />
+          <Stat label="Checkpoints filled" value="0 / —" />
+          <Stat label="Lowest category" value="—" />
         </div>
-        <Badge tone="info">Module 1 of 3</Badge>
-      </div>
+      </Card>
 
-      <PlaceholderModule
-        title="Checklist categories"
-        subtitle="Each category will roll up into a 0–100 governance score with a risk band."
-        scoreLabel="of 100"
-        buildingBlocks={[
-          "Board composition and independence",
-          "Audit committee, statutory auditor tenure and qualifications",
-          "Promoter holding, pledging, and changes over time",
-          "Related-party transactions and subsidiary structure",
-          "Disclosure quality and timeliness on the exchange",
-          "Regulatory actions, litigation, and going-concern flags",
-        ]}
-        pending={[
-          "Wire annual-report adapter for board / audit committee data",
-          "Wire exchange-filing adapter for disclosures and red flags",
-          "Implement scoring rubric in services/calculations/governanceCalc",
-          "Render the actual checklist with pass / warn / fail per item",
-        ]}
-      />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <PlaceholderModule
+          title="Checkpoint table"
+          description="Per-question rows, weights, evidence links, and reviewer notes."
+          bullets={[
+            "Rows grouped by category with collapsible sections",
+            "Each row exposes evidence URL and last-verified timestamp",
+            "Reviewer can override answer and attach a note",
+          ]}
+        />
+        <PlaceholderModule
+          title="Category breakdown"
+          description="Score contribution by board / audit / disclosures / related-parties / capital allocation."
+          bullets={[
+            "Stacked horizontal bars per category",
+            "Tooltip shows weight and answered ratio",
+            "Click a category to filter the checkpoint table",
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
+        {label}
+      </p>
+      <p
+        className="mt-1 text-2xl font-semibold tracking-tight text-[var(--color-fg)]"
+        data-numeric
+      >
+        {value}
+      </p>
     </div>
   );
 }

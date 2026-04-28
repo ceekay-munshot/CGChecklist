@@ -1,29 +1,29 @@
-/**
- * Source descriptors used by the discovery + adapter layers.
- * The dashboard never fetches directly from third parties; everything
- * routes through the adapter contracts defined here so individual
- * sources can be swapped or composed without UI churn.
- */
-
 export type SourceKind =
   | "screener"
   | "annual-report"
   | "exchange-filing"
-  | "ir-page"
-  | "news"
+  | "investor-relations"
+  | "press-release"
+  | "regulatory-filing"
   | "other";
 
-export type SourceDescriptor = {
+export interface SourceRef {
   kind: SourceKind;
-  url: string;
-  title: string;
-  /** ISO date string when the source was published or last updated. */
-  publishedAt: string | null;
-  /** Confidence between 0–1 from the discovery layer. */
-  confidence: number;
-};
+  label: string;
+  url: string | null;
+  retrievedAt: string | null;
+  trust: "primary" | "secondary" | "tertiary";
+}
 
-export type SourcePack = {
-  resolvedAt: string;
-  sources: SourceDescriptor[];
-};
+export interface DataQualityFlag {
+  id: string;
+  severity: "info" | "warn" | "risk";
+  message: string;
+  affects: ("governance" | "beneish" | "altman")[];
+}
+
+export interface DataQualityReport {
+  completeness: number;
+  flags: DataQualityFlag[];
+  sources: SourceRef[];
+}

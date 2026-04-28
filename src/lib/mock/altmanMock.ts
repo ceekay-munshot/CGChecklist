@@ -1,18 +1,19 @@
-import type { AltmanModule } from "@/lib/types/scores";
+import type { AltmanScore } from "@/lib/types/scores";
 
-/**
- * Empty Altman module — variant defaults to the manufacturing model
- * (Z-score). The calculation layer will switch variants based on
- * resolved company classification.
- */
-export const EMPTY_ALTMAN: AltmanModule = {
+export const EMPTY_ALTMAN: AltmanScore = {
   summary: {
-    band: "unknown",
     value: null,
+    verdict: "unknown",
     label: "Awaiting data",
-    rationale:
-      "Altman Z-Score combines five working-capital and earnings ratios. Refresh data to compute X1–X5 and the weighted Z value.",
+    description:
+      "Refresh data to compute the Altman Z-Score using the variant most appropriate for this company.",
   },
-  variant: "manufacturing",
-  components: [],
+  variant: "original",
+  ratios: [
+    { id: "X1", label: "Working capital / total assets", description: "Liquidity", value: null, weight: 1.2, contribution: null },
+    { id: "X2", label: "Retained earnings / total assets", description: "Cumulative profitability", value: null, weight: 1.4, contribution: null },
+    { id: "X3", label: "EBIT / total assets", description: "Operating efficiency", value: null, weight: 3.3, contribution: null },
+    { id: "X4", label: "Market cap / total liabilities", description: "Solvency cushion", value: null, weight: 0.6, contribution: null },
+    { id: "X5", label: "Sales / total assets", description: "Asset turnover", value: null, weight: 1.0, contribution: null },
+  ],
 };

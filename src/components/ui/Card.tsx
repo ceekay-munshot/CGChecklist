@@ -1,53 +1,49 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import { forwardRef } from "react";
 
-type CardProps = HTMLAttributes<HTMLDivElement> & {
-  children: ReactNode;
-};
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  as?: "div" | "section" | "article";
+  padded?: boolean;
+}
 
-export function Card({ className = "", children, ...rest }: CardProps) {
+export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
+  { as: Tag = "section", padded = true, className = "", children, ...rest },
+  ref,
+) {
   return (
-    <div
-      className={
-        "rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] " +
-        className
-      }
+    <Tag
+      ref={ref as never}
+      className={`rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-[0_1px_2px_rgba(10,20,34,0.04)] ${
+        padded ? "p-5 sm:p-6" : ""
+      } ${className}`}
       {...rest}
     >
       {children}
-    </div>
+    </Tag>
   );
-}
+});
 
-type CardHeaderProps = {
-  title: string;
-  subtitle?: string;
-  trailing?: ReactNode;
-};
-
-export function CardHeader({ title, subtitle, trailing }: CardHeaderProps) {
+export function CardHeader({
+  title,
+  description,
+  action,
+}: {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
-      <div className="min-w-0">
-        <h3 className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
+    <header className="mb-4 flex items-start justify-between gap-4">
+      <div>
+        <h3 className="text-base font-semibold tracking-tight text-[var(--color-fg)]">
           {title}
         </h3>
-        {subtitle ? (
-          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-            {subtitle}
+        {description ? (
+          <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
+            {description}
           </p>
         ) : null}
       </div>
-      {trailing ? <div className="shrink-0">{trailing}</div> : null}
-    </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </header>
   );
-}
-
-export function CardBody({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return <div className={"px-5 py-5 " + className}>{children}</div>;
 }

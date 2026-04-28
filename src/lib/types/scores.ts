@@ -1,58 +1,66 @@
-/**
- * Score types used by the three modules.
- * All numeric fields stay nullable to make missing-data states explicit.
- */
+export type Verdict = "good" | "warn" | "risk" | "unknown";
 
-export type RiskBand = "good" | "caution" | "risk" | "unknown";
-
-export type ScoreSummary = {
-  band: RiskBand;
-  /** Score value normalised for the relevant module (0–100, signed M-score, Z-score). */
+export interface ScoreSummary {
   value: number | null;
-  /** Short label rendered next to the value (e.g. "Safe", "Grey", "Distress"). */
+  verdict: Verdict;
   label: string;
-  /** Free-form blurb explaining the score in one sentence. */
-  rationale: string;
-};
+  description: string;
+}
 
-export type GovernanceCheckpoint = {
+export interface GovernanceCheckpoint {
   id: string;
-  category: string;
+  category:
+    | "board"
+    | "audit"
+    | "disclosures"
+    | "related-parties"
+    | "capital-allocation";
   question: string;
-  status: "pass" | "warn" | "fail" | "na";
   weight: number;
-  evidence: string | null;
-};
+  answer: "yes" | "no" | "partial" | null;
+  evidenceUrl: string | null;
+  note: string | null;
+}
 
-export type GovernanceModule = {
+export interface GovernanceScore {
   summary: ScoreSummary;
   checkpoints: GovernanceCheckpoint[];
-};
+}
 
-export type BeneishComponent = {
-  key: string;
+export interface BeneishVariable {
+  id:
+    | "DSRI"
+    | "GMI"
+    | "AQI"
+    | "SGI"
+    | "DEPI"
+    | "SGAI"
+    | "LVGI"
+    | "TATA";
   label: string;
+  description: string;
   value: number | null;
   contribution: number | null;
-  notes?: string;
-};
+}
 
-export type BeneishModule = {
+export interface BeneishScore {
   summary: ScoreSummary;
-  components: BeneishComponent[];
-};
+  variables: BeneishVariable[];
+}
 
-export type AltmanComponent = {
-  key: string;
+export type AltmanVariant = "original" | "private" | "non-manufacturing" | "emerging-markets";
+
+export interface AltmanRatio {
+  id: "X1" | "X2" | "X3" | "X4" | "X5";
   label: string;
+  description: string;
   value: number | null;
   weight: number;
-  weighted: number | null;
-  notes?: string;
-};
+  contribution: number | null;
+}
 
-export type AltmanModule = {
+export interface AltmanScore {
   summary: ScoreSummary;
-  variant: "manufacturing" | "non-manufacturing" | "emerging-market";
-  components: AltmanComponent[];
-};
+  variant: AltmanVariant;
+  ratios: AltmanRatio[];
+}

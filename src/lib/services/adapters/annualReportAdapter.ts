@@ -1,30 +1,14 @@
-import type { ResolvedCompany } from "@/lib/types/company";
+import type { CompanyIdentity } from "@/lib/types/company";
 
-/**
- * Annual report adapter — placeholder.
- *
- * Pulls structured fields out of the annual report PDF (or HTML where
- * available). Used for governance signals that filings don't surface:
- *  - Board composition + independence
- *  - Audit committee composition
- *  - Related party transactions
- *  - Auditor tenure / qualifications
- *  - Subsidiary structure
- *
- * Implementation will run server-side via Firecrawl + a parsing step.
- */
-export type AnnualReportSnapshot = {
-  source: "annual-report";
-  fiscalYear: number | null;
-  raw: Record<string, unknown> | null;
-};
+export interface AnnualReportSnapshot {
+  fiscalYear: string;
+  fields: Record<string, number | string | null>;
+}
 
 export async function fetchFromAnnualReport(
-  _company: ResolvedCompany
+  _company: CompanyIdentity,
 ): Promise<AnnualReportSnapshot> {
-  return {
-    source: "annual-report",
-    fiscalYear: null,
-    raw: null,
-  };
+  throw new Error(
+    "fetchFromAnnualReport is not implemented yet. It will run server-side and parse PDFs / IR pages via Firecrawl.",
+  );
 }

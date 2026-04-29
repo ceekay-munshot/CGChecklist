@@ -1,5 +1,6 @@
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { GovernanceExportButton } from "@/components/governance/GovernanceExportButton";
 import { GovernanceFinalSummary } from "@/components/governance/GovernanceFinalSummary";
 import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
@@ -22,7 +23,12 @@ export default function GovernancePage() {
         <CardHeader
           title="Corporate Governance Score"
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
-          action={<Badge tone="info">Mock data</Badge>}
+          action={
+            <div className="flex items-center gap-3">
+              <Badge tone="info">Mock data</Badge>
+              <GovernanceExportButton rows={rows} />
+            </div>
+          }
         />
         <GovernanceKpiCards totals={totals} />
       </Card>

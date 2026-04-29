@@ -7,26 +7,6 @@ export interface ScoreSummary {
   description: string;
 }
 
-export interface GovernanceCheckpoint {
-  id: string;
-  category:
-    | "board"
-    | "audit"
-    | "disclosures"
-    | "related-parties"
-    | "capital-allocation";
-  question: string;
-  weight: number;
-  answer: "yes" | "no" | "partial" | null;
-  evidenceUrl: string | null;
-  note: string | null;
-}
-
-export interface GovernanceScore {
-  summary: ScoreSummary;
-  checkpoints: GovernanceCheckpoint[];
-}
-
 export interface BeneishVariable {
   id:
     | "DSRI"

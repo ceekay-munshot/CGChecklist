@@ -8,7 +8,6 @@ import { GovernanceFinalSummary } from "@/components/governance/GovernanceFinalS
 import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
 import { GovernanceSectionTable } from "@/components/governance/GovernanceSectionTable";
-import { MunsPanel } from "@/components/governance/MunsPanel";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
 import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
@@ -78,12 +77,6 @@ export default function GovernancePage() {
       </div>
 
       <GovernanceFinalSummary totals={totals} />
-
-      <MunsPanel
-        raw={munsRaw}
-        error={munsError || undefined}
-        open={Boolean(munsRaw || munsError)}
-      />
     </div>
   );
 }

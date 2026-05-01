@@ -3,6 +3,11 @@
 import { useCompany } from "@/lib/state/CompanyContext";
 import { RefreshButton } from "@/components/header/RefreshButton";
 import { StatusBadge } from "@/components/header/StatusBadge";
+import { CompanySearchInput } from "@/components/header/CompanySearchInput";
+import type {
+  CountryCode,
+  ExchangeCode,
+} from "@/lib/types/company";
 
 export function CompanyHeader() {
   const { state, setIdentity } = useCompany();
@@ -22,11 +27,18 @@ export function CompanyHeader() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-xl lg:flex-1">
           <Field label="Company name">
-            <input
+            <CompanySearchInput
               value={identity.name}
-              onChange={(e) => setIdentity({ name: e.target.value })}
+              onTextChange={(name) => setIdentity({ name })}
+              onPick={(s) =>
+                setIdentity({
+                  name: s.name,
+                  ticker: s.ticker.toUpperCase(),
+                  exchange: s.exchange as ExchangeCode | "",
+                  country: s.country as CountryCode | "",
+                })
+              }
               placeholder="e.g. Asian Paints"
-              className="focus-ring h-10 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)]"
             />
           </Field>
 

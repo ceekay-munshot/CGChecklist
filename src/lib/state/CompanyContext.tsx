@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type {
@@ -13,12 +14,11 @@ import type {
   DataStatus,
 } from "@/lib/types/company";
 import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
+import { fetchGovernanceAnalysis } from "@/lib/munsClient";
 
 interface CompanyContextValue {
   state: CompanyState;
-  setIdentity: (
-    patch: Partial<CompanyIdentity>,
-  ) => void;
+  setIdentity: (patch: Partial<CompanyIdentity>) => void;
   refresh: () => Promise<void>;
 }
 
@@ -29,6 +29,8 @@ const INITIAL_STATE: CompanyState = {
   status: "idle",
   lastRefreshedAt: null,
   message: null,
+  munsRaw: "",
+  munsError: null,
 };
 
 export function CompanyProvider({
@@ -37,6 +39,8 @@ export function CompanyProvider({
   children: React.ReactNode;
 }) {
   const [state, setState] = useState<CompanyState>(INITIAL_STATE);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const setIdentity = useCallback((patch: Partial<CompanyIdentity>) => {
     setState((prev) => ({
@@ -46,17 +50,42 @@ export function CompanyProvider({
   }, []);
 
   const refresh = useCallback(async () => {
-    setState((prev) => ({ ...prev, status: "loading", message: null }));
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    const identity = stateRef.current.identity;
+
+    if (!isComplete(identity)) {
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        message: "Enter company name and ticker first.",
+        munsError: "Missing company details.",
+      }));
+      return;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      status: "loading",
+      message: null,
+      munsError: null,
+    }));
+
+    const result = await fetchGovernanceAnalysis({
+      ticker: identity.ticker,
+      companyName: identity.name,
+      country: identity.country || undefined,
+    });
+
     setState((prev) => {
-      const status: DataStatus = isComplete(prev.identity) ? "partial" : "idle";
+      const status: DataStatus = result.ok ? "ready" : "error";
       return {
         ...prev,
         status,
         lastRefreshedAt: new Date().toISOString(),
-        message: isComplete(prev.identity)
-          ? "Mock refresh complete. Real data adapters are not wired yet."
-          : "Enter company name, ticker, exchange, and country to refresh.",
+        message: result.ok
+          ? "Live MUNS analysis loaded."
+          : result.error || "Failed to fetch MUNS analysis.",
+        munsRaw: result.ok ? result.raw : "",
+        munsError: result.ok ? null : result.error || "Failed to fetch.",
       };
     });
   }, []);
@@ -80,10 +109,5 @@ export function useCompany() {
 }
 
 function isComplete(identity: CompanyIdentity) {
-  return Boolean(
-    identity.name.trim() &&
-      identity.ticker.trim() &&
-      identity.exchange &&
-      identity.country,
-  );
+  return Boolean(identity.name.trim() && identity.ticker.trim());
 }

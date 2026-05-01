@@ -37,35 +37,67 @@ const isSkippableText = (text: string): boolean => {
   );
 };
 
+const SECTION_KEYWORD_TITLES: Array<{ keyword: string; title: string }> = [
+  { keyword: "board of directors", title: "Board of Directors" },
+  { keyword: "audit committee", title: "Audit Committee" },
+  { keyword: "audit", title: "Audit" },
+  { keyword: "stakeholders", title: "Stakeholders" },
+  { keyword: "stakeholder", title: "Stakeholders" },
+  { keyword: "employee welfare", title: "Employee Welfare" },
+  { keyword: "employee", title: "Employee" },
+  { keyword: "industry and promoter", title: "Industry and Promoter" },
+  { keyword: "promoter", title: "Promoter" },
+  { keyword: "stock exchange", title: "Stock Exchange" },
+  { keyword: "exchange compliance", title: "Stock Exchange" },
+  { keyword: "other regulatory", title: "Other Regulatory" },
+  { keyword: "regulatory", title: "Regulatory" },
+  { keyword: "financial statement", title: "Financial Statements" },
+  { keyword: "financials", title: "Financials" },
+  { keyword: "financial", title: "Financials" },
+];
+
+const findTitleInGap = (gap: string): string | null => {
+  const text = stripTags(gap).toLowerCase();
+  if (!text) return null;
+  let bestEnd = -1;
+  let bestLen = 0;
+  let bestTitle: string | null = null;
+  for (const { keyword, title } of SECTION_KEYWORD_TITLES) {
+    const idx = text.lastIndexOf(keyword);
+    if (idx === -1) continue;
+    const end = idx + keyword.length;
+    if (end > bestEnd || (end === bestEnd && keyword.length > bestLen)) {
+      bestEnd = end;
+      bestLen = keyword.length;
+      bestTitle = title;
+    }
+  }
+  return bestTitle;
+};
+
 const parseHtmlTables = (html: string): ParsedTable[] => {
   const tables: ParsedTable[] = [];
   let sectionTitle = "Section";
-  let tableCount = 0;
 
   const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
   const tableMatches = Array.from(html.matchAll(tableRegex));
 
-  const divSectionRegex =
-    /<div[^>]*>(?:SECTION \d+:\s*)?([^<]+)<\/div>/gi;
-  const divMatches = Array.from(html.matchAll(divSectionRegex));
+  let prevTableEnd = 0;
 
   for (let tableIdx = 0; tableIdx < tableMatches.length; tableIdx++) {
-    const tableHtml = tableMatches[tableIdx][1];
+    const match = tableMatches[tableIdx];
+    const tableHtml = match[1];
+    const tableStart = match.index ?? 0;
     const rowMatches = tableHtml.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
 
-    if (rowMatches.length === 0) continue;
-
-    // Try to find a matching section title from divs
-    let currentTitle = sectionTitle;
-    for (let divIdx = 0; divIdx < divMatches.length; divIdx++) {
-      const candidateTitle = stripTags(divMatches[divIdx][1]);
-      if (!isSkippableText(candidateTitle)) {
-        // Use the most recent non-skippable div title
-        if (divMatches[divIdx].index! < tableMatches[tableIdx].index!) {
-          currentTitle = candidateTitle;
-        }
-      }
+    if (rowMatches.length === 0) {
+      prevTableEnd = tableStart + match[0].length;
+      continue;
     }
+
+    const gap = html.slice(prevTableEnd, tableStart);
+    const gapTitle = findTitleInGap(gap);
+    const currentTitle = gapTitle || sectionTitle;
 
     const headers: string[] = [];
     const dataRows: Record<string, string>[] = [];
@@ -90,10 +122,11 @@ const parseHtmlTables = (html: string): ParsedTable[] => {
     }
 
     if (headers.length > 0) {
-      sectionTitle = currentTitle; // Update for next iteration
+      sectionTitle = currentTitle;
       tables.push({ title: currentTitle, headers, rows: dataRows });
-      tableCount++;
     }
+
+    prevTableEnd = tableStart + match[0].length;
   }
 
   return tables;
@@ -104,6 +137,7 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
   const lines = markdown.split("\n");
 
   let currentTitle = "Section";
+  let gapBuffer = "";
   let i = 0;
 
   const isSeparator = (line: string) =>
@@ -115,6 +149,12 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
       .replace(/\|$/, "")
       .split("|")
       .map((cell) => cell.replace(/\*\*/g, "").trim());
+
+  const consumeGapTitle = () => {
+    const fromGap = findTitleInGap(gapBuffer);
+    if (fromGap) currentTitle = fromGap;
+    gapBuffer = "";
+  };
 
   while (i < lines.length) {
     const line = lines[i];
@@ -129,6 +169,7 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
       if (!isSkippableText(candidateTitle)) {
         currentTitle = candidateTitle;
       }
+      gapBuffer = "";
       i++;
       continue;
     }
@@ -138,6 +179,8 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
       i + 1 < lines.length &&
       isSeparator(lines[i + 1])
     ) {
+      consumeGapTitle();
+
       const headers = splitCells(trimmed);
       if (headers.length === 0 || headers.some((h) => !h)) {
         i += 2;
@@ -169,6 +212,7 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
       continue;
     }
 
+    gapBuffer += " " + trimmed;
     i++;
   }
 

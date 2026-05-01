@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GovernanceExportButton } from "@/components/governance/GovernanceExportButton";
@@ -8,7 +8,6 @@ import { GovernanceFinalSummary } from "@/components/governance/GovernanceFinalS
 import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
 import { GovernanceSectionTable } from "@/components/governance/GovernanceSectionTable";
-import { MunsButton } from "@/components/governance/MunsButton";
 import { MunsPanel } from "@/components/governance/MunsPanel";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
@@ -17,26 +16,24 @@ import {
   calculateGovernanceScore,
   getGovernanceSectionSummaries,
 } from "@/lib/services/calculations/governanceCalc";
+import { useCompany } from "@/lib/state/CompanyContext";
 
 export default function GovernancePage() {
-  const [munsRaw, setMunsRaw] = useState("");
-  const [munsError, setMunsError] = useState<string>();
-  const [munsOpen, setMunsOpen] = useState(false);
-
-  const handleMunsResult = (result: { raw: string; error?: string }) => {
-    setMunsRaw(result.raw);
-    setMunsError(result.error);
-    setMunsOpen(true);
-  };
+  const { state } = useCompany();
+  const { munsRaw, munsError } = state;
 
   const rows = useMemo(() => {
     if (munsRaw && !munsError) {
-      return munsHtmlToGovernanceRows(munsRaw);
+      const parsed = munsHtmlToGovernanceRows(munsRaw);
+      if (parsed.length > 0) return parsed;
     }
     return MOCK_GOVERNANCE_ROWS;
   }, [munsRaw, munsError]);
+
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
+
+  const isLive = Boolean(munsRaw && !munsError);
 
   return (
     <div className="grid gap-5">
@@ -46,8 +43,9 @@ export default function GovernancePage() {
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
           action={
             <div className="flex items-center gap-3">
-              <Badge tone="info">Mock data</Badge>
-              <MunsButton onResult={handleMunsResult} />
+              <Badge tone={isLive ? "good" : "info"}>
+                {isLive ? "Live MUNS data" : "Mock data"}
+              </Badge>
               <GovernanceExportButton rows={rows} />
             </div>
           }
@@ -81,7 +79,11 @@ export default function GovernancePage() {
 
       <GovernanceFinalSummary totals={totals} />
 
-      <MunsPanel raw={munsRaw} error={munsError} open={munsOpen} />
+      <MunsPanel
+        raw={munsRaw}
+        error={munsError || undefined}
+        open={Boolean(munsRaw || munsError)}
+      />
     </div>
   );
 }

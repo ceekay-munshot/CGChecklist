@@ -49,4 +49,6 @@ export interface CompanyState {
   status: DataStatus;
   lastRefreshedAt: string | null;
   message: string | null;
+  munsRaw: string;
+  munsError: string | null;
 }

@@ -19,24 +19,22 @@ import {
 } from "@/lib/services/calculations/governanceCalc";
 
 export default function GovernancePage() {
-  const [munsHtml, setMunsHtml] = useState("");
   const [munsRaw, setMunsRaw] = useState("");
   const [munsError, setMunsError] = useState<string>();
   const [munsOpen, setMunsOpen] = useState(false);
 
-  const handleMunsResult = (result: { html: string; raw: string; error?: string }) => {
-    setMunsHtml(result.html);
+  const handleMunsResult = (result: { raw: string; error?: string }) => {
     setMunsRaw(result.raw);
     setMunsError(result.error);
     setMunsOpen(true);
   };
 
   const rows = useMemo(() => {
-    if (munsHtml && !munsError) {
-      return munsHtmlToGovernanceRows(munsHtml);
+    if (munsRaw && !munsError) {
+      return munsHtmlToGovernanceRows(munsRaw);
     }
     return MOCK_GOVERNANCE_ROWS;
-  }, [munsHtml, munsError]);
+  }, [munsRaw, munsError]);
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
 
@@ -83,7 +81,7 @@ export default function GovernancePage() {
 
       <GovernanceFinalSummary totals={totals} />
 
-      <MunsPanel html={munsHtml} raw={munsRaw} error={munsError} open={munsOpen} />
+      <MunsPanel raw={munsRaw} error={munsError} open={munsOpen} />
     </div>
   );
 }

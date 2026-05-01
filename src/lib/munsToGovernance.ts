@@ -1,14 +1,21 @@
-import type { GovernanceRow, GovernanceSectionId } from "@/lib/types/governance";
+import type {
+  GovernanceConfidence,
+  GovernanceResponse,
+  GovernanceRow,
+  GovernanceScoreValue,
+  GovernanceSectionId,
+} from "@/lib/types/governance";
+import { parseMunsResponse } from "@/lib/munsParse";
 
 const SECTION_MAP: Record<string, GovernanceSectionId> = {
   "board of directors": "BOARD",
-  "audit": "AUDIT",
-  "stakeholders": "STAKEHOLDERS",
-  "employee": "EMPLOYEE",
+  audit: "AUDIT",
+  stakeholders: "STAKEHOLDERS",
+  employee: "EMPLOYEE",
   "industry and promoter": "INDUSTRY_PROMOTER",
   "stock exchange": "STOCK_EXCHANGE",
   "other regulatory": "OTHER_REGULATORY",
-  "financials": "FINANCIALS",
+  financials: "FINANCIALS",
 };
 
 const mapSectionName = (title: string): GovernanceSectionId => {
@@ -16,76 +23,69 @@ const mapSectionName = (title: string): GovernanceSectionId => {
   for (const [key, value] of Object.entries(SECTION_MAP)) {
     if (normalized.includes(key)) return value;
   }
-  return "BOARD"; // fallback
+  return "BOARD";
 };
 
-const responseToConfidence = (response: string): "High" | "Medium" | "Low" => {
-  const low = response.toLowerCase();
-  if (["yes", "good", "high", "above", "positive", "stable", "no issues"].includes(low))
+const responseToConfidence = (response: string): GovernanceConfidence => {
+  const v = response.toLowerCase().trim();
+  if (
+    ["yes", "good", "high", "above", "stable", "no"].includes(v) ||
+    v.includes("debt <") ||
+    v.includes("cash >")
+  ) {
     return "High";
-  if (["average", "moderate", "moderate"].includes(low)) return "Medium";
+  }
+  if (["average", "moderate", "medium"].includes(v)) return "Medium";
   return "Low";
 };
 
-const responseToType = (response: string) => {
-  const low = response.toLowerCase().trim();
-  return (low as any); // trusts it's a valid GovernanceResponse
+const clampScore = (n: number): GovernanceScoreValue => {
+  if (n >= 2) return 2;
+  if (n <= 0) return 0;
+  return 1;
 };
 
-export const munsHtmlToGovernanceRows = (html: string): GovernanceRow[] => {
+const findColumn = (headers: string[], needles: string[]): string | undefined =>
+  headers.find((h) => needles.some((n) => h.toLowerCase().includes(n)));
+
+export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
+  const parsed = parseMunsResponse(raw);
   const rows: GovernanceRow[] = [];
-  let currentSection: GovernanceSectionId = "BOARD";
   let questionCounter = 0;
 
-  // Extract section headers and their tables
-  const sectionRegex = /<div[^>]*>SECTION \d+:\s*([^<]+)<\/div>[\s\S]*?<table[^>]*>([\s\S]*?)<\/table>/gi;
-  let sectionMatch;
+  for (const table of parsed.tables) {
+    const sectionId = mapSectionName(table.title);
 
-  while ((sectionMatch = sectionRegex.exec(html)) !== null) {
-    const sectionTitle = sectionMatch[1].trim();
-    currentSection = mapSectionName(sectionTitle);
-    const tableHtml = sectionMatch[2];
+    const particularsCol = findColumn(table.headers, ["particular"]);
+    const responseCol = findColumn(table.headers, ["response"]);
+    const scoreCol = table.headers.find(
+      (h) => h.toLowerCase().trim() === "score",
+    );
+    const maxScoreCol = findColumn(table.headers, ["max"]);
+    const remarksCol = findColumn(table.headers, ["remark"]);
 
-    // Parse rows within the table
-    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-    let isHeader = true;
-    let rowMatch;
+    if (!particularsCol || !responseCol) continue;
 
-    while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
-      if (isHeader) {
-        isHeader = false;
-        continue; // Skip header row
-      }
+    for (const row of table.rows) {
+      const particulars = row[particularsCol] || "";
+      const response = row[responseCol] || "";
+      const scoreNum = scoreCol ? parseInt(row[scoreCol], 10) || 0 : 0;
+      const maxScoreNum = maxScoreCol ? parseInt(row[maxScoreCol], 10) || 2 : 2;
+      const remarks = remarksCol ? row[remarksCol] || "" : "";
 
-      const rowHtml = rowMatch[1];
-      const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-      const cells: string[] = [];
-      let cellMatch;
+      if (!particulars.trim()) continue;
 
-      while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-        const cell = cellMatch[1].replace(/<[^>]+>/g, "").trim();
-        cells.push(cell);
-      }
-
-      if (cells.length >= 5) {
-        const particulars = cells[0];
-        const response = cells[1];
-        const score = parseInt(cells[2], 10) || 0;
-        const maxScore = 2;
-        const remarks = cells[4];
-
-        rows.push({
-          sectionId: currentSection,
-          questionId: `${currentSection}-${++questionCounter}`,
-          particulars,
-          response: responseToType(response),
-          score: (score as 0 | 1 | 2),
-          maxScore,
-          remarks,
-          source: "MUNS Analysis",
-          confidence: responseToConfidence(response),
-        });
-      }
+      rows.push({
+        sectionId,
+        questionId: `${sectionId}-${++questionCounter}`,
+        particulars,
+        response: response as GovernanceResponse,
+        score: clampScore(scoreNum),
+        maxScore: 2,
+        remarks,
+        source: "MUNS Analysis",
+        confidence: responseToConfidence(response),
+      });
     }
   }
 

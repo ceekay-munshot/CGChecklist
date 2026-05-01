@@ -5,6 +5,7 @@ export interface MunsParseResult {
 }
 
 export interface ParsedTable {
+  title: string;
   headers: string[];
   rows: Record<string, string>[];
 }
@@ -26,12 +27,15 @@ const stripTags = (html: string): string => {
 };
 
 const parseHtmlTables = (html: string): ParsedTable[] => {
-  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
   const tables: ParsedTable[] = [];
-  let match;
 
-  while ((match = tableRegex.exec(html)) !== null) {
-    const tableHtml = match[1];
+  // Match section headers followed by tables
+  const sectionRegex = /<div[^>]*>(?:SECTION \d+:\s*)?([^<]+)<\/div>[\s\S]*?<table[^>]*>([\s\S]*?)<\/table>/gi;
+  let sectionMatch;
+
+  while ((sectionMatch = sectionRegex.exec(html)) !== null) {
+    const title = stripTags(sectionMatch[1]);
+    const tableHtml = sectionMatch[2];
     const rows = tableHtml.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
 
     if (rows.length === 0) continue;
@@ -62,7 +66,7 @@ const parseHtmlTables = (html: string): ParsedTable[] => {
     }
 
     if (headers.length > 0) {
-      tables.push({ headers, rows: dataRows });
+      tables.push({ title, headers, rows: dataRows });
     }
   }
 

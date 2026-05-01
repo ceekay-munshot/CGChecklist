@@ -1,14 +1,16 @@
 "use client";
 
 import { Card, CardHeader } from "@/components/ui/Card";
+import { MunsAgentOutput } from "../../MunsRenderer";
 
 export interface MunsPanelProps {
   html: string;
+  raw: string;
   error?: string;
   open: boolean;
 }
 
-export function MunsPanel({ html, error, open }: MunsPanelProps) {
+export function MunsPanel({ html, raw, error, open }: MunsPanelProps) {
   if (!open) return null;
 
   return (
@@ -17,13 +19,10 @@ export function MunsPanel({ html, error, open }: MunsPanelProps) {
       <div className="p-6">
         {error ? (
           <p className="text-sm text-red-600">{error}</p>
+        ) : html ? (
+          <MunsAgentOutput markdown={html} raw={raw} />
         ) : (
-          <div className="prose max-w-none overflow-auto">
-            <div
-              dangerouslySetInnerHTML={{ __html: html }}
-              className="text-sm leading-relaxed"
-            />
-          </div>
+          <p className="text-sm text-muted-foreground">No data available</p>
         )}
       </div>
     </Card>

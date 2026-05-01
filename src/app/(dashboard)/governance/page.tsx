@@ -20,11 +20,13 @@ import {
 
 export default function GovernancePage() {
   const [munsHtml, setMunsHtml] = useState("");
+  const [munsRaw, setMunsRaw] = useState("");
   const [munsError, setMunsError] = useState<string>();
   const [munsOpen, setMunsOpen] = useState(false);
 
-  const handleMunsResult = (result: { html: string; error?: string }) => {
+  const handleMunsResult = (result: { html: string; raw: string; error?: string }) => {
     setMunsHtml(result.html);
+    setMunsRaw(result.raw);
     setMunsError(result.error);
     setMunsOpen(true);
   };
@@ -81,7 +83,7 @@ export default function GovernancePage() {
 
       <GovernanceFinalSummary totals={totals} />
 
-      <MunsPanel html={munsHtml} error={munsError} open={munsOpen} />
+      <MunsPanel html={munsHtml} raw={munsRaw} error={munsError} open={munsOpen} />
     </div>
   );
 }

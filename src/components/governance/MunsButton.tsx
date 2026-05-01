@@ -6,6 +6,7 @@ import { fetchGovernanceAnalysis } from "@/lib/munsClient";
 export interface MunsButtonProps {
   onResult: (result: {
     html: string;
+    raw: string;
     error?: string;
   }) => void;
 }
@@ -18,13 +19,14 @@ export function MunsButton({ onResult }: MunsButtonProps) {
     try {
       const result = await fetchGovernanceAnalysis();
       if (result.ok && result.parsed) {
-        onResult({ html: result.parsed.html });
+        onResult({ html: result.parsed.html, raw: result.raw });
       } else {
-        onResult({ html: "", error: result.error || "Unknown error" });
+        onResult({ html: "", raw: "", error: result.error || "Unknown error" });
       }
     } catch (error) {
       onResult({
         html: "",
+        raw: "",
         error: error instanceof Error ? error.message : "Failed to fetch",
       });
     } finally {

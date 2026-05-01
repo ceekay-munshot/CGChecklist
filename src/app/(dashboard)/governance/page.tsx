@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GovernanceExportButton } from "@/components/governance/GovernanceExportButton";
@@ -12,6 +12,7 @@ import { MunsButton } from "@/components/governance/MunsButton";
 import { MunsPanel } from "@/components/governance/MunsPanel";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
+import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
 import {
   calculateGovernanceScore,
   getGovernanceSectionSummaries,
@@ -27,7 +28,13 @@ export default function GovernancePage() {
     setMunsError(result.error);
     setMunsOpen(true);
   };
-  const rows = MOCK_GOVERNANCE_ROWS;
+
+  const rows = useMemo(() => {
+    if (munsHtml && !munsError) {
+      return munsHtmlToGovernanceRows(munsHtml);
+    }
+    return MOCK_GOVERNANCE_ROWS;
+  }, [munsHtml, munsError]);
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
 

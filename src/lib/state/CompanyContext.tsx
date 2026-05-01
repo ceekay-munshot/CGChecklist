@@ -56,7 +56,7 @@ export function CompanyProvider({
       setState((prev) => ({
         ...prev,
         status: "error",
-        message: "Enter company name, ticker, exchange, and country first.",
+        message: "Enter company name and ticker first.",
         munsError: "Missing company details.",
       }));
       return;
@@ -109,10 +109,5 @@ export function useCompany() {
 }
 
 function isComplete(identity: CompanyIdentity) {
-  return Boolean(
-    identity.name.trim() &&
-      identity.ticker.trim() &&
-      identity.exchange &&
-      identity.country,
-  );
+  return Boolean(identity.name.trim() && identity.ticker.trim());
 }

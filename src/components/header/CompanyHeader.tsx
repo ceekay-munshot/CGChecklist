@@ -1,8 +1,6 @@
 "use client";
 
 import { useCompany } from "@/lib/state/CompanyContext";
-import { COUNTRIES } from "@/lib/mock/countries";
-import { EXCHANGES } from "@/lib/mock/exchanges";
 import { RefreshButton } from "@/components/header/RefreshButton";
 import { StatusBadge } from "@/components/header/StatusBadge";
 
@@ -22,7 +20,7 @@ export function CompanyHeader() {
           </h1>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:max-w-3xl lg:flex-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-xl lg:flex-1">
           <Field label="Company name">
             <input
               value={identity.name}
@@ -42,44 +40,6 @@ export function CompanyHeader() {
               spellCheck={false}
               className="focus-ring h-10 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-3 text-sm uppercase tracking-wide text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)]"
             />
-          </Field>
-
-          <Field label="Exchange">
-            <select
-              value={identity.exchange}
-              onChange={(e) =>
-                setIdentity({
-                  exchange: e.target.value as typeof identity.exchange,
-                })
-              }
-              className="focus-ring h-10 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-fg)]"
-            >
-              <option value="">Select…</option>
-              {EXCHANGES.map((ex) => (
-                <option key={ex.code} value={ex.code}>
-                  {ex.code} — {ex.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Country">
-            <select
-              value={identity.country}
-              onChange={(e) =>
-                setIdentity({
-                  country: e.target.value as typeof identity.country,
-                })
-              }
-              className="focus-ring h-10 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-fg)]"
-            >
-              <option value="">Select…</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
           </Field>
         </div>
 

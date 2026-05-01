@@ -28,19 +28,44 @@ const stripTags = (html: string): string => {
 
 const looksLikeHtml = (text: string): boolean => /<table[^>]*>/i.test(text);
 
+const isSkippableText = (text: string): boolean => {
+  const normalized = text.toLowerCase().trim();
+  return (
+    normalized.includes("highly confidential") ||
+    normalized.includes("disclaimer") ||
+    normalized === ""
+  );
+};
+
 const parseHtmlTables = (html: string): ParsedTable[] => {
   const tables: ParsedTable[] = [];
+  let sectionTitle = "Section";
+  let tableCount = 0;
 
-  const sectionRegex =
-    /<div[^>]*>(?:SECTION \d+:\s*)?([^<]+)<\/div>[\s\S]*?<table[^>]*>([\s\S]*?)<\/table>/gi;
-  let sectionMatch;
+  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  const tableMatches = Array.from(html.matchAll(tableRegex));
 
-  while ((sectionMatch = sectionRegex.exec(html)) !== null) {
-    const title = stripTags(sectionMatch[1]);
-    const tableHtml = sectionMatch[2];
+  const divSectionRegex =
+    /<div[^>]*>(?:SECTION \d+:\s*)?([^<]+)<\/div>/gi;
+  const divMatches = Array.from(html.matchAll(divSectionRegex));
+
+  for (let tableIdx = 0; tableIdx < tableMatches.length; tableIdx++) {
+    const tableHtml = tableMatches[tableIdx][1];
     const rowMatches = tableHtml.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
 
     if (rowMatches.length === 0) continue;
+
+    // Try to find a matching section title from divs
+    let currentTitle = sectionTitle;
+    for (let divIdx = 0; divIdx < divMatches.length; divIdx++) {
+      const candidateTitle = stripTags(divMatches[divIdx][1]);
+      if (!isSkippableText(candidateTitle)) {
+        // Use the most recent non-skippable div title
+        if (divMatches[divIdx].index! < tableMatches[tableIdx].index!) {
+          currentTitle = candidateTitle;
+        }
+      }
+    }
 
     const headers: string[] = [];
     const dataRows: Record<string, string>[] = [];
@@ -65,7 +90,9 @@ const parseHtmlTables = (html: string): ParsedTable[] => {
     }
 
     if (headers.length > 0) {
-      tables.push({ title, headers, rows: dataRows });
+      sectionTitle = currentTitle; // Update for next iteration
+      tables.push({ title: currentTitle, headers, rows: dataRows });
+      tableCount++;
     }
   }
 
@@ -95,10 +122,13 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
 
     const headingMatch = trimmed.match(/^#{1,4}\s+\*?\*?(.+?)\*?\*?$/);
     if (headingMatch) {
-      currentTitle = headingMatch[1]
+      const candidateTitle = headingMatch[1]
         .replace(/\*\*/g, "")
         .replace(/^SECTION\s+\d+:\s*/i, "")
         .trim();
+      if (!isSkippableText(candidateTitle)) {
+        currentTitle = candidateTitle;
+      }
       i++;
       continue;
     }
@@ -109,6 +139,11 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
       isSeparator(lines[i + 1])
     ) {
       const headers = splitCells(trimmed);
+      if (headers.length === 0 || headers.some((h) => !h)) {
+        i += 2;
+        continue;
+      }
+
       const dataRows: Record<string, string>[] = [];
       i += 2;
 
@@ -128,7 +163,7 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
         i++;
       }
 
-      if (headers.length > 0) {
+      if (headers.length > 0 && dataRows.length > 0) {
         tables.push({ title: currentTitle, headers, rows: dataRows });
       }
       continue;

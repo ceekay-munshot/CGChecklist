@@ -9,20 +9,33 @@ import { parseMunsResponse } from "@/lib/munsParse";
 
 const SECTION_MAP: Record<string, GovernanceSectionId> = {
   "board of directors": "BOARD",
+  board: "BOARD",
   audit: "AUDIT",
+  stakeholder: "STAKEHOLDERS",
   stakeholders: "STAKEHOLDERS",
   employee: "EMPLOYEE",
   "industry and promoter": "INDUSTRY_PROMOTER",
+  promoter: "INDUSTRY_PROMOTER",
   "stock exchange": "STOCK_EXCHANGE",
+  exchange: "STOCK_EXCHANGE",
   "other regulatory": "OTHER_REGULATORY",
+  regulatory: "OTHER_REGULATORY",
+  financial: "FINANCIALS",
   financials: "FINANCIALS",
 };
 
 const mapSectionName = (title: string): GovernanceSectionId => {
-  const normalized = title.toLowerCase().trim();
-  for (const [key, value] of Object.entries(SECTION_MAP)) {
-    if (normalized.includes(key)) return value;
+  let normalized = title
+    .toLowerCase()
+    .trim()
+    .replace(/^section\s+\d+:\s*/i, "");
+
+  // Try exact matches first (longest first for better specificity)
+  const keys = Object.keys(SECTION_MAP).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    if (normalized.includes(key)) return SECTION_MAP[key];
   }
+
   return "BOARD";
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardHeader } from "@/components/ui/Card";
-import { MunsAgentOutput } from "../../MunsRenderer";
+import { MunsAgentOutput } from "../../../MunsRenderer";
 
 export interface MunsPanelProps {
   html: string;

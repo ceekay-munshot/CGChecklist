@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GovernanceExportButton } from "@/components/governance/GovernanceExportButton";
@@ -5,6 +8,8 @@ import { GovernanceFinalSummary } from "@/components/governance/GovernanceFinalS
 import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
 import { GovernanceSectionTable } from "@/components/governance/GovernanceSectionTable";
+import { MunsButton } from "@/components/governance/MunsButton";
+import { MunsPanel } from "@/components/governance/MunsPanel";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
 import {
@@ -13,6 +18,15 @@ import {
 } from "@/lib/services/calculations/governanceCalc";
 
 export default function GovernancePage() {
+  const [munsHtml, setMunsHtml] = useState("");
+  const [munsError, setMunsError] = useState<string>();
+  const [munsOpen, setMunsOpen] = useState(false);
+
+  const handleMunsResult = (result: { html: string; error?: string }) => {
+    setMunsHtml(result.html);
+    setMunsError(result.error);
+    setMunsOpen(true);
+  };
   const rows = MOCK_GOVERNANCE_ROWS;
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
@@ -26,6 +40,7 @@ export default function GovernancePage() {
           action={
             <div className="flex items-center gap-3">
               <Badge tone="info">Mock data</Badge>
+              <MunsButton onResult={handleMunsResult} />
               <GovernanceExportButton rows={rows} />
             </div>
           }
@@ -58,6 +73,8 @@ export default function GovernancePage() {
       </div>
 
       <GovernanceFinalSummary totals={totals} />
+
+      <MunsPanel html={munsHtml} error={munsError} open={munsOpen} />
     </div>
   );
 }

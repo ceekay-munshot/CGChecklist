@@ -13,7 +13,10 @@ interface YahooQuote {
   typeDisp?: string;
 }
 
-const SUFFIX_TO_EXCHANGE: Record<string, { exchange: string; country: string }> = {
+const SUFFIX_TO_EXCHANGE: Record<
+  string,
+  { exchange: string; country: string }
+> = {
   NS: { exchange: "NSE", country: "IN" },
   BO: { exchange: "BSE", country: "IN" },
   L: { exchange: "LSE", country: "GB" },
@@ -64,52 +67,81 @@ const mapQuote = (q: YahooQuote): CompanySuggestion | null => {
   };
 };
 
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept: "application/json,text/plain,*/*",
+  "Accept-Language": "en-US,en;q=0.9",
+  Referer: "https://finance.yahoo.com/",
+  Origin: "https://finance.yahoo.com",
+};
+
+const fetchWithTimeout = async (url: string, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      headers: BROWSER_HEADERS,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const tryYahoo = async (
+  query: string,
+): Promise<{ quotes: YahooQuote[]; debug: string }> => {
+  const encoded = encodeURIComponent(query);
+  const endpoints = [
+    `https://query1.finance.yahoo.com/v1/finance/search?q=${encoded}&quotesCount=10&newsCount=0&listsCount=0&region=IN&lang=en-IN`,
+    `https://query2.finance.yahoo.com/v1/finance/search?q=${encoded}&quotesCount=10&newsCount=0&listsCount=0&region=IN&lang=en-IN`,
+    `https://query1.finance.yahoo.com/v1/finance/search?q=${encoded}&quotesCount=10&newsCount=0&listsCount=0`,
+  ];
+
+  let lastDebug = "no upstream attempted";
+  for (const url of endpoints) {
+    try {
+      const res = await fetchWithTimeout(url, 4500);
+      if (!res.ok) {
+        lastDebug = `${new URL(url).host} -> ${res.status}`;
+        continue;
+      }
+      const data = (await res.json()) as { quotes?: YahooQuote[] };
+      const quotes = data.quotes || [];
+      if (quotes.length > 0) {
+        return { quotes, debug: `${new URL(url).host} -> ok` };
+      }
+      lastDebug = `${new URL(url).host} -> empty`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown";
+      lastDebug = `${new URL(url).host} -> ${msg}`;
+    }
+  }
+  return { quotes: [], debug: lastDebug };
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim();
+  const debug = searchParams.get("debug") === "1";
 
   if (!q || q.length < 1) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&listsCount=0`;
+  const { quotes, debug: upstreamDebug } = await tryYahoo(q);
+  const suggestions = quotes
+    .map(mapQuote)
+    .filter((s): s is CompanySuggestion => s !== null)
+    .slice(0, 8);
 
-  try {
-    const response = await fetch(url, {
+  return NextResponse.json(
+    debug ? { suggestions, debug: upstreamDebug } : { suggestions },
+    {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "application/json,text/plain,*/*",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { suggestions: [], error: `Upstream returned ${response.status}` },
-        { status: 502 },
-      );
-    }
-
-    const data = (await response.json()) as { quotes?: YahooQuote[] };
-    const suggestions = (data.quotes || [])
-      .map(mapQuote)
-      .filter((s): s is CompanySuggestion => s !== null)
-      .slice(0, 8);
-
-    return NextResponse.json(
-      { suggestions },
-      {
-        headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-        },
-      },
-    );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { suggestions: [], error: message },
-      { status: 502 },
-    );
-  }
+    },
+  );
 }

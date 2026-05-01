@@ -19,6 +19,7 @@ export function CompanySearchInput({
   const [suggestions, setSuggestions] = useState<CompanySuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,6 +34,7 @@ export function CompanySearchInput({
         abortRef.current?.abort();
         setSuggestions([]);
         setLoading(false);
+        setSearched(false);
         setActiveIndex(-1);
         return;
       }
@@ -40,6 +42,7 @@ export function CompanySearchInput({
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       setLoading(true);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
@@ -49,11 +52,14 @@ export function CompanySearchInput({
         const data = (await res.json()) as { suggestions: CompanySuggestion[] };
         setSuggestions(data.suggestions || []);
         setActiveIndex(-1);
+        setSearched(true);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setSuggestions([]);
+          setSearched(true);
         }
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     }, 200);
@@ -96,7 +102,8 @@ export function CompanySearchInput({
     }
   };
 
-  const showList = open && (loading || suggestions.length > 0);
+  const showList =
+    open && value.trim().length >= 2 && (loading || searched);
 
   return (
     <div ref={containerRef} className="relative">
@@ -126,6 +133,11 @@ export function CompanySearchInput({
           {loading && suggestions.length === 0 && (
             <li className="px-3 py-2 text-xs text-[var(--color-fg-subtle)]">
               Searching…
+            </li>
+          )}
+          {!loading && searched && suggestions.length === 0 && (
+            <li className="px-3 py-2 text-xs text-[var(--color-fg-subtle)]">
+              No matches found.
             </li>
           )}
           {suggestions.map((s, idx) => (

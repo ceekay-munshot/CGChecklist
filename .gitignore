@@ -45,3 +45,6 @@ next-env.d.ts
 .dev.vars
 .wrangler
 cloudflare-env.d.ts
+
+# MUNS bootstrap (local reference only)
+munshot-outputs/

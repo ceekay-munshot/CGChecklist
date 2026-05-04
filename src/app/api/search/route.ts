@@ -3,8 +3,6 @@ import Fuse from "fuse.js";
 import type { CompanySuggestion } from "@/lib/types/search";
 import companiesIndex from "@/lib/data/companiesIndex.json";
 
-export const runtime = "edge";
-
 interface IndexedCompany {
   name: string;
   nse: string;

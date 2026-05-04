@@ -1,7 +1,65 @@
 import { NextResponse } from "next/server";
+import Fuse from "fuse.js";
 import type { CompanySuggestion } from "@/lib/types/search";
+import companiesIndex from "@/lib/data/companiesIndex.json";
 
 export const runtime = "edge";
+
+interface IndexedCompany {
+  name: string;
+  nse: string;
+  bse: string;
+  industry: string;
+}
+
+const COMPANIES = companiesIndex as IndexedCompany[];
+
+const fuse = new Fuse(COMPANIES, {
+  keys: [
+    { name: "name", weight: 0.7 },
+    { name: "nse", weight: 0.3 },
+  ],
+  threshold: 0.4,
+  ignoreLocation: true,
+  minMatchCharLength: 2,
+  includeScore: true,
+});
+
+const localToSuggestion = (c: IndexedCompany): CompanySuggestion => {
+  if (c.nse) {
+    return {
+      symbol: `${c.nse}.NS`,
+      ticker: c.nse,
+      name: c.name,
+      exchange: "NSE",
+      country: "IN",
+      industry: c.industry || undefined,
+    };
+  }
+  return {
+    symbol: `${c.bse}.BO`,
+    ticker: c.bse,
+    name: c.name,
+    exchange: "BSE",
+    country: "IN",
+    industry: c.industry || undefined,
+  };
+};
+
+const searchLocal = (query: string): CompanySuggestion[] => {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const upper = q.toUpperCase();
+  const exactTicker = COMPANIES.find((c) => c.nse === upper);
+  const fuseHits = fuse.search(q, { limit: 8 });
+  const ranked: IndexedCompany[] = [];
+  if (exactTicker) ranked.push(exactTicker);
+  for (const hit of fuseHits) {
+    if (hit.item !== exactTicker) ranked.push(hit.item);
+    if (ranked.length >= 8) break;
+  }
+  return ranked.map(localToSuggestion);
+};
 
 interface YahooQuote {
   symbol?: string;
@@ -130,6 +188,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
+  const localHits = searchLocal(q);
+  if (localHits.length > 0) {
+    return NextResponse.json(
+      debug
+        ? { suggestions: localHits, debug: `local -> ${localHits.length}` }
+        : { suggestions: localHits },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      },
+    );
+  }
+
   const { quotes, debug: upstreamDebug } = await tryYahoo(q);
   const suggestions = quotes
     .map(mapQuote)
@@ -137,7 +209,9 @@ export async function GET(request: Request) {
     .slice(0, 8);
 
   return NextResponse.json(
-    debug ? { suggestions, debug: upstreamDebug } : { suggestions },
+    debug
+      ? { suggestions, debug: `local -> 0; yahoo -> ${upstreamDebug}` }
+      : { suggestions },
     {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",

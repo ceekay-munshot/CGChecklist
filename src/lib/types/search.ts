@@ -4,4 +4,5 @@ export interface CompanySuggestion {
   name: string;
   exchange: string;
   country: string;
+  industry?: string;
 }

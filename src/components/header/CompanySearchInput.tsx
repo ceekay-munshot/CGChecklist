@@ -128,15 +128,16 @@ export function CompanySearchInput({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-auto rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white shadow-lg"
+          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-80 overflow-auto rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white shadow-[0_12px_32px_rgba(10,20,34,0.08)]"
         >
           {loading && suggestions.length === 0 && (
-            <li className="px-3 py-2 text-xs text-[var(--color-fg-subtle)]">
+            <li className="flex items-center gap-2 px-4 py-3 text-xs text-[var(--color-fg-subtle)]">
+              <Spinner />
               Searching…
             </li>
           )}
           {!loading && searched && suggestions.length === 0 && (
-            <li className="px-3 py-2 text-xs text-[var(--color-fg-subtle)]">
+            <li className="px-4 py-3 text-xs text-[var(--color-fg-subtle)]">
               No matches found.
             </li>
           )}
@@ -150,27 +151,53 @@ export function CompanySearchInput({
                 handleSelect(s);
               }}
               onMouseEnter={() => setActiveIndex(idx)}
-              className={`flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm ${
+              className={`flex cursor-pointer items-start justify-between gap-3 border-b border-[var(--color-border)] px-4 py-2.5 transition-colors last:border-b-0 ${
                 idx === activeIndex
                   ? "bg-[var(--color-navy-50)]"
                   : "hover:bg-[var(--color-navy-50)]"
               }`}
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[var(--color-fg)]">{s.name}</p>
+                <p className="truncate text-[13.5px] font-medium leading-snug text-[var(--color-fg)]">
+                  {s.name}
+                </p>
                 {s.industry ? (
-                  <p className="truncate text-[11px] text-[var(--color-fg-subtle)]">
+                  <p className="mt-0.5 truncate text-[11px] leading-snug text-[var(--color-fg-subtle)]">
                     {s.industry}
                   </p>
                 ) : null}
               </div>
-              <span className="shrink-0 font-mono text-[11px] uppercase tracking-wide text-[var(--color-fg-subtle)]">
-                {s.ticker} · {s.exchange}
+              <span
+                className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--color-fg-muted)]"
+                data-numeric
+              >
+                {s.ticker}
+                <span className="mx-1 text-[var(--color-fg-subtle)]">·</span>
+                {s.exchange}
               </span>
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="h-3.5 w-3.5 animate-spin text-[var(--color-fg-subtle)]"
+      fill="none"
+    >
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path
+        d="M14 8a6 6 0 0 0-6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

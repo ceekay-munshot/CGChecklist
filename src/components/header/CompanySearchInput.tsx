@@ -156,7 +156,14 @@ export function CompanySearchInput({
                   : "hover:bg-[var(--color-navy-50)]"
               }`}
             >
-              <span className="truncate text-[var(--color-fg)]">{s.name}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[var(--color-fg)]">{s.name}</p>
+                {s.industry ? (
+                  <p className="truncate text-[11px] text-[var(--color-fg-subtle)]">
+                    {s.industry}
+                  </p>
+                ) : null}
+              </div>
               <span className="shrink-0 font-mono text-[11px] uppercase tracking-wide text-[var(--color-fg-subtle)]">
                 {s.ticker} · {s.exchange}
               </span>

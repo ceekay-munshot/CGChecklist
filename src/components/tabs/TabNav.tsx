@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 
 const TABS = [
   { href: "/governance", label: "Corporate Governance Score", short: "Governance" },
-  { href: "/beneish", label: "Beneish M-Score", short: "Beneish" },
-  { href: "/altman", label: "Altman Z-Score", short: "Altman" },
 ] as const;
 
 export function TabNav() {

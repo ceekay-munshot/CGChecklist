@@ -53,7 +53,7 @@ export function GovernanceSectionTable({
                 key={row.questionId}
                 className="border-b border-[var(--color-border)] align-top last:border-b-0"
               >
-                <td className="px-3 py-3 font-medium text-[var(--color-fg)]">
+                <td className="px-3 py-3 font-medium text-[var(--color-fg)] [overflow-wrap:anywhere]">
                   {row.particulars}
                 </td>
                 <td className="px-3 py-3">
@@ -73,7 +73,7 @@ export function GovernanceSectionTable({
                 >
                   {row.maxScore}
                 </td>
-                <td className="px-3 py-3 text-[var(--color-fg-muted)]">
+                <td className="px-3 py-3 text-[var(--color-fg-muted)] [overflow-wrap:anywhere]">
                   {row.remarks}
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 text-[var(--color-fg-muted)]">

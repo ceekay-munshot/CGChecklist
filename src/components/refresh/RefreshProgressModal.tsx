@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCompany } from "@/lib/state/CompanyContext";
 import {
   REFRESH_PHASES,
@@ -8,118 +8,307 @@ import {
   formatElapsed,
   progressPercent,
 } from "@/lib/refresh/phases";
+import type { MunsDiff } from "@/lib/refresh/diffMuns";
+import type { DataStatus } from "@/lib/types/company";
+
+const COMPLETION_HOLD_MS = 3500;
+
+interface CompletionState {
+  outcome: "success" | "error";
+  totalElapsedMs: number;
+  diff: MunsDiff | null;
+  error: string | null;
+}
 
 export function RefreshProgressModal() {
   const { state } = useCompany();
-  const isOpen = state.status === "loading";
+  const isLoading = state.status === "loading";
   const startedAt = state.progress.startedAt;
+  const finishedAt = state.progress.finishedAt;
+  const progressDiff = state.progress.diff;
+  const progressError = state.progress.error;
 
-  const [, setTick] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [completion, setCompletion] = useState<CompletionState | null>(null);
+  const prevStatusRef = useRef<DataStatus>(state.status);
 
   useEffect(() => {
-    if (!isOpen) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    if (!isLoading || !startedAt) return;
+    const id = setInterval(
+      () => setElapsedMs(Date.now() - startedAt),
+      1000,
+    );
     return () => clearInterval(id);
-  }, [isOpen]);
+  }, [isLoading, startedAt]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    if (
+      prev === "loading" &&
+      (state.status === "ready" || state.status === "error")
+    ) {
+      const total = startedAt && finishedAt ? finishedAt - startedAt : 0;
+      setCompletion({
+        outcome: state.status === "ready" ? "success" : "error",
+        totalElapsedMs: total,
+        diff: progressDiff,
+        error: progressError,
+      });
+    } else if (prev !== "loading" && state.status === "loading") {
+      setCompletion(null);
+      setElapsedMs(0);
+    }
+    prevStatusRef.current = state.status;
+  }, [state.status, startedAt, finishedAt, progressDiff, progressError]);
 
-  const elapsedMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
-  const phaseIdx = currentPhaseIndex(elapsedMs);
-  const percent = progressPercent(elapsedMs, false);
-  const identity = state.identity;
+  useEffect(() => {
+    if (!completion) return;
+    const id = setTimeout(() => setCompletion(null), COMPLETION_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [completion]);
+
+  if (!isLoading && !completion) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Refreshing governance analysis"
+      aria-label={
+        isLoading
+          ? "Refreshing governance analysis"
+          : completion?.outcome === "success"
+            ? "Refresh complete"
+            : "Refresh failed"
+      }
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
     >
       <div className="absolute inset-0 bg-[var(--color-navy-900)]/40 backdrop-blur-sm" />
       <div className="relative w-full max-w-md rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6 shadow-[0_24px_48px_rgba(10,20,34,0.18)]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
-              Refreshing governance analysis
-            </p>
-            <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--color-fg)]">
-              {identity.name || "Company"}
-              {identity.ticker ? (
-                <span className="ml-2 text-[var(--color-fg-subtle)]">
-                  · {identity.ticker}
-                </span>
-              ) : null}
-            </h2>
-          </div>
-          <span
-            className="rounded-full bg-[var(--color-good-50)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-good-700)]"
-            data-numeric
-          >
-            {formatElapsed(elapsedMs)}
-          </span>
-        </div>
+        {isLoading ? (
+          <LoadingFrame
+            companyName={state.identity.name}
+            ticker={state.identity.ticker}
+            elapsedMs={elapsedMs}
+          />
+        ) : completion ? (
+          <CompletionFrame
+            completion={completion}
+            companyName={state.identity.name}
+            ticker={state.identity.ticker}
+            onClose={() => setCompletion(null)}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
-        <div className="mt-5">
+function LoadingFrame({
+  companyName,
+  ticker,
+  elapsedMs,
+}: {
+  companyName: string;
+  ticker: string;
+  elapsedMs: number;
+}) {
+  const phaseIdx = currentPhaseIndex(elapsedMs);
+  const percent = progressPercent(elapsedMs, false);
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
+            Refreshing governance analysis
+          </p>
+          <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--color-fg)]">
+            {companyName || "Company"}
+            {ticker ? (
+              <span className="ml-2 text-[var(--color-fg-subtle)]">
+                · {ticker}
+              </span>
+            ) : null}
+          </h2>
+        </div>
+        <span
+          className="rounded-full bg-[var(--color-good-50)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-good-700)]"
+          data-numeric
+        >
+          {formatElapsed(elapsedMs)}
+        </span>
+      </div>
+
+      <div className="mt-5">
+        <div
+          role="progressbar"
+          aria-valuenow={Math.round(percent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-mist-100)]"
+        >
           <div
-            role="progressbar"
-            aria-valuenow={Math.round(percent)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-mist-100)]"
-          >
-            <div
-              className="h-full rounded-full bg-[var(--color-good-500)] transition-[width] duration-700 ease-out"
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-fg-subtle)]">
-            <span>Working on it…</span>
-            <span data-numeric>{Math.round(percent)}%</span>
-          </div>
+            className="h-full rounded-full bg-[var(--color-good-500)] transition-[width] duration-700 ease-out"
+            style={{ width: `${percent}%` }}
+          />
         </div>
+        <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-fg-subtle)]">
+          <span>Working on it…</span>
+          <span data-numeric>{Math.round(percent)}%</span>
+        </div>
+      </div>
 
-        <ul className="mt-5 space-y-2">
-          {REFRESH_PHASES.map((phase, i) => {
-            const status =
-              i < phaseIdx ? "done" : i === phaseIdx ? "active" : "pending";
-            return (
-              <li
-                key={phase.id}
-                className={`flex items-start gap-3 text-sm ${
-                  status === "pending"
-                    ? "text-[var(--color-fg-subtle)]"
-                    : "text-[var(--color-fg)]"
+      <ul className="mt-5 space-y-2">
+        {REFRESH_PHASES.map((phase, i) => {
+          const status =
+            i < phaseIdx ? "done" : i === phaseIdx ? "active" : "pending";
+          return (
+            <li
+              key={phase.id}
+              className={`flex items-start gap-3 text-sm ${
+                status === "pending"
+                  ? "text-[var(--color-fg-subtle)]"
+                  : "text-[var(--color-fg)]"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                  status === "done"
+                    ? "bg-[var(--color-good-500)] text-white"
+                    : status === "active"
+                      ? "bg-[var(--color-good-50)] text-[var(--color-good-700)] ring-2 ring-[var(--color-good-500)]"
+                      : "bg-[var(--color-mist-100)] text-[var(--color-fg-subtle)]"
                 }`}
               >
-                <span
-                  aria-hidden
-                  className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                    status === "done"
-                      ? "bg-[var(--color-good-500)] text-white"
-                      : status === "active"
-                        ? "bg-[var(--color-good-50)] text-[var(--color-good-700)] ring-2 ring-[var(--color-good-500)]"
-                        : "bg-[var(--color-mist-100)] text-[var(--color-fg-subtle)]"
-                  }`}
-                >
-                  {status === "done" ? "✓" : status === "active" ? (
-                    <ActiveDot />
-                  ) : (
-                    i + 1
-                  )}
-                </span>
-                <span className="leading-5">{phase.label}</span>
-              </li>
-            );
-          })}
-        </ul>
+                {status === "done" ? "✓" : status === "active" ? (
+                  <ActiveDot />
+                ) : (
+                  i + 1
+                )}
+              </span>
+              <span className="leading-5">{phase.label}</span>
+            </li>
+          );
+        })}
+      </ul>
 
-        <p className="mt-5 rounded-[var(--radius-control)] bg-[var(--color-mist-50)] px-3 py-2 text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
-          The MUNS agent typically takes <strong>7–9 minutes</strong> to compile
-          a full governance analysis. You can leave this tab open — we&apos;ll
-          update the dashboard the moment results land.
+      <p className="mt-5 rounded-[var(--radius-control)] bg-[var(--color-mist-50)] px-3 py-2 text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+        The MUNS agent typically takes <strong>7–9 minutes</strong> to compile a
+        full governance analysis. You can leave this tab open — we&apos;ll
+        update the dashboard the moment results land.
+      </p>
+    </>
+  );
+}
+
+function CompletionFrame({
+  completion,
+  companyName,
+  ticker,
+  onClose,
+}: {
+  completion: CompletionState;
+  companyName: string;
+  ticker: string;
+  onClose: () => void;
+}) {
+  const isSuccess = completion.outcome === "success";
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <span
+        aria-hidden
+        className={`inline-flex h-14 w-14 items-center justify-center rounded-full ${
+          isSuccess
+            ? "bg-[var(--color-good-50)] text-[var(--color-good-600)]"
+            : "bg-[var(--color-risk-50)] text-[var(--color-risk-600)]"
+        }`}
+      >
+        {isSuccess ? <BigCheck /> : <BigCross />}
+      </span>
+
+      <h2 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-fg)]">
+        {isSuccess ? "Refresh complete" : "Refresh failed"}
+      </h2>
+      <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
+        {companyName || "Company"}
+        {ticker ? <span className="ml-1.5">· {ticker}</span> : null}
+      </p>
+
+      <p
+        className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]"
+        data-numeric
+      >
+        {isSuccess ? "Completed in" : "Stopped after"}{" "}
+        {formatElapsed(completion.totalElapsedMs)}
+      </p>
+
+      {isSuccess && completion.diff ? (
+        <DiffStats diff={completion.diff} />
+      ) : null}
+
+      {!isSuccess && completion.error ? (
+        <p className="mt-4 w-full rounded-[var(--radius-control)] bg-[var(--color-risk-50)] px-3 py-2 text-left text-[12px] leading-relaxed text-[var(--color-risk-700)]">
+          {completion.error}
         </p>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={onClose}
+        className="focus-ring mt-5 inline-flex h-9 items-center justify-center rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-fg)] transition hover:bg-[var(--color-mist-50)]"
+      >
+        Close
+      </button>
+    </div>
+  );
+}
+
+function DiffStats({ diff }: { diff: MunsDiff }) {
+  if (diff.isFirstLoad) {
+    return (
+      <div className="mt-4 grid w-full grid-cols-1 gap-2">
+        <StatRow label="Sections loaded" value={diff.sectionsAdded.length} />
       </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid w-full grid-cols-3 gap-2">
+      <StatRow label="Updated" value={diff.sectionsUpdated.length} highlight />
+      <StatRow label="New" value={diff.sectionsAdded.length} />
+      <StatRow label="Unchanged" value={diff.sectionsUnchanged.length} />
+    </div>
+  );
+}
+
+function StatRow({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: number;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-[var(--radius-control)] border px-3 py-2 ${
+        highlight
+          ? "border-[var(--color-good-100)] bg-[var(--color-good-50)]"
+          : "border-[var(--color-border)] bg-[var(--color-surface-muted)]"
+      }`}
+    >
+      <p
+        className="text-xl font-semibold tracking-tight text-[var(--color-fg)]"
+        data-numeric
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
+        {label}
+      </p>
     </div>
   );
 }
@@ -127,5 +316,32 @@ export function RefreshProgressModal() {
 function ActiveDot() {
   return (
     <span className="block h-2 w-2 animate-pulse rounded-full bg-[var(--color-good-600)]" />
+  );
+}
+
+function BigCheck() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none">
+      <path
+        d="M5 12.5l4.5 4.5L19 7.5"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BigCross() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none">
+      <path
+        d="M7 7l10 10M17 7L7 17"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

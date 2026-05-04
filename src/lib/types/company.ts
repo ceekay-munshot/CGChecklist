@@ -44,6 +44,16 @@ export type DataStatus =
   | "ready"
   | "error";
 
+export type RefreshOutcome = "success" | "error";
+
+export interface RefreshProgress {
+  startedAt: number | null;
+  finishedAt: number | null;
+  outcome: RefreshOutcome | null;
+  diff: import("@/lib/refresh/diffMuns").MunsDiff | null;
+  error: string | null;
+}
+
 export interface CompanyState {
   identity: CompanyIdentity;
   status: DataStatus;
@@ -51,4 +61,5 @@ export interface CompanyState {
   message: string | null;
   munsRaw: string;
   munsError: string | null;
+  progress: RefreshProgress;
 }

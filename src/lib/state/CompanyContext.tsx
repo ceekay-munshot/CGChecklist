@@ -12,14 +12,17 @@ import type {
   CompanyIdentity,
   CompanyState,
   DataStatus,
+  RefreshOutcome,
 } from "@/lib/types/company";
 import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
 import { fetchGovernanceAnalysis } from "@/lib/munsClient";
+import { diffMuns } from "@/lib/refresh/diffMuns";
 
 interface CompanyContextValue {
   state: CompanyState;
   setIdentity: (patch: Partial<CompanyIdentity>) => void;
   refresh: () => Promise<void>;
+  dismissProgress: () => void;
 }
 
 const CompanyContext = createContext<CompanyContextValue | null>(null);
@@ -31,6 +34,13 @@ const INITIAL_STATE: CompanyState = {
   message: null,
   munsRaw: "",
   munsError: null,
+  progress: {
+    startedAt: null,
+    finishedAt: null,
+    outcome: null,
+    diff: null,
+    error: null,
+  },
 };
 
 export function CompanyProvider({
@@ -62,11 +72,20 @@ export function CompanyProvider({
       return;
     }
 
+    const previousRaw = stateRef.current.munsRaw;
+
     setState((prev) => ({
       ...prev,
       status: "loading",
       message: null,
       munsError: null,
+      progress: {
+        startedAt: Date.now(),
+        finishedAt: null,
+        outcome: null,
+        diff: null,
+        error: null,
+      },
     }));
 
     const result = await fetchGovernanceAnalysis({
@@ -77,6 +96,9 @@ export function CompanyProvider({
 
     setState((prev) => {
       const status: DataStatus = result.ok ? "ready" : "error";
+      const outcome: RefreshOutcome = result.ok ? "success" : "error";
+      const newRaw = result.ok ? result.raw : prev.munsRaw;
+      const diff = result.ok ? diffMuns(previousRaw, result.raw) : null;
       return {
         ...prev,
         status,
@@ -84,15 +106,35 @@ export function CompanyProvider({
         message: result.ok
           ? "Live MUNS analysis loaded."
           : result.error || "Failed to fetch MUNS analysis.",
-        munsRaw: result.ok ? result.raw : "",
+        munsRaw: newRaw,
         munsError: result.ok ? null : result.error || "Failed to fetch.",
+        progress: {
+          startedAt: prev.progress.startedAt,
+          finishedAt: Date.now(),
+          outcome,
+          diff,
+          error: result.ok ? null : result.error || "Failed to fetch.",
+        },
       };
     });
   }, []);
 
+  const dismissProgress = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      progress: {
+        startedAt: prev.progress.startedAt,
+        finishedAt: prev.progress.finishedAt,
+        outcome: null,
+        diff: null,
+        error: null,
+      },
+    }));
+  }, []);
+
   const value = useMemo<CompanyContextValue>(
-    () => ({ state, setIdentity, refresh }),
-    [state, setIdentity, refresh],
+    () => ({ state, setIdentity, refresh, dismissProgress }),
+    [state, setIdentity, refresh, dismissProgress],
   );
 
   return (

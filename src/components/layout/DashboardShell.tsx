@@ -1,6 +1,8 @@
 import { CompanyHeader } from "@/components/header/CompanyHeader";
 import { TabNav } from "@/components/tabs/TabNav";
 import { Toaster } from "@/components/ui/Toaster";
+import { RefreshProgressModal } from "@/components/refresh/RefreshProgressModal";
+import { RefreshSuccessBanner } from "@/components/refresh/RefreshSuccessBanner";
 import { CompanyProvider } from "@/lib/state/CompanyContext";
 import { ToastProvider } from "@/lib/state/ToastContext";
 
@@ -11,6 +13,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-screen flex-col">
           <CompanyHeader />
           <TabNav />
+          <RefreshSuccessBanner />
           <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-6 sm:px-6">
             {children}
           </main>
@@ -22,6 +25,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </footer>
         </div>
         <Toaster />
+        <RefreshProgressModal />
       </CompanyProvider>
     </ToastProvider>
   );

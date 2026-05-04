@@ -18,9 +18,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             {children}
           </main>
           <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] py-4">
-            <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-6 text-xs text-[var(--color-fg-subtle)]">
+            <div className="mx-auto max-w-screen-2xl px-6 text-xs text-[var(--color-fg-subtle)]">
               <span>Governance &amp; Forensic Scorecard</span>
-              <span>Calculations and adapters arrive in upcoming steps.</span>
             </div>
           </footer>
         </div>

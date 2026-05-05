@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -17,12 +18,16 @@ import type {
 import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
 import { fetchGovernanceAnalysis } from "@/lib/munsClient";
 import { diffMuns } from "@/lib/refresh/diffMuns";
+import { recordRefreshHistory } from "@/lib/refresh/history";
 
 interface CompanyContextValue {
   state: CompanyState;
+  dashboardUnlocked: boolean;
   setIdentity: (patch: Partial<CompanyIdentity>) => void;
   refresh: () => Promise<void>;
   dismissProgress: () => void;
+  unlockDashboard: () => void;
+  lockDashboard: () => void;
 }
 
 const CompanyContext = createContext<CompanyContextValue | null>(null);
@@ -49,8 +54,12 @@ export function CompanyProvider({
   children: React.ReactNode;
 }) {
   const [state, setState] = useState<CompanyState>(INITIAL_STATE);
+  const [dashboardUnlocked, setDashboardUnlocked] = useState(false);
   const stateRef = useRef(state);
-  stateRef.current = state;
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const setIdentity = useCallback((patch: Partial<CompanyIdentity>) => {
     setState((prev) => ({
@@ -94,15 +103,17 @@ export function CompanyProvider({
       country: identity.country || undefined,
     });
 
+    const refreshedAtIso = new Date().toISOString();
+    const outcome: RefreshOutcome = result.ok ? "success" : "error";
+
     setState((prev) => {
       const status: DataStatus = result.ok ? "ready" : "error";
-      const outcome: RefreshOutcome = result.ok ? "success" : "error";
       const newRaw = result.ok ? result.raw : prev.munsRaw;
       const diff = result.ok ? diffMuns(previousRaw, result.raw) : null;
       return {
         ...prev,
         status,
-        lastRefreshedAt: new Date().toISOString(),
+        lastRefreshedAt: refreshedAtIso,
         message: result.ok
           ? "Live MUNS analysis loaded."
           : result.error || "Failed to fetch MUNS analysis.",
@@ -117,7 +128,12 @@ export function CompanyProvider({
         },
       };
     });
+
+    recordRefreshHistory(identity, outcome, refreshedAtIso);
   }, []);
+
+  const unlockDashboard = useCallback(() => setDashboardUnlocked(true), []);
+  const lockDashboard = useCallback(() => setDashboardUnlocked(false), []);
 
   const dismissProgress = useCallback(() => {
     setState((prev) => ({
@@ -133,8 +149,24 @@ export function CompanyProvider({
   }, []);
 
   const value = useMemo<CompanyContextValue>(
-    () => ({ state, setIdentity, refresh, dismissProgress }),
-    [state, setIdentity, refresh, dismissProgress],
+    () => ({
+      state,
+      dashboardUnlocked,
+      setIdentity,
+      refresh,
+      dismissProgress,
+      unlockDashboard,
+      lockDashboard,
+    }),
+    [
+      state,
+      dashboardUnlocked,
+      setIdentity,
+      refresh,
+      dismissProgress,
+      unlockDashboard,
+      lockDashboard,
+    ],
   );
 
   return (

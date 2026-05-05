@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "eslint",
     "build:cf": "opennextjs-cloudflare build",
-    "build:companies": "node ./scripts/build-company-index.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
@@ -16,7 +15,6 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
-    "fuse.js": "^7.3.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -31,7 +29,6 @@
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "wrangler": "^4.85.0",
-    "xlsx": "^0.18.5"
+    "wrangler": "^4.85.0"
   }
 }

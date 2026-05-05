@@ -26,6 +26,17 @@ const stripTags = (html: string): string => {
     .trim();
 };
 
+// Strip agent-only metadata tags (e.g. <docsource>…</docsource>) that the
+// MUNS response embeds inside table cells as citation hints. Removes the
+// tag wrapper and its inner content, plus any orphan opening/closing tags.
+const stripCellMetaTags = (text: string): string => {
+  return text
+    .replace(/<docsource\b[^>]*>[\s\S]*?<\/docsource>/gi, "")
+    .replace(/<\/?docsource\b[^>]*>/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
 const looksLikeHtml = (text: string): boolean => /<table[^>]*>/i.test(text);
 
 const isSkippableText = (text: string): boolean => {
@@ -108,7 +119,9 @@ const parseHtmlTables = (html: string): ParsedTable[] => {
 
       if (cells.length === 0) continue;
 
-      const cellTexts = cells.map((cell) => stripTags(cell));
+      const cellTexts = cells.map((cell) =>
+        stripTags(stripCellMetaTags(cell)),
+      );
 
       if (i === 0) {
         headers.push(...cellTexts);
@@ -148,7 +161,7 @@ const parseMarkdownTables = (markdown: string): ParsedTable[] => {
       .replace(/^\|/, "")
       .replace(/\|$/, "")
       .split("|")
-      .map((cell) => cell.replace(/\*\*/g, "").trim());
+      .map((cell) => stripCellMetaTags(cell.replace(/\*\*/g, "")));
 
   const consumeGapTitle = () => {
     const fromGap = findTitleInGap(gapBuffer);

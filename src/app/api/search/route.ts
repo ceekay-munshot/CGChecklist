@@ -1,62 +1,113 @@
 import { NextResponse } from "next/server";
-import Fuse from "fuse.js";
 import type { CompanySuggestion } from "@/lib/types/search";
-import companiesIndex from "@/lib/data/companiesIndex.json";
+import { MUNS_BEARER_TOKEN } from "@/lib/munsConfig";
 
-interface IndexedCompany {
-  name: string;
-  nse: string;
-  bse: string;
-  industry: string;
+const BIRDNEST_SEARCH_URL = "https://birdnest.muns.io/stock/search";
+
+type BirdnestEntry = [string | null, string | null, string | null];
+
+interface BirdnestResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    total_results?: number;
+    results?: Record<string, BirdnestEntry>;
+  };
 }
 
-const COMPANIES = companiesIndex as IndexedCompany[];
+const COUNTRY_TO_LISTING: Record<
+  string,
+  { exchange: string; countryCode: string; suffix: string }
+> = {
+  India: { exchange: "NSE", countryCode: "IN", suffix: ".NS" },
+  "United States": { exchange: "NASDAQ", countryCode: "US", suffix: "" },
+  "United Kingdom": { exchange: "LSE", countryCode: "GB", suffix: ".L" },
+  "Hong Kong": { exchange: "HKEX", countryCode: "HK", suffix: ".HK" },
+  Japan: { exchange: "TSE", countryCode: "JP", suffix: ".T" },
+  Australia: { exchange: "ASX", countryCode: "AU", suffix: ".AX" },
+  Singapore: { exchange: "OTHER", countryCode: "SG", suffix: ".SI" },
+};
 
-const fuse = new Fuse(COMPANIES, {
-  keys: [
-    { name: "name", weight: 0.7 },
-    { name: "nse", weight: 0.3 },
-  ],
-  threshold: 0.4,
-  ignoreLocation: true,
-  minMatchCharLength: 2,
-  includeScore: true,
-});
-
-const localToSuggestion = (c: IndexedCompany): CompanySuggestion => {
-  if (c.nse) {
-    return {
-      symbol: `${c.nse}.NS`,
-      ticker: c.nse,
-      name: c.name,
-      exchange: "NSE",
-      country: "IN",
-      industry: c.industry || undefined,
-    };
-  }
+const mapBirdnestEntry = (
+  ticker: string,
+  entry: BirdnestEntry,
+): CompanySuggestion | null => {
+  const [country, name, industry] = entry;
+  if (!ticker || !name) return null;
+  const upperTicker = ticker.trim().toUpperCase();
+  const listing = country ? COUNTRY_TO_LISTING[country] : undefined;
+  const exchange = listing?.exchange ?? "OTHER";
+  const countryCode =
+    listing?.countryCode ??
+    (country ? country.slice(0, 2).toUpperCase() : "OTHER");
+  const suffix = listing?.suffix ?? "";
   return {
-    symbol: `${c.bse}.BO`,
-    ticker: c.bse,
-    name: c.name,
-    exchange: "BSE",
-    country: "IN",
-    industry: c.industry || undefined,
+    symbol: `${upperTicker}${suffix}`,
+    ticker: upperTicker,
+    name: name.trim(),
+    exchange,
+    country: countryCode,
+    industry: industry?.trim() || undefined,
   };
 };
 
-const searchLocal = (query: string): CompanySuggestion[] => {
-  const q = query.trim();
-  if (q.length < 2) return [];
-  const upper = q.toUpperCase();
-  const exactTicker = COMPANIES.find((c) => c.nse === upper);
-  const fuseHits = fuse.search(q, { limit: 8 });
-  const ranked: IndexedCompany[] = [];
-  if (exactTicker) ranked.push(exactTicker);
-  for (const hit of fuseHits) {
-    if (hit.item !== exactTicker) ranked.push(hit.item);
-    if (ranked.length >= 8) break;
+const rankSuggestions = (
+  suggestions: CompanySuggestion[],
+  query: string,
+): CompanySuggestion[] => {
+  const upper = query.trim().toUpperCase();
+  return [...suggestions].sort((a, b) => {
+    const aExact = a.ticker === upper ? 0 : 1;
+    const bExact = b.ticker === upper ? 0 : 1;
+    if (aExact !== bExact) return aExact - bExact;
+    const aPrefix = a.ticker.startsWith(upper) ? 0 : 1;
+    const bPrefix = b.ticker.startsWith(upper) ? 0 : 1;
+    if (aPrefix !== bPrefix) return aPrefix - bPrefix;
+    return a.name.localeCompare(b.name);
+  });
+};
+
+const fetchBirdnest = async (
+  query: string,
+): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
+  if (!MUNS_BEARER_TOKEN) {
+    return { suggestions: [], debug: "birdnest -> no token" };
   }
-  return ranked.map(localToSuggestion);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const res = await fetch(BIRDNEST_SEARCH_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${MUNS_BEARER_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      return { suggestions: [], debug: `birdnest -> ${res.status}` };
+    }
+    const data = (await res.json()) as BirdnestResponse;
+    const results = data.data?.results;
+    if (!results) {
+      return { suggestions: [], debug: "birdnest -> empty" };
+    }
+    const mapped: CompanySuggestion[] = [];
+    for (const [ticker, entry] of Object.entries(results)) {
+      const suggestion = mapBirdnestEntry(ticker, entry);
+      if (suggestion) mapped.push(suggestion);
+    }
+    return {
+      suggestions: rankSuggestions(mapped, query).slice(0, 8),
+      debug: `birdnest -> ${mapped.length}`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "unknown";
+    return { suggestions: [], debug: `birdnest -> ${msg}` };
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 interface YahooQuote {
@@ -186,12 +237,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const localHits = searchLocal(q);
-  if (localHits.length > 0) {
+  const { suggestions: birdnestHits, debug: birdnestDebug } =
+    await fetchBirdnest(q);
+  if (birdnestHits.length > 0) {
     return NextResponse.json(
       debug
-        ? { suggestions: localHits, debug: `local -> ${localHits.length}` }
-        : { suggestions: localHits },
+        ? { suggestions: birdnestHits, debug: birdnestDebug }
+        : { suggestions: birdnestHits },
       {
         headers: {
           "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
@@ -208,7 +260,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     debug
-      ? { suggestions, debug: `local -> 0; yahoo -> ${upstreamDebug}` }
+      ? { suggestions, debug: `${birdnestDebug}; yahoo -> ${upstreamDebug}` }
       : { suggestions },
     {
       headers: {

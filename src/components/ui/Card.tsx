@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { stripCitations } from "@/lib/stripCitations";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   as?: "div" | "section" | "article";
@@ -39,7 +40,7 @@ export function CardHeader({
         </h3>
         {description ? (
           <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
-            {description}
+            {typeof description === "string" ? stripCitations(description) : description}
           </p>
         ) : null}
       </div>

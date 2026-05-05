@@ -78,6 +78,33 @@ export interface GovernanceWorkbookInput {
   dataSource: string;
 }
 
+function estimateWrapLines(text: unknown, columnWidth: number): number {
+  if (text === null || text === undefined || text === "") return 1;
+  const str = String(text);
+  const usableWidth = Math.max(1, columnWidth - 2);
+  const segments = str.split(/\r?\n/);
+  let lines = 0;
+  for (const seg of segments) {
+    lines += Math.max(1, Math.ceil(seg.length / usableWidth));
+  }
+  return Math.max(1, lines);
+}
+
+function wrappedRowHeight(
+  parts: Array<{ text: unknown; width: number }>,
+  options: { lineHeight?: number; minHeight?: number; padding?: number } = {},
+): number {
+  const lineHeight = options.lineHeight ?? 15;
+  const minHeight = options.minHeight ?? 22;
+  const padding = options.padding ?? 6;
+  let maxLines = 1;
+  for (const part of parts) {
+    const lines = estimateWrapLines(part.text, part.width);
+    if (lines > maxLines) maxLines = lines;
+  }
+  return Math.max(minHeight, maxLines * lineHeight + padding);
+}
+
 export async function buildGovernanceWorkbook(
   input: GovernanceWorkbookInput,
 ): Promise<ArrayBuffer> {
@@ -676,7 +703,13 @@ function buildChecklistSheet(wb: Workbook, rows: GovernanceRow[]) {
         r.source,
         r.confidence,
       ]);
-      row.height = 30;
+      row.height = wrappedRowHeight(
+        [
+          { text: r.particulars, width: 56 },
+          { text: r.remarks, width: 64 },
+        ],
+        { minHeight: 30 },
+      );
       row.eachCell({ includeEmpty: true }, (cell) => {
         cell.fill = {
           type: "pattern",
@@ -900,7 +933,13 @@ function buildMethodologySheet(wb: Workbook) {
         bottom: { style: "thin", color: { argb: COLOR.mist200 } },
       };
 
-      ws.getRow(r).height = 28;
+      ws.getRow(r).height = wrappedRowHeight(
+        [
+          { text: k, width: 28 },
+          { text: v, width: 70 },
+        ],
+        { minHeight: 28 },
+      );
       r += 1;
     }
 

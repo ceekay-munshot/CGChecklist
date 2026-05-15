@@ -33,6 +33,7 @@ const stripCellMetaTags = (text: string): string => {
   return text
     .replace(/<docsource\b[^>]*>[\s\S]*?<\/docsource>/gi, "")
     .replace(/<\/?docsource\b[^>]*>/gi, "")
+    .replace(/\*\*/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 };

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { CompanySuggestion } from "@/lib/types/search";
-import { MUNS_BEARER_TOKEN } from "@/lib/munsConfig";
 
 const BIRDNEST_SEARCH_URL = "https://birdnest.muns.io/stock/search";
 
@@ -70,7 +69,8 @@ const rankSuggestions = (
 const fetchBirdnest = async (
   query: string,
 ): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
-  if (!MUNS_BEARER_TOKEN) {
+  const token = process.env.MUNS_BEARER_TOKEN;
+  if (!token) {
     return { suggestions: [], debug: "birdnest -> no token" };
   }
   const controller = new AbortController();
@@ -79,7 +79,7 @@ const fetchBirdnest = async (
     const res = await fetch(BIRDNEST_SEARCH_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${MUNS_BEARER_TOKEN}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ query }),

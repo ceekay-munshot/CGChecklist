@@ -1,0 +1,82 @@
+name: Current Dashboard Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      stock_ticker:
+        description: 'Stock ticker symbol'
+        required: true
+        default: 'NVDA'
+      company_name:
+        description: 'Company name'
+        required: true
+        default: 'NVIDIA Corporation'
+      country:
+        description: 'Country (full name, e.g. UNITED STATES, INDIA)'
+        required: true
+        default: 'UNITED STATES'
+
+permissions:
+  contents: write
+
+jobs:
+  run-current-agent:
+    runs-on: ubuntu-latest
+    name: Run dashboard's current governance agent
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Run current dashboard agent
+        env:
+          MUNS_ACCESS_TOKEN: ${{ secrets.MUNS_ACCESS_TOKEN }}
+          STOCK_TICKER: ${{ github.event.inputs.stock_ticker }}
+          COMPANY_NAME: ${{ github.event.inputs.company_name }}
+          COUNTRY: ${{ github.event.inputs.country }}
+        run: |
+          OUTPUT_FILE="current_agent_output.txt"
+          AGENT_ID="80e60362-47d9-4077-95ac-41b1a609c0cc"
+          TODAY="$(date -u +%Y-%m-%d)"
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "user_index": 124,
+            "agent_library_id": "${AGENT_ID}",
+            "metadata": {
+              "stock_ticker": "${STOCK_TICKER}",
+              "stock_company_name": "${COMPANY_NAME}",
+              "context_company_name": "${COMPANY_NAME}",
+              "stock_country": "${COUNTRY}",
+              "to_date": "${TODAY}",
+              "timezone": "UTC"
+            }
+          }
+          EOF
+          )
+
+          echo "===== Current Dashboard Governance Agent (${AGENT_ID}) =====" > "$OUTPUT_FILE"
+          echo "Ticker: ${STOCK_TICKER} | Company: ${COMPANY_NAME} | Country: ${COUNTRY} | Date: ${TODAY}" >> "$OUTPUT_FILE"
+          echo "" >> "$OUTPUT_FILE"
+
+          RESPONSE=$(curl -sS -X POST 'https://devde.muns.io/agents/run' \
+            -H 'accept: */*' \
+            -H "Authorization: Bearer ${MUNS_ACCESS_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD")
+
+          echo "$RESPONSE" >> "$OUTPUT_FILE"
+          echo "" >> "$OUTPUT_FILE"
+          echo "Completed current dashboard agent run."
+
+      - name: Commit output to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add current_agent_output.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update current_agent_output.txt (${{ github.event.inputs.stock_ticker }})"
+            git push origin main
+          fi

@@ -1,33 +1,33 @@
 ===== Beas Corporate Governance Agent #1 (022241e5-86c4-492b-a614-43990da3b841) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:44.590Z","path":"/agents/run","requestId":"cf6cd0c4-920f-43c5-8995-e55040fd90cd","sessionId":"446a8122-a65e-4b03-8a86-b0696806cdd9","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:15.752Z","path":"/agents/run","requestId":"62d86f47-80fc-4e32-b846-2872f415d9f8","sessionId":"2ffc43ac-d8d8-4625-a863-6a3066c3f5fb","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #2 (df618c18-0ade-498e-ba18-c7f25acbf87a) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:45.339Z","path":"/agents/run","requestId":"7f80c637-2441-407f-9968-877078f623c0","sessionId":"5ae27c68-19d3-468a-bc09-bfd65da7a9ec","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:16.477Z","path":"/agents/run","requestId":"f55877fd-6f34-466e-a2de-4e0854a6464d","sessionId":"803df8a7-bd0e-4312-b203-723ccae0504a","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #3 (8c5187ca-447b-417f-b560-3b9684ffdd0c) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:46.092Z","path":"/agents/run","requestId":"73e49cd4-313d-43ed-8029-a4d7196ec2b2","sessionId":"6fdf7028-e3e2-4168-811e-bb5298760692","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:17.201Z","path":"/agents/run","requestId":"da60a9f7-7bd2-4936-8f41-4fb558aaebf5","sessionId":"752cb09d-ea31-459b-8fb2-6765103b17b3","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #4 (465b6afd-90b0-4bc3-8ac8-4f59a80e05f8) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:46.866Z","path":"/agents/run","requestId":"abfedc97-ded0-43c1-b529-50da9835042e","sessionId":"f3a5320d-2389-4747-8526-e3e6d200f034","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:17.885Z","path":"/agents/run","requestId":"d7b15a99-8ca2-42aa-99fd-837abcc6865d","sessionId":"293cb1e3-3964-4389-bcc8-564291e5ca70","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #5 (34c938db-41cb-4406-b358-53e314fed6f8) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:47.600Z","path":"/agents/run","requestId":"c9a3b44a-2cff-4b33-abf5-74616cfdbfab","sessionId":"36847d58-2713-4e87-b47f-fa65aa653455","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:18.579Z","path":"/agents/run","requestId":"69e5eb92-06f8-441f-90a6-c0d2d07e1e2c","sessionId":"b9f83471-5251-4f27-8932-270ee5b16754","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #6 (bd38310a-46fd-49a2-b973-3f19c37135e7) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:48.310Z","path":"/agents/run","requestId":"0cbf3cb6-eec8-4a4b-bb95-42b3dd9f5772","sessionId":"58b51875-fb00-420b-b962-1910125fcd28","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:19.235Z","path":"/agents/run","requestId":"add4d590-43ce-4479-aa39-3d22e88a5e35","sessionId":"20972cfb-1b9c-4c2d-965d-a27fc050d583","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #7 (a6acebb8-4355-4915-8234-269b2b35ab6b) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:49.084Z","path":"/agents/run","requestId":"96c0d184-416a-4f6f-a099-57ccbf7778fb","sessionId":"3ead4e5e-045f-4fa7-9e71-969c7141e426","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:19.897Z","path":"/agents/run","requestId":"ac8d17c4-1763-407e-bf93-956197fcbeb1","sessionId":"825cde11-30d0-40a0-b5e8-be78f1488ad8","message":{"message":"Unauthorized","statusCode":401}}
 
 
 ===== Beas Corporate Governance Agent #8 (f77e47d9-7cbb-4bdb-aced-346affe0f2c7) =====
-{"statusCode":401,"timestamp":"2026-05-29T18:24:49.788Z","path":"/agents/run","requestId":"f9485023-4a2a-4c0d-a537-8c737a9ae27e","sessionId":"6033e82b-7756-41af-be1f-f48c0cb0108b","message":{"message":"Unauthorized","statusCode":401}}
+{"statusCode":401,"timestamp":"2026-05-29T18:28:20.596Z","path":"/agents/run","requestId":"d7f2709a-d29e-4dbd-9f6d-72178e2d3342","sessionId":"64b94898-7c85-4e40-acaf-762d1ec77267","message":{"message":"Unauthorized","statusCode":401}}
 
 
 All Beas Corporate Governance agents completed.

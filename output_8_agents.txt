@@ -1,35 +1,35 @@
 Run inputs: Ticker=NVDA | Company=NVIDIA Corporation Common Stock | Country=United States | From=2021-05-29 | To=2026-05-29
 
 ===== Beas Corporate Governance Agent #1 (022241e5-86c4-492b-a614-43990da3b841) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:21.344Z","path":"/agents/run","requestId":"93e606d5-4ca0-44b8-be85-140563d7f17c","sessionId":"b7e09449-e220-46e7-8265-e03cb1f27b8a","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #2 (df618c18-0ade-498e-ba18-c7f25acbf87a) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:22.100Z","path":"/agents/run","requestId":"8ad6f861-9c6e-4bfc-9a36-0dfdab12dd83","sessionId":"51846e62-3eb2-44d3-9b55-075caa904cba","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #3 (8c5187ca-447b-417f-b560-3b9684ffdd0c) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:22.877Z","path":"/agents/run","requestId":"7b7bfe8a-463e-4613-bb34-b0f284588994","sessionId":"942e0b2f-1d32-4e8a-bf58-60a387aaff30","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #4 (465b6afd-90b0-4bc3-8ac8-4f59a80e05f8) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:23.620Z","path":"/agents/run","requestId":"57225e95-77c7-4de6-bb85-64e67a42571b","sessionId":"d3a43b08-e494-4dbc-b32c-5ee8e8685388","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #5 (34c938db-41cb-4406-b358-53e314fed6f8) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:24.371Z","path":"/agents/run","requestId":"e1c0b094-2fc5-46b0-8450-c091241f6ba5","sessionId":"269b44db-5820-4084-88bd-7d8feab32ac7","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #6 (bd38310a-46fd-49a2-b973-3f19c37135e7) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:25.176Z","path":"/agents/run","requestId":"3c2383dd-bc36-4162-85ff-e2648f76009d","sessionId":"0600f68c-0310-47b9-bc2c-8223d4bb1b05","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #7 (a6acebb8-4355-4915-8234-269b2b35ab6b) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:25.951Z","path":"/agents/run","requestId":"0d89a23c-63fc-4b73-80e2-fe5977abca9b","sessionId":"a8b4397d-04a3-4ed4-84fe-f02708288669","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 ===== Beas Corporate Governance Agent #8 (f77e47d9-7cbb-4bdb-aced-346affe0f2c7) =====
-{"statusCode":400,"timestamp":"2026-05-29T20:54:26.682Z","path":"/agents/run","requestId":"0575f59f-8585-4922-ba0b-9b0630bb814b","sessionId":"7153a467-bd80-42a8-994a-3c474830bdc4","message":{"message":"user_index is required in the request body for service token requests","error":"Bad Request","statusCode":400}}
+{"message":"Internal server error during agent run setup."}
 
 
 All Beas Corporate Governance agents completed.

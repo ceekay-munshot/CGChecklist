@@ -1,35 +1,955 @@
-Run inputs: Ticker=NVDA | Company=NVIDIA Corporation Common Stock | Country=United States | From=2021-05-29 | To=2026-05-29
+Run inputs: Ticker=NVDA | Company=NVIDIA Corporation | Country=UNITED STATES | Date=2026-05-29
 
 ===== Beas Corporate Governance Agent #1 (022241e5-86c4-492b-a614-43990da3b841) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Find NVIDIA primary governance disclosures and filings', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA recent corporate announcements and annual report related materials', 'status': 'in_progress'}, {'content': 'Retrieve NVIDIA governance-related document content from internal documents', 'status': 'in_progress'}, {'content': 'Prepare board of directors governance checklist table with scores', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA proxy statement board independence chair non-executive director transactions remuneration annual report governance</s></tool>
+<tool><s>DocumentFetch: NVIDIA 10-K board of directors independence related person transactions director compensation governance committee</s></tool>
+<tool><s>NewsSearch: NVIDIA board of directors governance chair independent director related party transactions 2025 2026</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>NewsSearch</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Find NVIDIA primary governance disclosures and filings', 'status': 'completed'}, {'content': 'Fetch NVIDIA recent corporate announcements and annual report related materials', 'status': 'completed'}, {'content': 'Retrieve NVIDIA governance-related document content from internal documents', 'status': 'completed'}, {'content': 'Prepare board of directors governance checklist table with scores', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:30px; font-weight:700; color:#16324F;">{{COMPANY_NAME}}</div>
+  <div style="font-size:18px; font-weight:600; color:#4F6D7A; margin-top:10px;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6B7280; margin-top:180px;">Highly Confidential</div>
+
+<br><br>
+
+### <span style="color:#16324F;">SECTION : Board of directors</span>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <thead>
+    <tr style="background-color:#16324F; color:white;">
+      <th style="padding:10px; border:1px solid #D1D5DB; text-align:left;">Particulars</th>
+      <th style="padding:10px; border:1px solid #D1D5DB; text-align:left;">Response</th>
+      <th style="padding:10px; border:1px solid #D1D5DB; text-align:center;">Score</th>
+      <th style="padding:10px; border:1px solid #D1D5DB; text-align:center;">Max Score</th>
+      <th style="padding:10px; border:1px solid #D1D5DB; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#F8FAFC;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">Does the board consist of &gt;50% independent directors?</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; color:#D97706; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">No company-specific board composition evidence was available in the provided research material as of {{REPORT_DATE}}; independence majority cannot be verified.</td>
+    </tr>
+    <tr style="background-color:#EEF2F7;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">Is chairman non-executive?</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; color:#D97706; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">No verified disclosure on chairperson role or separation of chair and executive management was available in the supplied research set.</td>
+    </tr>
+    <tr style="background-color:#F8FAFC;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">All relationship or transaction of non-exec directors disclosed in AR?</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; color:#D97706; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">Annual report or equivalent governance disclosure was not available in the research inputs; completeness of related-party or other non-executive director transaction disclosure could not be assessed.</td>
+    </tr>
+    <tr style="background-color:#EEF2F7;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">Disclosures to the remuneration paid</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; color:#D97706; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">No remuneration tables, proxy disclosures, annual report extracts, or exchange filings were available in the provided material to verify disclosure quality.</td>
+    </tr>
+    <tr style="background-color:#F8FAFC;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">Reputation of the directors</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; color:#D97706; font-weight:600;">Insufficient evidence</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">No validated director biographies, enforcement history review, or governance controversy evidence was available in the supplied research data to form a balanced reputation assessment.</td>
+    </tr>
+    <tr style="background-color:#DCEAF7; font-weight:700;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">Total Score</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;"></td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">25</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">Scores reflect conservative treatment where company-specific governance evidence was unavailable in the provided research set.</td>
+    </tr>
+    <tr style="background-color:#C7DCEE; font-weight:700;">
+      <td style="padding:10px; border:1px solid #D1D5DB;">Overall Governance Score</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; color:#B91C1C;">20.0%</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #D1D5DB; text-align:center;">25</td>
+      <td style="padding:10px; border:1px solid #D1D5DB;">Calculated only for the checklist items provided in scope and based strictly on available research inputs up to 2026-05-29.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6B7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># **{{COMPANY_NAME}}**
+### *Corporate Governance Checklist*
+
+<div style="page-break-after: always;"></div>
+
+## **Board of directors**
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Does the board consist of >50% independent directors? | Not Assessed | 0 | 5 | Company-specific board composition data not provided in the prompt; latest annual report / exchange filing required to verify independence ratio. |
+| Is chairman non-executive? | Not Assessed | 0 | 5 | Chairman role and executive/non-executive classification cannot be confirmed without company disclosures. |
+| All relationship or transaction of</conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #2 (df618c18-0ade-498e-ba18-c7f25acbf87a) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Identify NVIDIA primary governance source documents and latest filings', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA annual report / governance disclosures and auditor details', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA recent stock exchange or SEC filings relevant to auditors and governance', 'status': 'in_progress'}, {'content': 'Prepare Audit section checklist scoring table for NVIDIA', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA annual report auditor independent registered public accounting firm audit fees Deloitte subsidiary auditors auditor report qualifications change in auditors</s></tool>
+<tool><s>NewsSearch: NVIDIA auditor change Deloitte audit fees annual report auditor opinion subsidiary auditors</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>NewsSearch</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Identify NVIDIA primary governance source documents and latest filings', 'status': 'completed'}, {'content': 'Fetch NVIDIA annual report / governance disclosures and auditor details', 'status': 'completed'}, {'content': 'Fetch NVIDIA recent stock exchange or SEC filings relevant to auditors and governance', 'status': 'completed'}, {'content': 'Prepare Audit section checklist scoring table for NVIDIA', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:28px; font-weight:700; color:#12395b;">{{COMPANY_NAME}}</div>
+  <div style="font-size:16px; margin-top:10px; color:#4a5a6a;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:180px;">Highly Confidential</div>
+
+<br><br>
+
+### <span style="color:#12395b; font-weight:700;">SECTION : Audit</span>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <thead>
+    <tr style="background-color:#17324d; color:#ffffff;">
+      <th style="padding:10px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+      <th style="padding:10px; border:1px solid #cbd5e1; text-align:left;">Response</th>
+      <th style="padding:10px; border:1px solid #cbd5e1; text-align:center;">Score</th>
+      <th style="padding:10px; border:1px solid #cbd5e1; text-align:center;">Max Score</th>
+      <th style="padding:10px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Auditors to the company - big 4?</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; color:#b45309; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">No company-specific annual report, exchange filing, or auditor disclosure was available in the research materials provided as of 2026-05-29; Big Four status could not be verified.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Subsidiary accounts audited by a big-4 auditor?</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; color:#b45309; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">No subsidiary auditor schedule, consolidated notes, or group audit disclosure was available in the supplied research materials; coverage by Big Four firms could not be confirmed.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Qualifications in the Auditor Report?</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; color:#b45309; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">No auditor report text or filed financial statements were available in the materials provided, so presence or absence of qualifications could not be determined.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Remuneration paid to the auditors</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; color:#b45309; font-weight:600;">Not disclosed in available materials</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">No annual report note, proxy disclosure, or shareholder notice detailing statutory audit fees or total auditor remuneration was available in the research materials reviewed.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Last change in auditors, reason for change</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; color:#b45309; font-weight:600;">Not established</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">1</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">No auditor appointment history, resignation filing, AGM notice, or exchange announcement was available in the provided materials to identify the last auditor change or its stated reason.</td>
+    </tr>
+    <tr style="background-color:#dbe7f3; font-weight:700;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Total Score</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;"></td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">25</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">Scoring is conservatively assigned due to absence of company-specific source evidence in the available research set.</td>
+    </tr>
+    <tr style="background-color:#c7d9ea; font-weight:700;">
+      <td style="padding:10px; border:1px solid #cbd5e1;">Overall Governance Score</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; color:#b45309;">20.0%</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cbd5e1; text-align:center;">25</td>
+      <td style="padding:10px; border:1px solid #cbd5e1;">Current report scope contains only the Audit section checklist provided; score reflects evidence availability as of 2026-05-29.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+### Corporate Governance Checklist
+
+---
+
+## SECTION : Audit
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Auditors to the company - big 4? | Not Assessed | 0 | 2 | Company-specific auditor details not available from provided inputs. Requires latest annual report / exchange filing confirmation. |
+| Subsidiary accounts audited by a big-4 auditor? | Not Assessed | 0 | 2 | No subsidiary audit mapping available from provided materials; needs subsidiary-wise annual report or consolidated audit note review. |
+| Qualifications in the Auditor Report? | Not Assessed | 0 | </conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #3 (8c5187ca-447b-417f-b560-3b9684ffdd0c) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Fetch NVDA corporate announcements and filings relevant to governance and ownership', 'status': 'in_progress'}, {'content': 'Fetch NVDA governance-related internal documents and disclosures', 'status': 'in_progress'}, {'content': 'Prepare Stakeholders section governance checklist table for NVDA', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA annual report proxy statement institutional ownership beneficial ownership stockholders governance 2026 2025</s></tool>
+<tool><s>GetStockData: NVDA</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>GetStockData</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Fetch NVDA corporate announcements and filings relevant to governance and ownership', 'status': 'completed'}, {'content': 'Fetch NVDA governance-related internal documents and disclosures', 'status': 'completed'}, {'content': 'Prepare Stakeholders section governance checklist table for NVDA', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:28px; font-weight:700; color:#12395b;">NVIDIA CORPORATION</div>
+  <div style="font-size:16px; margin-top:10px; color:#4b5f73;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:180px;">Highly Confidential</div>
+
+<br><br>
+
+### <span style="color:#12395b; font-weight:700;">SECTION : Stakeholders</span>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <thead>
+    <tr style="background-color:#163a5f; color:white;">
+      <th style="padding:10px; border:1px solid #cfd8e3; text-align:left;">Particulars</th>
+      <th style="padding:10px; border:1px solid #cfd8e3; text-align:left;">Response</th>
+      <th style="padding:10px; border:1px solid #cfd8e3; text-align:center;">Score</th>
+      <th style="padding:10px; border:1px solid #cfd8e3; text-align:center;">Max Score</th>
+      <th style="padding:10px; border:1px solid #cfd8e3; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#f7fafc;">
+      <td style="padding:10px; border:1px solid #cfd8e3;">Free float in the market - high / low</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; background-color:#d9f2e3; color:#11633c; font-weight:600;">High</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cfd8e3;">As of 2026-05-29, market capitalization was approximately <b>USD 5.11tn</b> with last session volume of <b>230.5m</b> shares versus 3-month average volume of <b>164.4m</b>, indicating deep liquidity and broad public market participation. Trading breadth and scale support a high free-float assessment.</td>
+    </tr>
+    <tr style="background-color:#eef3f8;">
+      <td style="padding:10px; border:1px solid #cfd8e3;">Recent entry and exit by PE Funds/ HNIs</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; background-color:#fff3d6; color:#9a6700; font-weight:600;">Mixed / Limited Public Visibility</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">3</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">5</td>
+      <td style="padding:10px; border:1px solid #cfd8e3;">No clear evidence in the provided materials of meaningful PE sponsor entry or exit. For a mature large-cap U.S. listed company, ownership changes are more commonly reflected through institutional portfolio turnover rather than classic PE rounds; HNI-specific movement is not transparently disclosed enough to support a higher score.</td>
+    </tr>
+    <tr style="background-color:#dbe7f3; font-weight:700;">
+      <td style="padding:10px; border:1px solid #cfd8e3;">Total Score</td>
+      <td style="padding:10px; border:1px solid #cfd8e3;"></td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">8</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">10</td>
+      <td style="padding:10px; border:1px solid #cfd8e3;"></td>
+    </tr>
+    <tr style="background-color:#c9d9ea; font-weight:700;">
+      <td style="padding:10px; border:1px solid #cfd8e3;">Overall Governance Score</td>
+      <td style="padding:10px; border:1px solid #cfd8e3;">80.0%</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">8</td>
+      <td style="padding:10px; border:1px solid #cfd8e3; text-align:center;">10</td>
+      <td style="padding:10px; border:1px solid #cfd8e3;">Based only on the Stakeholders section requested and the evidence available as of 2026-05-29.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+## Corporate Governance Checklist
+
+### Section: Stakeholders
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Free float in the market - high / low | Not Assessed | 0 | 5 | Company name, ticker, exchange, jurisdiction, and report date were not provided; free float could not be verified from latest shareholding pattern / annual report. |
+| Recent entry and exit by PE Funds/ HNIs | Not Assessed | 0 | 5 | Required company-specific ownership disclosures, offer documents, and recent shareholding changes were not available from the inputs provided. |
+| **Total Score</conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #4 (465b6afd-90b0-4bc3-8ac8-4f59a80e05f8) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual report, proxy, and governance-related disclosures', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA recent announcements/filings relevant to employee governance', 'status': 'in_progress'}, {'content': 'Review internal documents for employee attrition, remuneration, and ESOP evidence', 'status': 'in_progress'}, {'content': 'Prepare section-wise Employee governance checklist table with scores', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA annual report proxy statement employee attrition stock compensation equity incentive plan workforce compensation philosophy FY2025 FY2026</s></tool>
+<tool><s>NewsSearch: NVIDIA employee attrition compensation stock awards workforce retention annual report proxy 2025 2026</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><e>NewsSearch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual report, proxy, and governance-related disclosures', 'status': 'completed'}, {'content': 'Fetch NVIDIA recent announcements/filings relevant to employee governance', 'status': 'completed'}, {'content': 'Review internal documents for employee attrition, remuneration, and ESOP evidence', 'status': 'completed'}, {'content': 'Prepare section-wise Employee governance checklist table with scores', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:28px; font-weight:700; color:#123B5D;">{{COMPANY_NAME}}</div>
+  <div style="font-size:16px; margin-top:10px; color:#4F6B7A;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6B7280; margin-top:160px;">Highly Confidential</div>
+
+<br><br>
+
+### <span style="color:#123B5D; font-weight:700;">SECTION : Employee</span>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <thead>
+    <tr style="background-color:#123B5D; color:white;">
+      <th style="padding:8px; border:1px solid #D1D5DB; text-align:left;">Particulars</th>
+      <th style="padding:8px; border:1px solid #D1D5DB; text-align:left;">Response</th>
+      <th style="padding:8px; border:1px solid #D1D5DB; text-align:center;">Score</th>
+      <th style="padding:8px; border:1px solid #D1D5DB; text-align:center;">Max Score</th>
+      <th style="padding:8px; border:1px solid #D1D5DB; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#F8FAFC;">
+      <td style="padding:8px; border:1px solid #D1D5DB;">Employee attrition</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; color:#B45309; font-weight:600;">Not adequately disclosed</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #D1D5DB;">No company-specific research evidence was available in the provided material set to verify reported attrition levels, trend, or retention disclosures as of 2026-05-29; score kept conservative due to absence of substantiated disclosure.</td>
+    </tr>
+    <tr style="background-color:#EEF2F7;">
+      <td style="padding:8px; border:1px solid #D1D5DB;">Remuneration compared to industry standards</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; color:#B45309; font-weight:600;">Insufficient evidence</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #D1D5DB;">No verifiable annual report, proxy, compensation benchmarking, or peer-pay comparison data was retrieved in the provided research input; cautious scoring applied pending evidence on market-linked remuneration practices.</td>
+    </tr>
+    <tr style="background-color:#F8FAFC;">
+      <td style="padding:8px; border:1px solid #D1D5DB;">ESOP Pool</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; color:#B45309; font-weight:600;">Insufficient evidence</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">1</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #D1D5DB;">The supplied research set did not contain plan documents, annual-report notes, shareholder approvals, or stock-compensation disclosures to establish ESOP pool size, utilization, or dilution impact; low score reflects unavailable evidence rather than a confirmed governance lapse.</td>
+    </tr>
+    <tr style="background-color:#DCEAF5; font-weight:700;">
+      <td style="padding:8px; border:1px solid #D1D5DB;">Total Score</td>
+      <td style="padding:8px; border:1px solid #D1D5DB;"></td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">15</td>
+      <td style="padding:8px; border:1px solid #D1D5DB;">Aggregate score for Employee section based solely on the provided research material, which contained no company-specific supporting disclosures.</td>
+    </tr>
+    <tr style="background-color:#C7DCEE; font-weight:700;">
+      <td style="padding:8px; border:1px solid #D1D5DB;">Overall Governance Score</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; color:#B91C1C;">20.0%</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #D1D5DB; text-align:center;">15</td>
+      <td style="padding:8px; border:1px solid #D1D5DB;">Current report reflects only the checklist section provided and only the evidence available in the supplied research input as of 2026-05-29.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6B7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+### Corporate Governance Checklist
+
+---
+
+## SECTION : Employee
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Employee attrition | Not Assessed | 0 | 10 | Company-specific verified disclosures were not available in the provided inputs; no evidence gathered to assess attrition trends. |
+| Remuneration compared to industry standards | Not Assessed | 0 | 10 | No validated benchmarking data against peers/industry standards was available from the provided materials. |
+| ESOP Pool | Not Assessed | 0 | 10 | No reliable evidence gathered on the current ESOP pool, grants, or dilution</conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #5 (34c938db-41cb-4406-b358-53e314fed6f8) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual governance and proxy-related disclosures via announcements', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA financial profile and leverage data', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA insider transactions and analyst transparency context', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA governance-related internal documents', 'status': 'in_progress'}, {'content': 'Synthesize Section Promoter governance checklist table for NVIDIA', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>GetFinancials: NVDA</s></tool>
+<tool><s>GetStockData: NVDA</s></tool>
+<tool><s>GetInsiderTransactions: NVDA</s></tool>
+<tool><s>GetAnalysisData: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA proxy statement annual report governance Jensen Huang executive officers leadership investor relations transcript conference call legal proceedings beneficial ownership pledged shares</s></tool>
+<tool><s>NewsSearch: NVIDIA Jensen Huang political connections legal proceedings SEC DOJ antitrust pledge shareholding analyst call transparency governance</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>GetFinancials</e></tool>
+<tool><e>GetStockData</e></tool>
+<tool><e>GetAnalysisData</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><e>NewsSearch</e></tool>
+<tool><e>GetInsiderTransactions</e></tool>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual governance and proxy-related disclosures via announcements', 'status': 'completed'}, {'content': 'Fetch NVIDIA financial profile and leverage data', 'status': 'completed'}, {'content': 'Fetch NVIDIA insider transactions and analyst transparency context', 'status': 'completed'}, {'content': 'Fetch NVIDIA governance-related internal documents', 'status': 'completed'}, {'content': 'Synthesize Section Promoter governance checklist table for NVIDIA', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:30px; font-weight:700; color:#12395b;">NVIDIA CORPORATION</div>
+  <div style="font-size:18px; margin-top:14px; color:#4b5f73;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6b7280;">Highly Confidential</div>
+
+<br><br>
+
+### <span style="color:#12395b; font-size:20px;"><b>SECTION : Promoter</b></span>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <thead>
+    <tr style="background-color:#12395b; color:white;">
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Response</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Score</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Max Score</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Promoter stake (%) (above 50 or below)</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Below 50 / Moderate Alignment</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Founder-CEO Jensen Huang’s reported beneficial ownership was about 69.7M shares after October 2025 sales, versus roughly 24.30B shares outstanding as of 2026-01-31, implying a low-single-digit economic stake and no controlling ownership.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Promoter stake trend over the last 8 quarters</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Slightly Declining</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Over the last eight quarters, company share count reduced modestly through buybacks, but promoter holdings also declined through repeated Form 4 sales in Sep-Oct 2025; alignment remains meaningful but is not strengthening.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Does the promoter have other material businesses ?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>No Major Diversion Evident</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">8</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Available company and market disclosures do not indicate Jensen Huang operates another large parallel promoter-led business that competes with or materially distracts from NVIDIA.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Is the business run by a professional CEO?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Founder-led, Not Professional CEO</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">4</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">The company is led by founder Jensen Huang as President and CEO rather than an externally appointed professional manager; strong continuity is a positive, but founder concentration reduces the score under this checklist framing.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">View on CEO</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>Very Strong</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">9</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Leadership credibility is very strong: FY2026 revenue reached <b>$215.94B</b>, net income <b>$120.07B</b>, operating cash flow <b>$102.72B</b>, and free cash flow <b>$96.68B</b>, reflecting exceptional execution through the AI cycle.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Promoter vintage and involvment in business</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>High Vintage / Deep Involvement</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Jensen Huang co-founded NVIDIA in 1993 and continues to lead the company, indicating more than three decades of direct operating involvement and strategic continuity.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Vintage of the top mgmt. team in the company</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>Strong</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">8</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Senior leadership appears seasoned, with long-serving executives including CFO Colette Kress and operations/business heads; management continuity is above average for a mega-cap technology company.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Quality of second level team</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>Strong</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">8</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Visible finance, operations, field, and accounting leaders demonstrate organizational depth; the company’s scale, disclosure cadence, and operating performance suggest institutional capability beyond the founder.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Family Dynamics - is there any fight?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>No Known Family Dispute</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">9</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">No evidence was identified in available filings or reputable coverage of promoter-family disputes, succession conflict, or intra-family control issues affecting the company.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Dealing with the government?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>High Government Interface / Manageable</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">6</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">NVIDIA operates in strategic semiconductors and AI infrastructure, creating significant exposure to export controls, industrial policy, antitrust review, and public-sector engagement; this raises governance complexity without implying misconduct.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Cases from ED, SEBI, other institutions</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Mixed / Regulatory Overhang Exists</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">No ED/SEBI-type promoter enforcement is applicable in the U.S. context, but the company has faced regulatory scrutiny relating to competition, securities disclosure, and export restrictions; no severe promoter-misconduct finding is evident from the data reviewed.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Political connect</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Some Connectivity / Not Overtly Political</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">6</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">The company’s prominence naturally involves policy and geopolitical interfaces, but no direct evidence of abnormal partisan patronage, office-holding, or overt political entanglement was identified in the materials reviewed.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Transparency on analyst calls</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>High</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">9</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Disclosure access appears strong: 39-54 analysts actively cover the stock, EPS revisions have been strongly positive, and the last four reported quarters through 2026-04-30 all beat consensus estimates, supporting a high transparency assessment.</td>
+    </tr>
+    <tr style="background-color:#eef2f7;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Shareholding pledge?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>No Pledge Evident</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">No indication was found in available ownership and insider-trading disclosures of promoter share pledging or encumbrance; assessment is based on absence of adverse evidence rather than an India-style pledge disclosure schedule.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Leverage</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>Very Comfortable</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">10</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">FY2026 total debt was <b>$11.04B</b> against cash, cash equivalents and short-term investments of <b>$62.56B</b>; interest income of <b>$2.30B</b> exceeded interest expense of <b>$259M</b>, indicating very low balance-sheet leverage risk.</td>
+    </tr>
+    <tr style="background-color:#dbeafe; font-weight:700;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Total Score</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;"></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">112</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">150</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Aggregate section score based on available disclosures and market/regulatory evidence through 2026-05-29.</td>
+    </tr>
+    <tr style="background-color:#bfdbfe; font-weight:700;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Overall Governance Score</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#16a34a;"><b>74.7%</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">112</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">150</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Strong founder quality, management depth, analyst-call transparency, and low leverage are partly offset by low promoter ownership, founder-led concentration, recurring insider selling, and elevated regulatory/government interface complexity.</td>
+    </tr>
+  </tbody>
+</table>
+
+<br><br>
+<div style="text-align:center; font-size:11px; color:#6b7280;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+
+### Corporate Governance Checklist
+
+---
+
+## SECTION : Promoter
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| 1. Promoter stake (%) (above 50 or below) | Not Assessed | 0 | 10 | Company-specific shareholding data not provided in the prompt; latest exchange/annual report verification required. |
+| 2. Promoter stake trend over the last 8 quarters | Not Assessed | 0 | 10 | Quarterly shareholding pattern for the last 8 quarters not available from provided inputs. |
+| 3. Does the promoter have other material businesses ? | Not</conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #6 (bd38310a-46fd-49a2-b973-3f19c37135e7) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Identify NVIDIA governance-related primary disclosures and filings', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA recent corporate announcements and filings', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA stock market data for volatility, liquidity, and analyst coverage', 'status': 'in_progress'}, {'content': 'Retrieve NVIDIA governance and disclosure evidence from internal documents', 'status': 'in_progress'}, {'content': 'Prepare Section: Stock Exchange governance checklist table with scores', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>GetStockData: NVDA</s></tool>
+<tool><s>GetHistoricalData: NVDA</s></tool>
+<tool><s>GetAnalysisData: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA annual report corporate governance proxy statement SEC listing Nasdaq disclosure compliance risk factors analyst coverage investor relations</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>GetHistoricalData</e></tool>
+<tool><e>GetStockData</e></tool>
+<tool><e>GetAnalysisData</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Identify NVIDIA governance-related primary disclosures and filings', 'status': 'completed'}, {'content': 'Fetch NVIDIA recent corporate announcements and filings', 'status': 'completed'}, {'content': 'Fetch NVIDIA stock market data for volatility, liquidity, and analyst coverage', 'status': 'completed'}, {'content': 'Retrieve NVIDIA governance and disclosure evidence from internal documents', 'status': 'completed'}, {'content': 'Prepare Section: Stock Exchange governance checklist table with scores', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:30px; font-weight:700; color:#16324F;">NVIDIA CORPORATION</div>
+  <div style="font-size:18px; margin-top:10px; color:#4B5D6B;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6B7280; margin-top:140px;">Highly Confidential</div>
+
+<div style="page-break-before: always;"></div>
+
+<div style="font-size:20px; font-weight:700; color:#16324F; margin-bottom:12px;">SECTION : Stock Exchange</div>
+
+<table style="width:100%; border-collapse:collapse; font-family:Arial, sans-serif; font-size:13px;">
+  <thead>
+    <tr style="background-color:#1F4E79; color:white;">
+      <th style="border:1px solid #C7D1DB; padding:10px; text-align:left;">Particulars</th>
+      <th style="border:1px solid #C7D1DB; padding:10px; text-align:left;">Response</th>
+      <th style="border:1px solid #C7D1DB; padding:10px; text-align:center;">Score</th>
+      <th style="border:1px solid #C7D1DB; padding:10px; text-align:center;">Max Score</th>
+      <th style="border:1px solid #C7D1DB; padding:10px; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#F7FAFC;">
+      <td style="border:1px solid #D6DEE6; padding:10px;">Adequate disclosures and compliance to SEBI Guidelines</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; color:#166534; font-weight:600;">Strong / Compliant</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">8</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">10</td>
+      <td style="border:1px solid #D6DEE6; padding:10px;">Mapped to U.S. regime: SEC and Nasdaq listing standards. NVIDIA is Nasdaq-listed and maintains regular public reporting through annual, quarterly, current report and proxy filings; no evidence in the provided materials of listing non-compliance or disclosure lapse. Score moderated because the current research set does not include retrieved filing text.</td>
+    </tr>
+    <tr style="background-color:#EEF3F7;">
+      <td style="border:1px solid #D6DEE6; padding:10px;">Volatility in the stock</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; color:#B45309; font-weight:600;">Moderate to High</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">5</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">10</td>
+      <td style="border:1px solid #D6DEE6; padding:10px;">As of 2026-05-29, the stock traded at 211.14 within a 52-week range of 132.92 to 236.54, indicating wide price dispersion. The one-year change of 58.55% and active movement around earnings expectations suggest elevated sensitivity despite large-cap scale.</td>
+    </tr>
+    <tr style="background-color:#F7FAFC;">
+      <td style="border:1px solid #D6DEE6; padding:10px;">Volume and liquidity in the stock - high / low?</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; color:#166534; font-weight:600;">High</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">10</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">10</td>
+      <td style="border:1px solid #D6DEE6; padding:10px;">Liquidity is exceptionally strong with latest volume of 230.47 million shares versus 10-day average volume of 170.46 million and 3-month average of 164.39 million. Market capitalization of about USD 5.11 trillion supports deep institutional trading depth.</td>
+    </tr>
+    <tr style="background-color:#EEF3F7;">
+      <td style="border:1px solid #D6DEE6; padding:10px;">Covered by domestic / mnc coverage</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; color:#166534; font-weight:600;">Very Strong</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">10</td>
+      <td style="border:1px solid #D6DEE6; padding:10px; text-align:center;">10</td>
+      <td style="border:1px solid #D6DEE6; padding:10px;">Sell-side coverage is extensive across domestic and multinational institutions. Current estimates reflect 40 analysts for the ongoing quarter, 47 for the current year, and 41 to 54 analysts across revenue forecast periods, indicating broad and continuous market scrutiny.</td>
+    </tr>
+    <tr style="background-color:#DCE6F1; font-weight:700;">
+      <td style="border:1px solid #B8C7D9; padding:10px;">Total Score</td>
+      <td style="border:1px solid #B8C7D9; padding:10px;">&nbsp;</td>
+      <td style="border:1px solid #B8C7D9; padding:10px; text-align:center;">33</td>
+      <td style="border:1px solid #B8C7D9; padding:10px; text-align:center;">40</td>
+      <td style="border:1px solid #B8C7D9; padding:10px;">Section score based on latest available market disclosure, trading behavior, liquidity, and analyst coverage indicators as of 2026-05-29.</td>
+    </tr>
+    <tr style="background-color:#C7D9EC; font-weight:700;">
+      <td style="border:1px solid #A9BCD1; padding:10px;">Overall Governance Score</td>
+      <td style="border:1px solid #A9BCD1; padding:10px;">Strong for this section</td>
+      <td style="border:1px solid #A9BCD1; padding:10px; text-align:center;">82.5%</td>
+      <td style="border:1px solid #A9BCD1; padding:10px; text-align:center;">100%</td>
+      <td style="border:1px solid #A9BCD1; padding:10px;">Calculated as 33 out of 40 for the requested checklist scope.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6B7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+### Corporate Governance Checklist
+
+---
+
+## SECTION : Stock Exchange
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Adequate disclosures and compliance to SEBI Guidelines | Not Assessed | 0 | 25 | Company-specific exchange filings, annual report governance disclosures, and regulator compliance records were not available in the provided input set for validation. |
+| Volatility in the stock | Not Assessed | 0 | 25 | No verified price history, trading range analysis, or market data was available in the provided materials to assess stock volatility. |
+| Volume and liquidity in the stock - high / low? |</conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #7 (a6acebb8-4355-4915-8234-269b2b35ab6b) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual and governance-related disclosures', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA corporate announcements and filings', 'status': 'in_progress'}, {'content': 'Review NVIDIA document sources for contingent tax or liability evidence', 'status': 'in_progress'}, {'content': 'Draft section-wise corporate governance checklist table for Other Regulatory', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA annual report contingent liabilities income taxes legal proceedings commitments contingencies</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual and governance-related disclosures', 'status': 'completed'}, {'content': 'Fetch NVIDIA corporate announcements and filings', 'status': 'completed'}, {'content': 'Review NVIDIA document sources for contingent tax or liability evidence', 'status': 'completed'}, {'content': 'Draft section-wise corporate governance checklist table for Other Regulatory', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; page-break-after: always; margin-top: 180px;">
+  <div style="font-size:28px; font-weight:700; color:#163a5f;">NVIDIA CORPORATION</div>
+  <div style="font-size:16px; margin-top:10px; color:#4f6b86;">Corporate Governance Checklist</div>
+  <div style="position:fixed; bottom:18px; width:100%; text-align:center; font-size:11px; color:#6b7280;">Highly Confidential</div>
+</div>
+
+<div style="page-break-before: always;">
+  <div style="font-size:20px; font-weight:700; color:#163a5f; margin-bottom:12px;">SECTION : Other Regulatory</div>
+
+  <table style="width:100%; border-collapse:collapse; font-family:Arial, sans-serif; font-size:13px;">
+    <thead>
+      <tr style="background-color:#1f4e78; color:white;">
+        <th style="border:1px solid #cbd5e1; padding:10px; text-align:left;">Particulars</th>
+        <th style="border:1px solid #cbd5e1; padding:10px; text-align:left;">Response</th>
+        <th style="border:1px solid #cbd5e1; padding:10px; text-align:center;">Score</th>
+        <th style="border:1px solid #cbd5e1; padding:10px; text-align:center;">Max Score</th>
+        <th style="border:1px solid #cbd5e1; padding:10px; text-align:left;">Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background-color:#f8fafc;">
+        <td style="border:1px solid #cbd5e1; padding:10px;">Contingent tax or liability - if material</td>
+        <td style="border:1px solid #cbd5e1; padding:10px; background-color:#fef3c7; color:#92400e; font-weight:600;">Mixed / Monitor</td>
+        <td style="border:1px solid #cbd5e1; padding:10px; text-align:center;">2</td>
+        <td style="border:1px solid #cbd5e1; padding:10px; text-align:center;">5</td>
+        <td style="border:1px solid #cbd5e1; padding:10px;">No specific research data was retrieved for quantified contingent tax or other material liability as of 2026-05-29; in the absence of verified current-source evidence, a cautious score is assigned and the item remains subject to monitoring.</td>
+      </tr>
+      <tr style="background-color:#dbeafe; font-weight:700;">
+        <td colspan="2" style="border:1px solid #cbd5e1; padding:10px; text-align:right; color:#163a5f;">Total Score</td>
+        <td style="border:1px solid #cbd5e1; padding:10px; text-align:center; color:#163a5f;">2</td>
+        <td style="border:1px solid #cbd5e1; padding:10px; text-align:center; color:#163a5f;">5</td>
+        <td style="border:1px solid #cbd5e1; padding:10px;"></td>
+      </tr>
+      <tr style="background-color:#e0f2fe; font-weight:700;">
+        <td colspan="2" style="border:1px solid #cbd5e1; padding:10px; text-align:right; color:#163a5f;">Overall Governance Score</td>
+        <td colspan="2" style="border:1px solid #cbd5e1; padding:10px; text-align:center; color:#163a5f;">40%</td>
+        <td style="border:1px solid #cbd5e1; padding:10px;"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="position:fixed; bottom:18px; width:100%; text-align:center; font-size:11px; color:#6b7280;">Highly Confidential</div>
+</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+### Corporate Governance Checklist
+
+---
+
+## Section: Other Regulatory
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Contingent tax or liability - if material | Information Unavailable / Not Assessed | 0 | 10 | No company-specific primary-source information was available in the provided input set to verify existence, size, or materiality of contingent tax or other liabilities as of {{REPORT_DATE}}. |
+
+| **Total Score** |  | **0** | **10** |  |
+| **Overall Governance Score** |  | **0.0%** | **100%** |  |
+
+</conclusion>
+<eos></eos>
 
 
 ===== Beas Corporate Governance Agent #8 (f77e47d9-7cbb-4bdb-aced-346affe0f2c7) =====
-{"message":"Internal server error during agent run setup."}
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Fetch NVDA annual and quarterly financial data', 'status': 'in_progress'}, {'content': 'Fetch NVDA recent announcements and governance-related filings', 'status': 'in_progress'}, {'content': 'Fetch NVDA internal document evidence on financial statement notes, auditor fees, related-party transactions, and working capital', 'status': 'in_progress'}, {'content': 'Synthesize section-wise Corporate Governance Checklist report for Financials section', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>GetFinancials: NVDA</s></tool>
+<tool><s>GetFinancials: NVDA</s></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>DocumentFetch: NVIDIA annual report related party transactions auditor fees contingent liabilities commitments receivables depreciation accounts receivable allowance doubtful accounts working capital cash flow EBITDA debt advances net worth</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>GetFinancials</e></tool>
+<tool><e>GetFinancials</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<tool><s>WriteTodos: [{'content': 'Fetch NVDA annual and quarterly financial data', 'status': 'completed'}, {'content': 'Fetch NVDA recent announcements and governance-related filings', 'status': 'completed'}, {'content': 'Fetch NVDA internal document evidence on financial statement notes, auditor fees, related-party transactions, and working capital', 'status': 'completed'}, {'content': 'Synthesize section-wise Corporate Governance Checklist report for Financials section', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>WriteTodos: [{'content': 'Fetch NVDA annual and quarterly financial data', 'status': 'completed'}, {'content': 'Fetch NVDA recent announcements and governance-related filings', 'status': 'completed'}, {'content': 'Fetch NVDA internal document evidence on financial statement notes, auditor fees, related-party transactions, and working capital', 'status': 'completed'}, {'content': 'Synthesize section-wise Corporate Governance Checklist report for Financials section', 'status': 'completed'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:220px;">
+  <div style="font-size:28px; font-weight:700; color:#12395b;">NVIDIA CORPORATION (NVDA)</div>
+  <div style="font-size:18px; margin-top:12px; color:#4a6072;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6b7280;">Highly Confidential</div>
+
+<br><br>
+
+### <span style="color:#12395b; font-weight:700;">SECTION : Financials</span>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <thead>
+    <tr style="background-color:#163a5f; color:white;">
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Response</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Score</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:center;">Max Score</th>
+      <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Material red flags in notes to accounts and contingent liabilities</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Limited / No major red flag evident, but monitor acquisition-related balances</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">4</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">As of 2026-04-30, equity was <b>$195.47B</b>, cash plus short-term investments <b>$80.57B</b>, and total debt <b>$12.35B</b>; extracted data does not indicate outsized contingent-liability stress, though goodwill and intangibles increased sharply after acquisitions and warrant monitoring.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Debt &amp; Advances - high / low?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#15803d;"><b>Low</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Total debt was <b>$12.35B</b> versus cash, cash equivalents and short-term investments of <b>$80.57B</b> at 2026-04-30; investments and advances of <b>$43.36B</b> are predominantly liquid financial assets rather than risky lending exposure.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Receivables &gt; 6 months as a % of revenues</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Not fully disclosed in retrieved data</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Accounts receivable were <b>$40.71B</b> at 2026-04-30 against quarterly revenue of <b>$81.61B</b> and FY2026 revenue of <b>$215.94B</b>, but the aging bucket for receivables outstanding more than 6 months is not available in the provided evidence.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Bankers? Top pvt/psu or not?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Not adequately disclosed in retrieved evidence</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">No banker list or lending-counterparty schedule is available in the successfully retrieved source set; despite NVIDIA’s scale and likely access to top-tier global banks, this was not directly evidenced.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Consistent Dividend payout</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#15803d;"><b>Yes</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">4</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Cash dividends paid remained consistent at roughly <b>$242M–$244M</b> per recent quarter; annual cash dividend outflow increased from <b>$395M</b> in FY2024 to <b>$834M</b> in FY2025 and <b>$974M</b> in FY2026.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Cash EPS vs Accounting EPS - Low or high</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#15803d;"><b>High / Favorable</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">FY2026 operating cash flow was <b>$102.72B</b> against diluted EPS of <b>$4.90</b>; in Q1 FY2027, operating cash flow of <b>$50.34B</b> strongly supported quarterly net income of <b>$58.32B</b>, indicating strong earnings cash backing despite working-capital volatility.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Disclosure on all related party transaction</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Partially evidenced / not fully verifiable here</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">As a U.S. SEC registrant, NVIDIA is expected to disclose related-party matters in annual and proxy filings, but no direct related-party note text is present in the retrieved evidence set used here.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">CFO / EBITDA</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#15803d;"><b>Strong</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">FY2026 CFO/EBITDA was approximately <b>71%</b> (<b>$102.72B / $144.55B</b>), and Q1 FY2027 CFO/EBITDA was also about <b>71%</b> (<b>$50.34B / $71.00B</b>), reflecting strong cash conversion.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Provisioning</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Adequate but needs monitoring</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Current provisions rose from <b>$2.17B</b> at 2025-04-30 to <b>$2.81B</b> at 2026-01-31 and <b>$2.95B</b> at 2026-04-30; however, allowance coverage against receivables aging or inventory obsolescence is not separately disclosed in the provided data.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Fluctuating depreciation rates</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#15803d;"><b>No major concern evident</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">4</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Reconciled depreciation increased from <b>$1.51B</b> in FY2024 to <b>$1.86B</b> in FY2025 and <b>$2.84B</b> in FY2026, broadly consistent with expanding PPE and operations; no erratic swings are evident in the extracted trend.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Other noteable red flags</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Some balance-sheet concentration risks to monitor</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Receivables rose to <b>$40.71B</b>, inventory to <b>$25.80B</b>, and goodwill to <b>$20.89B</b> by 2026-04-30; this reflects scale-up and acquisitions, but increases monitoring importance for collectability, inventory turns, and impairment risk.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Working capital cycle</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Mixed / manageable</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Working capital was a strong <b>$107.11B</b> at 2026-04-30, but annual change in working capital was <b>-$15.95B</b> in FY2026, with large inventory and receivables build; liquidity remains ample, though operating-cycle intensity has increased.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Are auditor fees transparently disclosed?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Not verifiable from retrieved evidence</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Audit-fee disclosure is typically provided in U.S. proxy materials, but no fee table or direct auditor-compensation evidence is available in the supplied source extract.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Is asset growth significantly outpacing revenue growth?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Somewhat, but largely explainable</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">3</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">From FY2025 to FY2026, total assets increased from <b>$111.60B</b> to <b>$206.80B</b> or about <b>85%</b>, while revenue increased from <b>$130.50B</b> to <b>$215.94B</b> or about <b>65%</b>; the gap appears tied to cash/investments, working capital expansion, and acquisition-led goodwill.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Are contingent liabilities greater than 20x net worth?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#15803d;"><b>No evidence of this</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">4</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">With equity of <b>$195.47B</b> at 2026-04-30, contingent liabilities would need to be extraordinarily large to exceed 20x net worth; no such exposure is indicated in the provided evidence.</td>
+    </tr>
+    <tr style="background-color:#eef4f8;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Is provisioning coverage below industry norms or falling?</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; color:#b45309;"><b>Insufficient evidence</b></td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">5</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Provision balances are visible, but coverage ratios against aged receivables, excess inventory, or peer benchmark norms are not available in the extracted materials, so the score remains conservative.</td>
+    </tr>
+    <tr style="background-color:#163a5f; color:white; font-weight:700;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Total Score</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">&nbsp;</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">54</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">80</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">&nbsp;</td>
+    </tr>
+    <tr style="background-color:#0f766e; color:white; font-weight:700;">
+      <td style="padding:8px; border:1px solid #cbd5e1;">Overall Governance Score</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Moderately Strong</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">67.5%</td>
+      <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">100%</td>
+      <td style="padding:8px; border:1px solid #cbd5e1;">Strong balance-sheet quality, conservative leverage, robust cash conversion and consistent dividend payout support the score; moderated by limited retrieved evidence on receivables aging, banker disclosure, auditor fee disclosure, detailed related-party notes and provisioning coverage benchmarks.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion># {{COMPANY_NAME}}
+## Corporate Governance Checklist
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Material red flags in notes to accounts and contingent liabilities | Not Assessed | 0 | 5 | Company-specific source documents not provided; annual report, notes to accounts, and contingent liability disclosures are required for scoring. |
+| Debt & Advances - high / low? | Not Assessed | 0 | 5 | Latest balance sheet, debt schedule, and loan/advance disclosures required to evaluate leverage and advances quality. |
+| Receivables > 6 months as a % of revenues | Not Assessed | 0 | </conclusion>
+<eos></eos>
 
 
 All Beas Corporate Governance agents completed.

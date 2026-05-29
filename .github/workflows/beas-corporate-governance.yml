@@ -8,13 +8,13 @@ on:
         required: true
         default: 'NVDA'
       company_name:
-        description: 'Company name (e.g. NVIDIA Corporation Common Stock)'
+        description: 'Company name'
         required: true
-        default: 'NVIDIA Corporation Common Stock'
+        default: 'NVIDIA Corporation'
       country:
-        description: 'Country (e.g. United States, India)'
+        description: 'Country (full name, e.g. UNITED STATES, INDIA)'
         required: true
-        default: 'United States'
+        default: 'UNITED STATES'
 
 permissions:
   contents: write
@@ -36,8 +36,7 @@ jobs:
           COUNTRY: ${{ github.event.inputs.country }}
         run: |
           OUTPUT_FILE="output_8_agents.txt"
-          TO_DATE="$(date -u +%Y-%m-%d)"
-          FROM_DATE="$(date -u -d "${TO_DATE} -5 years" +%Y-%m-%d)"
+          TODAY="$(date -u +%Y-%m-%d)"
           : > "$OUTPUT_FILE"
 
           AGENT_IDS=(
@@ -51,7 +50,7 @@ jobs:
             "f77e47d9-7cbb-4bdb-aced-346affe0f2c7"
           )
 
-          echo "Run inputs: Ticker=${STOCK_TICKER} | Company=${COMPANY_NAME} | Country=${COUNTRY} | From=${FROM_DATE} | To=${TO_DATE}" >> "$OUTPUT_FILE"
+          echo "Run inputs: Ticker=${STOCK_TICKER} | Company=${COMPANY_NAME} | Country=${COUNTRY} | Date=${TODAY}" >> "$OUTPUT_FILE"
           echo "" >> "$OUTPUT_FILE"
 
           for i in "${!AGENT_IDS[@]}"; do
@@ -59,34 +58,21 @@ jobs:
             AGENT_ID="${AGENT_IDS[$i]}"
             echo "===== Beas Corporate Governance Agent #${N} (${AGENT_ID}) =====" | tee -a "$OUTPUT_FILE"
 
-            PAYLOAD=$(jq -n \
-              --arg agent_id "$AGENT_ID" \
-              --arg ticker "$STOCK_TICKER" \
-              --arg company "$COMPANY_NAME" \
-              --arg country "$COUNTRY" \
-              --arg from_date "$FROM_DATE" \
-              --arg to_date "$TO_DATE" \
-              '{
-                user_index: 124,
-                agent_id: $agent_id,
-                metadata: {
-                  WRITING_STYLES: ["tabular"],
-                  autoAddUpcoming: false,
-                  context_company_name: [$company],
-                  form_types_by_ticker: { ($ticker): [] },
-                  from_date: $from_date,
-                  internet: "On",
-                  myDataFiles: [],
-                  stock_company_name: [$company],
-                  stock_country: [$country],
-                  stock_ticker: [$ticker],
-                  time_period_unit: "Year",
-                  time_period_value: "5",
-                  timezone: "Asia/Calcutta",
-                  to_date: $to_date,
-                  urls: []
-                }
-              }')
+            PAYLOAD=$(cat <<EOF
+          {
+            "user_index": 124,
+            "agent_library_id": "${AGENT_ID}",
+            "metadata": {
+              "stock_ticker": "${STOCK_TICKER}",
+              "stock_company_name": "${COMPANY_NAME}",
+              "context_company_name": "${COMPANY_NAME}",
+              "stock_country": "${COUNTRY}",
+              "to_date": "${TODAY}",
+              "timezone": "UTC"
+            }
+          }
+          EOF
+          )
 
             RESPONSE=$(curl -sS -X POST 'https://devde.muns.io/agents/run' \
               -H 'accept: */*' \

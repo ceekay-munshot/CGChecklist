@@ -7,6 +7,14 @@ on:
         description: 'Stock ticker symbol'
         required: true
         default: 'NVDA'
+      company_name:
+        description: 'Company name'
+        required: true
+        default: 'NVIDIA Corporation'
+      country:
+        description: 'Country (full name, e.g. UNITED STATES, INDIA)'
+        required: true
+        default: 'UNITED STATES'
 
 permissions:
   contents: write
@@ -24,8 +32,11 @@ jobs:
         env:
           MUNS_ACCESS_TOKEN: ${{ secrets.MUNS_ACCESS_TOKEN }}
           STOCK_TICKER: ${{ github.event.inputs.stock_ticker }}
+          COMPANY_NAME: ${{ github.event.inputs.company_name }}
+          COUNTRY: ${{ github.event.inputs.country }}
         run: |
           OUTPUT_FILE="output_8_agents.txt"
+          TODAY="$(date -u +%Y-%m-%d)"
           : > "$OUTPUT_FILE"
 
           AGENT_IDS=(
@@ -39,22 +50,35 @@ jobs:
             "f77e47d9-7cbb-4bdb-aced-346affe0f2c7"
           )
 
+          echo "Run inputs: Ticker=${STOCK_TICKER} | Company=${COMPANY_NAME} | Country=${COUNTRY} | Date=${TODAY}" >> "$OUTPUT_FILE"
+          echo "" >> "$OUTPUT_FILE"
+
           for i in "${!AGENT_IDS[@]}"; do
             N=$((i + 1))
             AGENT_ID="${AGENT_IDS[$i]}"
             echo "===== Beas Corporate Governance Agent #${N} (${AGENT_ID}) =====" | tee -a "$OUTPUT_FILE"
 
+            PAYLOAD=$(cat <<EOF
+          {
+            "user_index": 124,
+            "agent_library_id": "${AGENT_ID}",
+            "metadata": {
+              "stock_ticker": "${STOCK_TICKER}",
+              "stock_company_name": "${COMPANY_NAME}",
+              "context_company_name": "${COMPANY_NAME}",
+              "stock_country": "${COUNTRY}",
+              "to_date": "${TODAY}",
+              "timezone": "UTC"
+            }
+          }
+          EOF
+          )
+
             RESPONSE=$(curl -sS -X POST 'https://devde.muns.io/agents/run' \
               -H 'accept: */*' \
               -H "Authorization: Bearer ${MUNS_ACCESS_TOKEN}" \
               -H 'Content-Type: application/json' \
-              -d "{
-                \"user_index\": 124,
-                \"agent_library_id\": \"${AGENT_ID}\",
-                \"metadata\": {
-                  \"stock_ticker\": \"${STOCK_TICKER}\"
-                }
-              }")
+              -d "$PAYLOAD")
 
             echo "$RESPONSE" >> "$OUTPUT_FILE"
             echo "" >> "$OUTPUT_FILE"

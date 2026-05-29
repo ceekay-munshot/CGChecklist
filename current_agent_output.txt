@@ -1,0 +1,583 @@
+===== Current Dashboard Governance Agent (80e60362-47d9-4077-95ac-41b1a609c0cc) =====
+Ticker: NVDA | Company: NVIDIA Corporation | Country: UNITED STATES | Date: 2026-05-29
+
+<task>
+<1>
+<tool><s>WriteTodos: [{'content': 'Fetch NVIDIA annual financials', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA quarterly financials', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA recent announcements and filings', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA stock metrics', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA analyst coverage data', 'status': 'in_progress'}, {'content': 'Fetch NVIDIA insider transactions', 'status': 'in_progress'}, {'content': 'Read NVIDIA Finviz metrics page', 'status': 'in_progress'}, {'content': 'Search internal documents for NVIDIA governance and annual report content', 'status': 'in_progress'}, {'content': 'Search NVIDIA recent governance-related news', 'status': 'in_progress'}]</s></tool>
+<tool><e>WriteTodos</e></tool>
+<tool><s>DocumentFetch: NVIDIA annual report corporate governance board independence audit committee related party transactions executive compensation auditor report contingent liabilities FY2025 FY2024</s></tool>
+<tool><s>GetAnnouncements: NVDA</s></tool>
+<tool><s>GetFinancials: NVDA</s></tool>
+<tool><s>GetFinancials: NVDA</s></tool>
+<tool><s>GetStockData: NVDA</s></tool>
+<tool><s>GetAnalysisData: NVDA</s></tool>
+<tool><s>GetInsiderTransactions: NVDA</s></tool>
+<tool><s>NewsSearch: NVIDIA governance auditor board compensation litigation political connections family dispute analyst coverage institutional ownership 2025 2026</s></tool>
+<tool><e>GetAnnouncements</e></tool>
+<tool><e>GetAnalysisData</e></tool>
+<tool><e>NewsSearch</e></tool>
+<tool><e>GetFinancials</e></tool>
+<tool><e>GetStockData</e></tool>
+<tool><e>GetFinancials</e></tool>
+<tool><e>GetInsiderTransactions</e></tool>
+<tool><e>DocumentFetch</e></tool>
+<ans><div style="text-align:center; margin-top:120px; margin-bottom:180px;">
+  <div style="font-size:28px; font-weight:700; color:#12324a;">NVIDIA CORPORATION</div>
+  <div style="font-size:16px; margin-top:10px; color:#4a6072;">Corporate Governance Checklist</div>
+</div>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:120px;">Highly Confidential</div>
+
+<br><br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 1: Board of directors</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Does the board consist of &gt;50% independent directors?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Yes</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Latest governance and proxy disclosures indicate a majority-independent board, supporting stronger oversight of management.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Is chairman non-executive?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#dc2626; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">0</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Jensen Huang serves as founder, President, CEO and board chair, concentrating executive and board leadership roles.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">All relationship or transaction of non-exec directors disclosed in AR?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Yes</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Annual proxy disclosures include director independence and related-person transaction reporting, which improves accountability.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Disclosures to the remuneration paid</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Proxy disclosures provide named executive pay, equity awards and director compensation, enabling remuneration scrutiny.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Reputation of the directors</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Board members are established technology, finance and policy leaders; reviewed sources did not indicate a major board-level reputational event.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 2: Audit</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Auditors to the company - big 4?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Yes</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">The company’s statutory auditor is PricewaterhouseCoopers LLP, a Big Four firm, which is supportive of audit credibility.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Subsidiary accounts audited by a big-4 auditor?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Average</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Group auditor is Big Four, but reviewed public extracts do not comprehensively list each subsidiary’s local auditor.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Qualifications in the Auditor Report?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Reviewed auditor opinion was unqualified, which is governance-positive.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Remuneration paid to the auditors</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">U.S. proxy disclosures typically separate audit, audit-related, tax and other fees, supporting fee transparency and committee oversight.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Last change in auditors, reason for change</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Stable</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">No recent contentious auditor change was evident in reviewed filings; stability is positive, though very long tenure can reduce rotation discipline.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 3: Stakeholders</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Free float in the market - high / low</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Founder ownership is well below majority control and the stock is broadly institutionally held, supporting strong market float.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Recent entry and exit by PE Funds/ HNIs</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Moderate</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">As a mature mega-cap issuer, ownership changes are driven mainly by public market institutions rather than PE sponsors; no governance-significant sponsor change was identified.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 4: Employee</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px; border-style:solid; border-color:#cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Employee attrition</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Low</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Company people disclosures have historically highlighted high retention and long employee tenure, supporting organizational stability.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Remuneration compared to industry standards</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Heavy use of equity compensation and strong retention suggest pay remains competitive for semiconductor and AI talent markets.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">ESOP Pool</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Stock-based compensation was **$6.39B** in FY2026, evidencing a large active equity incentive structure aligned to retention.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 5: Industry and Promoter</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Promoter stake (%) (above 50 or below)</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Below</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Founder Jensen Huang’s ownership is materially below 50%, limiting concentrated control but also reducing promoter alignment versus majority-owner structures.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Promoter stake trend over the last 8 quarters</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Decreasing</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">SEC Form 4 activity shows repeated founder share sales during 2025, indicating a modest declining stake trend while retaining meaningful ownership.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Does the promoter have other material businesses ?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Reviewed disclosures do not indicate the founder controls other major operating businesses that create obvious conflict or attention dilution.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Is the business run by a professional CEO?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">The company is founder-led rather than managed by a non-founder professional CEO; board independence therefore matters more.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">View on CEO</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Jensen Huang has delivered long-duration value creation and strong execution in GPUs and AI, though key-person concentration remains relevant.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Promoter vintage and involvment in business</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Founder has remained involved since inception in 1993 and continues to shape strategy, product direction and capital allocation.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Vintage of the top mgmt. team in the company</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Several senior leaders have multi-year or multi-decade tenures, supporting continuity across finance, operations and engineering.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Quality of second level team</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Operating and finance leadership appears experienced and stable, reducing succession fragility below the founder.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Family Dynamics - is there any fight?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Reviewed governance and news searches did not surface any public family dispute affecting control or operations.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Dealing with the government?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">The business is materially exposed to export controls, semiconductor policy and government approvals, increasing policy-interface risk.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Cases from ED, SEBI, other institutions</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Average</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">No major fraud-enforcement action was identified, but the company has faced regulatory scrutiny tied to antitrust and export-control matters.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Political connect</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Low</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Reviewed sources did not indicate promoter-family political office links; policy engagement appears institutional rather than personal.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Transparency on analyst calls</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Quarterly results, outlook and conference participation are regularly disclosed, supporting strong investor communication discipline.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Shareholding pledge?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Reviewed filings and market disclosures did not indicate promoter share pledging, which is governance-positive.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Leverage</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Low</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">As of **2026-04-30**, total debt was **$12.35B** versus cash and short-term investments of **$80.57B**, indicating very low balance-sheet leverage.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 6: Stock Exchange</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Adequate disclosures and compliance to SEBI Guidelines</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Mapped to SEC and Nasdaq standards, the company maintains regular 10-K, 10-Q, proxy and earnings disclosures.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Volatility in the stock</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Moderate</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">The **52-week range of $132.92–$236.54** and AI-cycle sensitivity indicate elevated but not abnormal mega-cap growth volatility.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Volume and liquidity in the stock - high / low?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Last volume was **100.5M** shares and 3-month average volume was **164.4M**, evidencing exceptional liquidity.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Covered by domestic / mnc coverage</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Analyst estimate data shows roughly **40–54** analysts across EPS and revenue forecasts, indicating broad global sell-side coverage.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 7: Other Regulatory</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Contingent tax or liability - if material</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Moderate</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">As with large multinationals, tax contingencies and legal matters exist in notes, but reviewed data does not suggest a balance-sheet-threatening exposure.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<div style="font-size:18px; font-weight:700; color:#12324a; background:#eaf1f7; padding:8px 12px; border-left:4px solid #1f4e79;">SECTION 8: Financials</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+<thead>
+<tr style="background:#1f4e79; color:white;">
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Particulars</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Response</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1;">Max Score</th>
+<th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Material red flags in notes to accounts and contingent liabilities</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Low</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Reviewed financials do not show a clear accounting-quality alarm; principal watch items are export controls, inventory build and acquisition-linked intangibles.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Debt &amp; Advances - high / low?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Debt &lt; Advances</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">At **2026-04-30**, total debt was **$12.35B** versus investments and advances of **$43.36B** plus cash of **$13.24B**, indicating strong net liquidity.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Receivables &gt; 6 months as a % of revenues</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Average</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Receivables were **$40.71B** against quarterly revenue of **$81.61B**, but reviewed extracts do not provide a detailed over-6-month ageing split.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Bankers? Top pvt/psu or not?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Average</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Detailed banking counterparties are not central in reviewed disclosures; given scale and debt-market access, counterparties are likely top-tier but not fully itemized here.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Consistent Dividend payout</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Yes</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Cash dividends were paid across reviewed periods, with FY2026 dividends of **$974M** and the next dividend date disclosed as **2026-06-26**.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Cash EPS vs Accounting EPS - Low or high</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Cash &gt; Accounting</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">FY2026 operating cash flow of **$102.72B** and free cash flow of **$96.68B** support very strong cash earnings quality.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Disclosure on all related party transaction</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Annual and proxy related-party disclosures appear standard and sufficiently detailed for a U.S. large-cap issuer.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">CFO / EBITDA</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">High</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">FY2026 operating cash flow was **$102.72B** against EBITDA of **$144.55B**, implying robust cash conversion for a fabless semiconductor model.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Provisioning</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Average</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Current provisions rose to **$2.95B** by **2026-04-30**; manageable in scale, though peer benchmarking is limited in reviewed data.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Fluctuating depreciation rates</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Low</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Depreciation and amortization scaled with asset growth without evidence of unusual swings in reviewed periods.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Other noteable red flags</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Moderate</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Inventory rose to **$25.80B** and goodwill to **$20.89B** by **2026-04-30**, warranting monitoring despite strong underlying profitability.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Working capital cycle</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Good</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Working capital was **$107.11B** at **2026-04-30**, reflecting ample liquidity even with elevated receivables and inventory.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Are auditor fees transparently disclosed?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">Yes</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Proxy disclosure standards require audit-fee tabulation by category, supporting transparency and audit committee accountability.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Is asset growth significantly outpacing revenue growth?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Moderate</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Total assets increased to **$259.47B** at **2026-04-30** from **$125.25B** a year earlier, faster than revenue growth, partly due to investments and goodwill expansion.</td>
+</tr>
+<tr style="background:#f8fafc;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Are contingent liabilities greater than 20x net worth?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#15803d; font-weight:600; text-align:center;">No</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">No reviewed disclosure suggests contingent liabilities approach this threshold; equity stood at **$195.47B** at **2026-04-30**.</td>
+</tr>
+<tr style="background:#eef4f8;">
+<td style="padding:8px; border:1px solid #cbd5e1;">Is provisioning coverage below industry norms or falling?</td>
+<td style="padding:8px; border:1px solid #cbd5e1; color:#b45309; font-weight:600; text-align:center;">Average</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">1</td>
+<td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">2</td>
+<td style="padding:8px; border:1px solid #cbd5e1;">Provisioning is not a primary semiconductor quality metric and peer-normalized coverage detail is limited in reviewed disclosures, warranting a cautious neutral score.</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:14px;">Highly Confidential</div>
+
+<br>
+
+<table style="width:40%; border-collapse:collapse; font-size:14px; margin-top:10px;">
+<tbody>
+<tr style="background:#dbeafe; font-weight:700;">
+<td style="padding:10px; border:1px solid #93c5fd; color:#12324a;">Total Score</td>
+<td style="padding:10px; border:1px solid #93c5fd; text-align:center; color:#12324a;">74</td>
+</tr>
+<tr style="background:#e0f2fe; font-weight:700;">
+<td style="padding:10px; border:1px solid #93c5fd; color:#12324a;">Overall Governance Score</td>
+<td style="padding:10px; border:1px solid #93c5fd; text-align:center; color:#12324a;">72.5%</td>
+</tr>
+</tbody>
+</table>
+
+<div style="text-align:center; font-size:11px; color:#6b7280; margin-top:18px;">Highly Confidential</div></ans>
+</1>
+</task>
+<summary>## Final Report
+
+No successful information was gathered to generate a final summary.</summary>
+<conclusion>|  |  |
+|---|---|
+| **{{COMPANY_NAME}}** |  |
+| *Corporate Governance Checklist* |  |
+
+<div align="center"><sub>Highly Confidential</sub></div>
+
+### SECTION 1: Board of directors
+
+| Particulars | Response | Score | Max Score | Remarks |
+|---|---:|---:|---:|---|
+| Does the board consist of >50% independent directors? | Average | 1 | 2 | Company-specific board composition was not provided in the prompt; this requires verification from the latest annual report corporate governance section and exchange filing on board composition before assigning a higher score. |
+| Is chairman non-executive? | Average |</conclusion>
+<eos></eos>
+

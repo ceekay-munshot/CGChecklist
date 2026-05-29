@@ -1,0 +1,77 @@
+name: Beas Corporate Governance Agents
+
+on:
+  workflow_dispatch:
+    inputs:
+      stock_ticker:
+        description: 'Stock ticker symbol'
+        required: true
+        default: 'NVDA'
+
+permissions:
+  contents: write
+
+jobs:
+  run-agents:
+    runs-on: ubuntu-latest
+    name: Run 8 Beas Corporate Governance Agents
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Run Beas Corporate Governance Agents
+        env:
+          MUNS_ACCESS_TOKEN: ${{ secrets.MUNS_ACCESS_TOKEN }}
+          STOCK_TICKER: ${{ github.event.inputs.stock_ticker }}
+        run: |
+          OUTPUT_FILE="output_8_agents.txt"
+          : > "$OUTPUT_FILE"
+
+          AGENT_IDS=(
+            "022241e5-86c4-492b-a614-43990da3b841"
+            "df618c18-0ade-498e-ba18-c7f25acbf87a"
+            "8c5187ca-447b-417f-b560-3b9684ffdd0c"
+            "465b6afd-90b0-4bc3-8ac8-4f59a80e05f8"
+            "34c938db-41cb-4406-b358-53e314fed6f8"
+            "bd38310a-46fd-49a2-b973-3f19c37135e7"
+            "a6acebb8-4355-4915-8234-269b2b35ab6b"
+            "f77e47d9-7cbb-4bdb-aced-346affe0f2c7"
+          )
+
+          for i in "${!AGENT_IDS[@]}"; do
+            N=$((i + 1))
+            AGENT_ID="${AGENT_IDS[$i]}"
+            echo "===== Beas Corporate Governance Agent #${N} (${AGENT_ID}) =====" | tee -a "$OUTPUT_FILE"
+
+            RESPONSE=$(curl -sS -X POST 'https://devde.muns.io/agents/run' \
+              -H 'accept: */*' \
+              -H "Authorization: Bearer ${MUNS_ACCESS_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d "{
+                \"user_index\": 124,
+                \"agent_library_id\": \"${AGENT_ID}\",
+                \"metadata\": {
+                  \"stock_ticker\": \"${STOCK_TICKER}\"
+                }
+              }")
+
+            echo "$RESPONSE" >> "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+            echo "Completed Beas Corporate Governance Agent #${N}"
+            echo "" >> "$OUTPUT_FILE"
+          done
+
+          echo "All Beas Corporate Governance agents completed." | tee -a "$OUTPUT_FILE"
+
+      - name: Commit output to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output_8_agents.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update output_8_agents.txt from Beas Corporate Governance run (${{ github.event.inputs.stock_ticker }})"
+            git push origin main
+          fi

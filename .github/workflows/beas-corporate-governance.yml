@@ -67,6 +67,7 @@ jobs:
               --arg from_date "$FROM_DATE" \
               --arg to_date "$TO_DATE" \
               '{
+                user_index: 124,
                 agent_id: $agent_id,
                 metadata: {
                   WRITING_STYLES: ["tabular"],

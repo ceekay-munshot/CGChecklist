@@ -1,0 +1,42 @@
+name: Auditor Opinion Agent
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-auditor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Call Auditor Opinion agent
+        env:
+          MUNS_ACCESS_TOKEN: ${{ secrets.MUNS_ACCESS_SECRET }}
+        run: |
+          curl -sS -X POST 'https://devde.muns.io/agents/run' \
+            -H 'accept: */*' \
+            -H "Authorization: Bearer ${MUNS_ACCESS_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "user_index": 124,
+              "agent_library_id": "0789b5f8-48f2-49db-9490-399dcdc294ba",
+              "metadata": {
+                "stock_ticker": "NVDA"
+              }
+            }' \
+            -o auditor_agent.txt
+
+      - name: Commit and push output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add auditor_agent.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: update auditor_agent.txt"
+            git push origin HEAD:main
+          fi

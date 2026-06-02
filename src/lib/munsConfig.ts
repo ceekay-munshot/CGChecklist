@@ -1,5 +1,7 @@
 export const MUNS_API_BASE = "https://birdnest.muns.io";
 
+export const MUNS_USER_INDEX = 124;
+
 export interface GovernanceSection {
   index: number;
   title: string;

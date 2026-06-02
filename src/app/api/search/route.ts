@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { CompanySuggestion } from "@/lib/types/search";
+import { MUNS_USER_INDEX } from "@/lib/munsConfig";
 
 const BIRDNEST_SEARCH_URL = "https://devde.muns.io/stock/search";
 
@@ -82,7 +83,7 @@ const fetchBirdnest = async (
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ user_index: MUNS_USER_INDEX, query }),
       signal: controller.signal,
     });
     if (!res.ok) {

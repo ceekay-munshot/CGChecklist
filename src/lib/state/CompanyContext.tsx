@@ -108,7 +108,9 @@ export function CompanyProvider({
 
     setState((prev) => {
       const status: DataStatus = result.ok ? "ready" : "error";
-      const newRaw = result.ok ? result.raw : prev.munsRaw;
+      // Keep any raw payload that came back even on error so the dashboard
+      // debug panel can show what the upstream returned.
+      const newRaw = result.raw || (result.ok ? "" : prev.munsRaw);
       const diff = result.ok ? diffMuns(previousRaw, result.raw) : null;
       return {
         ...prev,

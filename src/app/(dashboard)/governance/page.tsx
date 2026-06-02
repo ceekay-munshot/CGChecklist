@@ -56,9 +56,19 @@ export default function GovernancePage() {
         {munsError && (
           <div className="mt-4 rounded-[var(--radius-control)] border border-[var(--color-risk-100)] bg-[var(--color-risk-50)] p-4 text-[13px] leading-relaxed text-[var(--color-risk-700)]">
             <div className="mb-1 font-semibold">MUNS API request failed</div>
-            <pre className="whitespace-pre-wrap break-words font-mono text-[12px]">
+            <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-white/60 p-2 font-mono text-[12px]">
               {munsError}
             </pre>
+            {munsRaw && (
+              <>
+                <div className="mt-3 mb-1 font-semibold">
+                  Partial combined response from /api/muns/run ({munsRaw.length} chars):
+                </div>
+                <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-white/60 p-2 font-mono text-[12px]">
+                  {munsRaw}
+                </pre>
+              </>
+            )}
           </div>
         )}
 
@@ -68,12 +78,11 @@ export default function GovernancePage() {
               Response returned but no governance rows parsed
             </div>
             <div className="mb-2">
-              MUNS responded successfully but the parser produced 0 rows. First
-              1,000 characters of the raw response:
+              MUNS responded successfully but the parser produced 0 rows. Full
+              raw response from /api/muns/run ({munsRaw.length} chars):
             </div>
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-white/60 p-2 font-mono text-[12px]">
-              {munsRaw.slice(0, 1000)}
-              {munsRaw.length > 1000 ? `\n… (${munsRaw.length} chars total)` : ""}
+            <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-white/60 p-2 font-mono text-[12px]">
+              {munsRaw}
             </pre>
           </div>
         )}

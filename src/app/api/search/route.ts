@@ -69,7 +69,7 @@ const rankSuggestions = (
 const fetchBirdnest = async (
   query: string,
 ): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
-  const token = process.env.MUNS_BEARER_TOKEN;
+  const token = process.env.TEMPORARY_TOKEN;
   if (!token) {
     return { suggestions: [], debug: "birdnest -> no token" };
   }

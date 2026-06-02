@@ -1,6 +1,4 @@
-export const MUNS_API_BASE = "https://devde.muns.io";
-
-export const MUNS_USER_INDEX = 124;
+export const MUNS_API_BASE = "https://birdnest.muns.io";
 
 export interface GovernanceSection {
   index: number;

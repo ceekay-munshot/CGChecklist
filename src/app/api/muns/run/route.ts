@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   MUNS_API_BASE,
-  MUNS_USER_INDEX,
   GOVERNANCE_SECTIONS,
   GOVERNANCE_PARALLEL_BATCH_SIZE,
   type GovernanceSection,
@@ -40,7 +39,6 @@ const buildPayload = (
   country: string,
   today: string,
 ) => ({
-  user_index: MUNS_USER_INDEX,
   agent_library_id: section.agentLibraryId,
   metadata: {
     stock_ticker: ticker.toUpperCase(),
@@ -127,10 +125,10 @@ const combine = (companyName: string, results: SectionResult[]): string => {
 };
 
 export async function POST(request: Request) {
-  const token = process.env.MUNS_BEARER_TOKEN;
+  const token = process.env.TEMPORARY_TOKEN;
   if (!token) {
     return NextResponse.json(
-      { ok: false, raw: "", error: "MUNS_BEARER_TOKEN not configured." },
+      { ok: false, raw: "", error: "TEMPORARY_TOKEN not configured." },
       { status: 500 },
     );
   }

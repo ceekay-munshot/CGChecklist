@@ -28,12 +28,12 @@ export function GovernanceExportButton({ rows, fileBaseName }: Props) {
 
       const buffer = await buildGovernanceWorkbook({
         rows,
-        company: state.identity.name || "Sample Company",
+        company: state.identity.name || "Untitled",
         ticker: state.identity.ticker || "—",
         exchange: state.identity.exchange || "—",
         country: state.identity.country || "—",
         reportDate,
-        dataSource: isLive ? "Live MUNS analysis" : "Sample data",
+        dataSource: isLive ? "Live MUNS analysis" : "Live MUNS analysis (stale)",
       });
 
       const blob = new Blob([buffer], {

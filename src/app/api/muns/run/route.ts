@@ -71,63 +71,154 @@ const runSection = async (
   return { section, raw, status: upstream.status };
 };
 
-const SUMMARY_ROW_RE = /^(total\s+score|overall\s+governance\s+score)$/i;
+// ---------- Body extraction ----------
 
-const dropSummaryRows = (html: string): string =>
-  html.replace(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi, (tr) => {
-    const firstCell = tr.match(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/i);
-    if (!firstCell) return tr;
-    const text = firstCell[1].replace(/<[^>]+>/g, "").trim();
-    return SUMMARY_ROW_RE.test(text) ? "" : tr;
-  });
-
-// Walk a JSON value and collect any string leaves that look like they might
-// contain an HTML body (have angle-bracket markup). Returns the longest one
-// — agent responses sometimes nest the content several keys deep.
-const collectHtmlCandidates = (value: unknown, out: string[]): void => {
+// Walk a parsed JSON value and collect every string leaf that contains
+// markup or markdown table syntax — agent envelopes nest the content a few
+// keys deep. The longest candidate is used as the working body.
+const collectContentCandidates = (value: unknown, out: string[]): void => {
   if (typeof value === "string") {
-    if (/<\/?[a-zA-Z][^>]*>/.test(value)) out.push(value);
+    if (/<\/?[a-zA-Z]|\|.+\|/.test(value)) out.push(value);
     return;
   }
   if (Array.isArray(value)) {
-    for (const item of value) collectHtmlCandidates(item, out);
+    for (const item of value) collectContentCandidates(item, out);
     return;
   }
   if (value && typeof value === "object") {
-    for (const v of Object.values(value)) collectHtmlCandidates(v, out);
+    for (const v of Object.values(value)) collectContentCandidates(v, out);
   }
 };
 
-// Best-effort body extraction. The MUNS agent endpoint may return either
-// raw text containing <ans>…</ans> or a JSON envelope whose payload string
-// contains the markup. Try JSON first, fall back to the raw string.
-const extractHtmlBody = (raw: string): string => {
+const extractBody = (raw: string): string => {
   const trimmed = raw.trim();
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {
       const parsed = JSON.parse(trimmed);
       const candidates: string[] = [];
-      collectHtmlCandidates(parsed, candidates);
+      collectContentCandidates(parsed, candidates);
       if (candidates.length > 0) {
         candidates.sort((a, b) => b.length - a.length);
         return candidates[0];
       }
     } catch {
-      /* fall through to raw */
+      /* fall through */
     }
   }
   return raw;
 };
 
-const extractAnsInner = (body: string): string => {
+// Strip streaming tool-call / citation / graph wrappers so they don't pollute
+// table extraction. Patterns mirror MunsRenderer's NOISE_PATTERNS + tag list.
+// Strip streaming tool-call wrappers but keep <task>/<ans> markers — the
+// <ans> block is nested inside <task>, so removing <task>…</task> would
+// throw the answer out with the noise.
+const stripStreamNoise = (raw: string): string =>
+  raw
+    .replace(/<tool\b[\s\S]*?<\/tool>/gi, "")
+    .replace(/<docsource\b[\s\S]*?<\/docsource>/gi, "")
+    .replace(/<\/?docsource\b[^>]*>/gi, "")
+    .replace(/<graph\b[\s\S]*?<\/graph>/gi, "");
+
+const unwrapAns = (body: string): string => {
   const match = body.match(/<ans>([\s\S]*?)<\/ans>/i);
   return match ? match[1] : body;
 };
 
-const firstTable = (html: string): string => {
-  const match = html.match(/<table[\s\S]*?<\/table>/i);
-  return match ? match[0] : "";
+// ---------- Table extraction ----------
+
+interface CandidateTable {
+  html: string;
+  headers: string[];
+  bodyRowCount: number;
+  score: number;
+}
+
+const stripTagsForText = (html: string): string =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const SUMMARY_ROW_RE = /^(total\s*score|overall(\s+governance)?\s+score|subtotal|section\s+total)$/i;
+
+const scoreCandidate = (headers: string[], rowCount: number): number => {
+  const lower = headers.map((h) => h.toLowerCase());
+  const has = (kw: string) => lower.some((h) => h.includes(kw));
+  let score = 0;
+  // Particulars / question column is the strongest indicator we have the
+  // right table.
+  if (has("particular")) score += 100;
+  else if (has("question") || has("criterion") || has("criteria")) score += 80;
+  if (has("response") || has("answer") || has("verdict")) score += 40;
+  if (has("score")) score += 25;
+  if (has("max")) score += 10;
+  if (has("remark") || has("comment") || has("rationale") || has("source")) score += 10;
+  // Reward tables with a reasonable number of detail rows, penalise tiny
+  // summary tables (which usually have 1-3 rows).
+  score += Math.min(rowCount, 25);
+  return score;
 };
+
+// ---- HTML tables ----
+
+const parseHtmlTableHeaders = (tableHtml: string): { headers: string[]; rowCount: number } => {
+  const rows = tableHtml.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
+  if (rows.length === 0) return { headers: [], rowCount: 0 };
+  // Prefer headers from a <thead>; otherwise first <tr> with <th>; otherwise first <tr>.
+  const theadMatch = tableHtml.match(/<thead\b[^>]*>[\s\S]*?<\/thead>/i);
+  let headerRowHtml = "";
+  if (theadMatch) {
+    const tr = theadMatch[0].match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/i);
+    headerRowHtml = tr?.[1] ?? "";
+  }
+  if (!headerRowHtml) {
+    const thRow = rows.find((r) => /<th\b/i.test(r));
+    if (thRow) {
+      headerRowHtml = thRow.replace(/^<tr\b[^>]*>/i, "").replace(/<\/tr>$/i, "");
+    }
+  }
+  if (!headerRowHtml && rows[0]) {
+    headerRowHtml = rows[0].replace(/^<tr\b[^>]*>/i, "").replace(/<\/tr>$/i, "");
+  }
+  const cells = headerRowHtml.match(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi) || [];
+  const headers = cells.map((c) => stripTagsForText(c));
+  // Body rows = total tr - 1 for header (approximately).
+  const rowCount = Math.max(0, rows.length - 1);
+  return { headers, rowCount };
+};
+
+const findHtmlCandidates = (html: string): CandidateTable[] => {
+  const out: CandidateTable[] = [];
+  const matches = html.match(/<table\b[\s\S]*?<\/table>/gi) || [];
+  for (const t of matches) {
+    const { headers, rowCount } = parseHtmlTableHeaders(t);
+    if (headers.length === 0) continue;
+    out.push({
+      html: t,
+      headers,
+      bodyRowCount: rowCount,
+      score: scoreCandidate(headers, rowCount),
+    });
+  }
+  return out;
+};
+
+// ---- Markdown tables ----
+
+const splitMarkdownRow = (row: string): string[] =>
+  row
+    .replace(/^\s*\|/, "")
+    .replace(/\|\s*$/, "")
+    .split("|")
+    .map((c) => c.replace(/\*\*/g, "").trim());
+
+const isMarkdownSeparator = (line: string): boolean =>
+  /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line);
 
 const escapeHtml = (s: string): string =>
   s
@@ -135,22 +226,92 @@ const escapeHtml = (s: string): string =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
+const markdownTableToHtml = (
+  headerLine: string,
+  bodyLines: string[],
+): { html: string; headers: string[]; rowCount: number } => {
+  const headers = splitMarkdownRow(headerLine);
+  const cellsByRow = bodyLines.map(splitMarkdownRow);
+  const headHtml = `<thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>`;
+  const bodyHtml = `<tbody>${cellsByRow
+    .map((row) => {
+      const padded = row.length < headers.length ? [...row, ...Array(headers.length - row.length).fill("")] : row;
+      return `<tr>${padded
+        .slice(0, headers.length)
+        .map((c) => `<td>${escapeHtml(c)}</td>`)
+        .join("")}</tr>`;
+    })
+    .join("")}</tbody>`;
+  return {
+    html: `<table>${headHtml}${bodyHtml}</table>`,
+    headers,
+    rowCount: cellsByRow.length,
+  };
+};
+
+const findMarkdownCandidates = (text: string): CandidateTable[] => {
+  const out: CandidateTable[] = [];
+  const lines = text.split("\n");
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.includes("|") && i + 1 < lines.length && isMarkdownSeparator(lines[i + 1])) {
+      const headerLine = line;
+      const bodyLines: string[] = [];
+      let j = i + 2;
+      while (j < lines.length) {
+        const bl = lines[j];
+        if (!bl.includes("|") || isMarkdownSeparator(bl)) break;
+        if (bl.trim() === "") break;
+        bodyLines.push(bl);
+        j++;
+      }
+      if (bodyLines.length > 0) {
+        const { html, headers, rowCount } = markdownTableToHtml(headerLine, bodyLines);
+        out.push({
+          html,
+          headers,
+          bodyRowCount: rowCount,
+          score: scoreCandidate(headers, rowCount),
+        });
+      }
+      i = j;
+      continue;
+    }
+    i++;
+  }
+  return out;
+};
+
+const pickBestTable = (body: string): CandidateTable | null => {
+  const candidates = [...findHtmlCandidates(body), ...findMarkdownCandidates(body)];
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0];
+};
+
+const dropSummaryRows = (html: string): string =>
+  html.replace(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi, (tr) => {
+    const firstCell = tr.match(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/i);
+    if (!firstCell) return tr;
+    const text = stripTagsForText(firstCell[1]);
+    return SUMMARY_ROW_RE.test(text) ? "" : tr;
+  });
+
+// ---------- Combine ----------
+
 const extractSectionTable = (
   raw: string,
-): { table: string; debug: string | null } => {
-  const body = extractHtmlBody(raw);
-  const inner = extractAnsInner(body);
-  const cleaned = dropSummaryRows(inner);
-  const table = firstTable(cleaned);
-  if (table) return { table, debug: null };
-  // Couldn't find a table — preserve a snippet of the raw body for the
-  // dashboard's parse-error panel. Strip script/style for safety.
-  const snippet = body
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .trim()
-    .slice(0, 1200);
-  return { table: "", debug: snippet };
+): { table: string; debug: string | null; headers: string[]; rowCount: number } => {
+  const body = stripStreamNoise(extractBody(raw));
+  const search = unwrapAns(body);
+  const best = pickBestTable(search) ?? pickBestTable(body); // try with and without unwrapping
+  if (!best) {
+    const snippet = body.replace(/<style[\s\S]*?<\/style>/gi, "").trim().slice(0, 1500);
+    return { table: "", debug: snippet, headers: [], rowCount: 0 };
+  }
+  const cleaned = dropSummaryRows(best.html);
+  return { table: cleaned, debug: null, headers: best.headers, rowCount: best.bodyRowCount };
 };
 
 const combine = (companyName: string, results: SectionResult[]): string => {
@@ -171,16 +332,17 @@ const combine = (companyName: string, results: SectionResult[]): string => {
       ``,
     );
     if (!result) {
-      parts.push(
-        `<p><strong>No response captured for agent ${section.agentLibraryId}.</strong></p>`,
-      );
+      parts.push(`<p><strong>No response captured for agent ${section.agentLibraryId}.</strong></p>`);
     } else {
-      const { table, debug } = extractSectionTable(result.raw);
+      const { table, debug, headers, rowCount } = extractSectionTable(result.raw);
       if (table) {
-        parts.push(table);
+        parts.push(
+          `<!-- agent=${section.agentLibraryId} status=${result.status} headers=[${headers.join(" | ")}] rows=${rowCount} -->`,
+          table,
+        );
       } else {
         parts.push(
-          `<p><strong>No table parsed from agent ${section.agentLibraryId}</strong> (status ${result.status}).</p>`,
+          `<p><strong>No checklist table parsed from agent ${section.agentLibraryId}</strong> (HTTP ${result.status}, ${result.raw.length} chars).</p>`,
           `<pre style="white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:12px; background:#f7f9fc; padding:8px; border:1px solid #dde4ee; border-radius:6px;">${escapeHtml(
             debug ?? "(empty response body)",
           )}</pre>`,
@@ -195,6 +357,8 @@ const combine = (companyName: string, results: SectionResult[]): string => {
   }
   return `<ans>${parts.join("\n")}</ans>`;
 };
+
+// ---------- Handler ----------
 
 export async function POST(request: Request) {
   const token = process.env.TEMPORARY_TOKEN;
@@ -250,9 +414,6 @@ export async function POST(request: Request) {
       results.push(...batchResults);
     }
 
-    // Surface non-2xx upstream calls as an explicit error so the dashboard
-    // shows the "API error" panel rather than silently degrading to an
-    // empty parse-error state.
     const upstreamFailures = results.filter((r) => r.status < 200 || r.status >= 300);
     if (upstreamFailures.length > 0) {
       const summary = upstreamFailures

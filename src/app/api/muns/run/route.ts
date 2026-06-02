@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  MUNS_API_BASE,
-  GOVERNANCE_AGENT_UUID,
-  MUNS_USER_INDEX,
-} from "@/lib/munsConfig";
+import { MUNS_API_BASE, GOVERNANCE_AGENT_UUID } from "@/lib/munsConfig";
 
 const COUNTRY_CODE_TO_NAME: Record<string, string> = {
   IN: "INDIA",
@@ -27,10 +23,10 @@ interface RunRequest {
 }
 
 export async function POST(request: Request) {
-  const token = process.env.MUNS_BEARER_TOKEN;
+  const token = process.env.TEMPORARY_TOKEN;
   if (!token) {
     return NextResponse.json(
-      { ok: false, raw: "", error: "MUNS_BEARER_TOKEN not configured." },
+      { ok: false, raw: "", error: "TEMPORARY_TOKEN not configured." },
       { status: 500 },
     );
   }
@@ -60,7 +56,6 @@ export async function POST(request: Request) {
 
   const today = new Date().toISOString().slice(0, 10);
   const payload = {
-    user_index: MUNS_USER_INDEX,
     agent_library_id: GOVERNANCE_AGENT_UUID,
     metadata: {
       stock_ticker: ticker.toUpperCase(),

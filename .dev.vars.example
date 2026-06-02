@@ -3,10 +3,15 @@
 
 NEXTJS_ENV=development
 
-# MUNS bearer token — used server-side by /api/muns/run and /api/search to call
-# devde.muns.io / birdnest.muns.io. In production, set via:
+# MUNS bearer token — used server-side by /api/search to call birdnest.muns.io.
+# In production, set via:
 #   npx wrangler secret put MUNS_BEARER_TOKEN
 MUNS_BEARER_TOKEN=
+
+# Temporary token — used server-side by /api/muns/run to call the
+# birdnest.muns.io agents API. In production, set via:
+#   npx wrangler secret put TEMPORARY_TOKEN
+TEMPORARY_TOKEN=
 
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=

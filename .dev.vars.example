@@ -3,13 +3,8 @@
 
 NEXTJS_ENV=development
 
-# Temporary token — used server-side by /api/muns/run to call birdnest.muns.io
-# for governance agent runs. In production, set via:
-#   npx wrangler secret put TEMPORARY_TOKEN
-TEMPORARY_TOKEN=
-
-# MUNS bearer token — used server-side by /api/search to call devde.muns.io
-# for stock search. In production, set via:
+# MUNS bearer token — used server-side by /api/muns/run and /api/search to call
+# devde.muns.io. In production, set via:
 #   npx wrangler secret put MUNS_BEARER_TOKEN
 MUNS_BEARER_TOKEN=
 

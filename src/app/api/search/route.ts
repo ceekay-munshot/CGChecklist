@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { CompanySuggestion } from "@/lib/types/search";
 
-const BIRDNEST_SEARCH_URL = "https://birdnest.muns.io/stock/search";
+const BIRDNEST_SEARCH_URL = "https://devde.muns.io/stock/search";
 
 type BirdnestEntry = [string | null, string | null, string | null];
 
@@ -69,7 +69,7 @@ const rankSuggestions = (
 const fetchBirdnest = async (
   query: string,
 ): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
-  const token = process.env.TEMPORARY_TOKEN;
+  const token = process.env.MUNS_BEARER_TOKEN;
   if (!token) {
     return { suggestions: [], debug: "birdnest -> no token" };
   }

@@ -70,4 +70,6 @@ export interface CompanyState {
   dataSource: DataSource;
   storedAt: string | null;
   verifying: boolean;
+  // Live pipeline log lines shown on the progress screen during a run.
+  logs: string[];
 }

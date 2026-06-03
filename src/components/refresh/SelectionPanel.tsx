@@ -26,7 +26,7 @@ export function SelectionPanel() {
   const { state, setIdentity, refresh, unlockDashboard } = useCompany();
   const { entries } = useRefreshHistory();
   const { push } = useToast();
-  const { identity, status, progress } = state;
+  const { identity, status, progress, logs } = state;
 
   const isLoading = status === "loading";
   const showError =
@@ -114,6 +114,7 @@ export function SelectionPanel() {
                 companyName={identity.name}
                 ticker={identity.ticker}
                 elapsedMs={elapsedMs}
+                logs={logs}
               />
             ) : showSuccess ? (
               <SuccessBody
@@ -303,10 +304,12 @@ function ProgressBody({
   companyName,
   ticker,
   elapsedMs,
+  logs,
 }: {
   companyName: string;
   ticker: string;
   elapsedMs: number;
+  logs: string[];
 }) {
   const phaseIdx = currentPhaseIndex(elapsedMs);
   const percent = progressPercent(elapsedMs, false);
@@ -382,10 +385,36 @@ function ProgressBody({
         })}
       </ol>
 
+      {logs.length > 0 ? <LiveLogs logs={logs} /> : null}
+
       <p className="text-[11.5px] leading-relaxed text-[var(--color-fg-muted)]">
         Leave this tab open — the dashboard will appear automatically when the
         analysis lands.
       </p>
+    </div>
+  );
+}
+
+function LiveLogs({ logs }: { logs: string[] }) {
+  const endRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [logs.length]);
+  return (
+    <div className="rounded-lg border border-[#1e2a3d] bg-[#0b1220] p-2.5">
+      <p className="mb-1 text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#5eead4]">
+        Live log
+      </p>
+      <div className="max-h-32 overflow-y-auto">
+        <ul className="space-y-0.5 font-mono text-[11px] leading-relaxed text-[#e6ebf2]">
+          {logs.map((line, i) => (
+            <li key={i} className="[overflow-wrap:anywhere]">
+              {line}
+            </li>
+          ))}
+        </ul>
+        <div ref={endRef} />
+      </div>
     </div>
   );
 }

@@ -9,11 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type {
-  CompanyIdentity,
-  CompanyState,
-  RefreshOutcome,
-} from "@/lib/types/company";
+import type { CompanyIdentity, CompanyState } from "@/lib/types/company";
 import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
 import { fetchGovernanceAnalysis } from "@/lib/munsClient";
 import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
@@ -57,6 +53,7 @@ const INITIAL_STATE: CompanyState = {
   dataSource: null,
   storedAt: null,
   verifying: false,
+  logs: [],
 };
 
 const describeAge = (iso: string): string => {
@@ -105,6 +102,12 @@ export function CompanyProvider({
       country: identity.country || undefined,
     };
     const previousRaw = stateRef.current.munsRaw;
+    const startedAt = Date.now();
+
+    const log = (line: string) => {
+      const secs = Math.floor((Date.now() - startedAt) / 1000);
+      setState((prev) => ({ ...prev, logs: [...prev.logs, `[+${secs}s] ${line}`] }));
+    };
 
     setState((prev) => ({
       ...prev,
@@ -113,14 +116,16 @@ export function CompanyProvider({
       munsError: null,
       verifying: false,
       verification: {},
+      logs: [],
       progress: {
-        startedAt: Date.now(),
+        startedAt,
         finishedAt: null,
         outcome: null,
         diff: null,
         error: null,
       },
     }));
+    log("Checking saved analysis (15-day cache)…");
 
     // 1. Cache-first: serve a stored run if one landed within the last 15 days.
     const cached = await fetchCachedGovernance(
@@ -129,20 +134,20 @@ export function CompanyProvider({
     );
     if (cached.fromCache && cached.rows) {
       const refreshedAtIso = new Date().toISOString();
+      const age = describeAge(cached.storedAt || refreshedAtIso);
+      log(`Cache hit — serving saved analysis (verified ${age}).`);
       setState((prev) => ({
         ...prev,
         status: "ready",
         lastRefreshedAt: refreshedAtIso,
-        message: `Loaded saved analysis (verified ${describeAge(
-          cached.storedAt || refreshedAtIso,
-        )}).`,
+        message: `Loaded saved analysis (verified ${age}).`,
         governanceRows: cached.rows ?? null,
         verification: indexResults(cached.results ?? []),
         dataSource: "cache",
         storedAt: cached.storedAt ?? null,
         verifying: false,
         progress: {
-          startedAt: prev.progress.startedAt,
+          startedAt,
           finishedAt: Date.now(),
           outcome: "success",
           diff: null,
@@ -152,9 +157,10 @@ export function CompanyProvider({
       recordRefreshHistory(identity, "success", refreshedAtIso);
       return;
     }
+    log("No saved run within 15 days — running MUNS agent…");
 
     // 2. Cache miss / stale → run the live MUNS agent.
-    setState((prev) => ({ ...prev, message: "Running MUNS analysis…" }));
+    setState((prev) => ({ ...prev, message: "Running MUNS analysis (7–9 min)…" }));
     const result = await fetchGovernanceAnalysis({
       ticker: identity.ticker,
       companyName: identity.name,
@@ -163,6 +169,7 @@ export function CompanyProvider({
 
     if (!result.ok) {
       const refreshedAtIso = new Date().toISOString();
+      log(`MUNS failed: ${result.error || "unknown error"}`);
       setState((prev) => ({
         ...prev,
         status: "error",
@@ -171,7 +178,7 @@ export function CompanyProvider({
         munsError: result.error || "Failed to fetch.",
         verifying: false,
         progress: {
-          startedAt: prev.progress.startedAt,
+          startedAt,
           finishedAt: Date.now(),
           outcome: "error",
           diff: null,
@@ -184,61 +191,81 @@ export function CompanyProvider({
 
     const rows = munsHtmlToGovernanceRows(result.raw);
     const diff = diffMuns(previousRaw, result.raw);
+    log(`MUNS analysis loaded — ${rows.length} checklist rows.`);
 
-    // Show the MUNS rows immediately; verification fills in next.
+    // Keep the run on the progress screen; stash rows and start verifying.
     setState((prev) => ({
       ...prev,
-      status: "partial",
       munsRaw: result.raw,
       munsError: null,
       governanceRows: rows,
+      verification: {},
       dataSource: "live",
       storedAt: null,
       verifying: true,
-      message: "Verifying remarks via web search… this can take a few minutes.",
-      progress: { ...prev.progress, diff },
+      message: "Verifying remarks via web search…",
     }));
 
-    // 3. Fire the verification routine and wait for its callback.
-    const refreshedAtIso = new Date().toISOString();
-    // The run itself succeeded once MUNS returned; verification is best-effort.
-    const outcome: RefreshOutcome = "success";
+    // 3. Fire the verification routine and wait for its callback — still on the
+    // progress screen, so the dashboard only opens once the run is fully done.
+    log("Firing verification routine…");
     let message = "Analysis verified and saved.";
     let verification = {};
 
     const started = await startVerification(company, rows);
     if (!started.ok || !started.runId) {
+      log(`Verification couldn't start: ${started.error || "unknown error"}`);
       message = `Loaded MUNS analysis. Verification couldn't start: ${
         started.error || "unknown error"
       }`;
     } else {
-      const verified = await pollVerification(started.runId);
+      if (started.sessionUrl) log(`Routine session: ${started.sessionUrl}`);
+      log("Verifying remarks via web search… (polling for callback)");
+      let lastTick = Date.now();
+      const verified = await pollVerification(started.runId, {
+        onTick: () => {
+          if (Date.now() - lastTick >= 30_000) {
+            lastTick = Date.now();
+            const secs = Math.floor((Date.now() - startedAt) / 1000);
+            log(`Still verifying… (${secs}s elapsed)`);
+          }
+        },
+      });
       if (verified.ok) {
         verification = indexResults(verified.results ?? []);
+        log(`Verification complete — ${verified.results?.length ?? 0} remark(s) verified.`);
       } else {
+        log(`Verification failed: ${verified.error || "unknown error"}`);
         message = `Loaded MUNS analysis. Verification failed: ${
           verified.error || "unknown error"
         }`;
       }
     }
 
-    setState((prev) => ({
-      ...prev,
-      status: "ready",
-      lastRefreshedAt: refreshedAtIso,
-      message,
-      verification,
-      verifying: false,
-      progress: {
-        startedAt: prev.progress.startedAt,
-        finishedAt: Date.now(),
-        outcome,
-        diff,
-        error: null,
-      },
-    }));
-
-    recordRefreshHistory(identity, outcome, refreshedAtIso);
+    // 4. Finalize → status "ready" opens the dashboard.
+    const refreshedAtIso = new Date().toISOString();
+    log("Opening dashboard…");
+    setState((prev) =>
+      // Guard against a newer run having replaced this one while we waited.
+      prev.governanceRows === rows
+        ? {
+            ...prev,
+            status: "ready",
+            lastRefreshedAt: refreshedAtIso,
+            message,
+            verification,
+            verifying: false,
+            progress: {
+              startedAt,
+              finishedAt: Date.now(),
+              outcome: "success",
+              diff,
+              error: null,
+            },
+          }
+        : prev,
+    );
+    recordRefreshHistory(identity, "success", refreshedAtIso);
   }, []);
 
   const unlockDashboard = useCallback(() => setDashboardUnlocked(true), []);

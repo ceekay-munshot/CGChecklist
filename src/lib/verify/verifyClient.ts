@@ -1,10 +1,26 @@
 import type { GovernanceRow } from "@/lib/types/governance";
-import { rowsToVerificationInput } from "./buildPayload";
 import type {
+  CompanyCacheResponse,
   VerificationCompany,
   VerificationResultItem,
   VerificationResultResponse,
 } from "./types";
+
+// Cache-first lookup. Returns the stored final output if a run for this ticker
+// landed within the last 15 days, else { fromCache: false }.
+export const fetchCachedGovernance = async (
+  ticker: string,
+  country?: string,
+): Promise<CompanyCacheResponse> => {
+  try {
+    const query = new URLSearchParams({ ticker });
+    if (country) query.set("country", country);
+    const response = await fetch(`/api/company/governance?${query.toString()}`);
+    return (await response.json()) as CompanyCacheResponse;
+  } catch {
+    return { fromCache: false };
+  }
+};
 
 export interface StartVerificationResult {
   ok: boolean;
@@ -22,10 +38,7 @@ export const startVerification = async (
     const response = await fetch("/api/verify/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        company,
-        rows: rowsToVerificationInput(rows),
-      }),
+      body: JSON.stringify({ company, rows }),
     });
     const data = (await response.json()) as StartVerificationResult;
     if (!data.ok) {

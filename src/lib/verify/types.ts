@@ -1,5 +1,6 @@
 import type {
   GovernanceConfidence,
+  GovernanceRow,
   GovernanceScoreValue,
   GovernanceSectionId,
 } from "@/lib/types/governance";
@@ -70,10 +71,31 @@ export interface VerificationRecord {
   callbackSecret: string;
   company: VerificationCompany;
   createdAt: string;
+  // Full governance rows kept so the callback can assemble the final merged
+  // output and write it to the per-company cache once verification lands.
+  rows?: GovernanceRow[];
   sessionUrl?: string;
   results?: VerificationResultItem[];
   completedAt?: string;
   error?: string;
+}
+
+// Final merged output for a company, cached in KV for 15 days and served to
+// anyone who runs the same ticker within that window.
+export interface CompanyCacheRecord {
+  ticker: string;
+  company: VerificationCompany;
+  storedAt: string;
+  rows: GovernanceRow[];
+  results: VerificationResultItem[];
+}
+
+export interface CompanyCacheResponse {
+  fromCache: boolean;
+  storedAt?: string;
+  company?: VerificationCompany;
+  rows?: GovernanceRow[];
+  results?: VerificationResultItem[];
 }
 
 // Shape returned by GET /api/verify/result (secret stripped).

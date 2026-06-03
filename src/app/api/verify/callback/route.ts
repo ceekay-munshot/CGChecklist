@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRecord, putRecord } from "@/lib/verify/store";
+import { getRecord, putCompanyCache, putRecord } from "@/lib/verify/store";
 import type {
   VerificationCitation,
   VerificationConfidence,
@@ -128,13 +128,26 @@ export async function POST(request: Request) {
   }
 
   const results = normalizeResults(body.results);
+  const completedAt = new Date().toISOString();
 
   await putRecord({
     ...record,
     status: "done",
     results,
-    completedAt: new Date().toISOString(),
+    completedAt,
   });
+
+  // Persist the final merged output (rows + verification) for this company so
+  // the next run of the same ticker within 15 days is served from cache.
+  if (record.rows && record.company.ticker) {
+    await putCompanyCache({
+      ticker: record.company.ticker,
+      company: record.company,
+      storedAt: completedAt,
+      rows: record.rows,
+      results,
+    });
+  }
 
   return NextResponse.json({ ok: true, received: results.length });
 }

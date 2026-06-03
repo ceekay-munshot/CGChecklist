@@ -12,11 +12,17 @@ import {
 import type {
   CompanyIdentity,
   CompanyState,
-  DataStatus,
   RefreshOutcome,
 } from "@/lib/types/company";
 import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
 import { fetchGovernanceAnalysis } from "@/lib/munsClient";
+import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
+import {
+  fetchCachedGovernance,
+  pollVerification,
+  startVerification,
+} from "@/lib/verify/verifyClient";
+import { indexResults } from "@/lib/verify/mergeResults";
 import { diffMuns } from "@/lib/refresh/diffMuns";
 import { recordRefreshHistory } from "@/lib/refresh/history";
 
@@ -46,6 +52,18 @@ const INITIAL_STATE: CompanyState = {
     diff: null,
     error: null,
   },
+  governanceRows: null,
+  verification: {},
+  dataSource: null,
+  storedAt: null,
+  verifying: false,
+};
+
+const describeAge = (iso: string): string => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
 };
 
 export function CompanyProvider({
@@ -81,13 +99,20 @@ export function CompanyProvider({
       return;
     }
 
+    const company = {
+      name: identity.name,
+      ticker: identity.ticker,
+      country: identity.country || undefined,
+    };
     const previousRaw = stateRef.current.munsRaw;
 
     setState((prev) => ({
       ...prev,
       status: "loading",
-      message: null,
+      message: "Checking saved analysis…",
       munsError: null,
+      verifying: false,
+      verification: {},
       progress: {
         startedAt: Date.now(),
         finishedAt: null,
@@ -97,37 +122,121 @@ export function CompanyProvider({
       },
     }));
 
+    // 1. Cache-first: serve a stored run if one landed within the last 15 days.
+    const cached = await fetchCachedGovernance(
+      identity.ticker,
+      identity.country || undefined,
+    );
+    if (cached.fromCache && cached.rows) {
+      const refreshedAtIso = new Date().toISOString();
+      setState((prev) => ({
+        ...prev,
+        status: "ready",
+        lastRefreshedAt: refreshedAtIso,
+        message: `Loaded saved analysis (verified ${describeAge(
+          cached.storedAt || refreshedAtIso,
+        )}).`,
+        governanceRows: cached.rows ?? null,
+        verification: indexResults(cached.results ?? []),
+        dataSource: "cache",
+        storedAt: cached.storedAt ?? null,
+        verifying: false,
+        progress: {
+          startedAt: prev.progress.startedAt,
+          finishedAt: Date.now(),
+          outcome: "success",
+          diff: null,
+          error: null,
+        },
+      }));
+      recordRefreshHistory(identity, "success", refreshedAtIso);
+      return;
+    }
+
+    // 2. Cache miss / stale → run the live MUNS agent.
+    setState((prev) => ({ ...prev, message: "Running MUNS analysis…" }));
     const result = await fetchGovernanceAnalysis({
       ticker: identity.ticker,
       companyName: identity.name,
       country: identity.country || undefined,
     });
 
-    const refreshedAtIso = new Date().toISOString();
-    const outcome: RefreshOutcome = result.ok ? "success" : "error";
-
-    setState((prev) => {
-      const status: DataStatus = result.ok ? "ready" : "error";
-      const newRaw = result.ok ? result.raw : prev.munsRaw;
-      const diff = result.ok ? diffMuns(previousRaw, result.raw) : null;
-      return {
+    if (!result.ok) {
+      const refreshedAtIso = new Date().toISOString();
+      setState((prev) => ({
         ...prev,
-        status,
+        status: "error",
         lastRefreshedAt: refreshedAtIso,
-        message: result.ok
-          ? "Live MUNS analysis loaded."
-          : result.error || "Failed to fetch MUNS analysis.",
-        munsRaw: newRaw,
-        munsError: result.ok ? null : result.error || "Failed to fetch.",
+        message: result.error || "Failed to fetch MUNS analysis.",
+        munsError: result.error || "Failed to fetch.",
+        verifying: false,
         progress: {
           startedAt: prev.progress.startedAt,
           finishedAt: Date.now(),
-          outcome,
-          diff,
-          error: result.ok ? null : result.error || "Failed to fetch.",
+          outcome: "error",
+          diff: null,
+          error: result.error || "Failed to fetch.",
         },
-      };
-    });
+      }));
+      recordRefreshHistory(identity, "error", refreshedAtIso);
+      return;
+    }
+
+    const rows = munsHtmlToGovernanceRows(result.raw);
+    const diff = diffMuns(previousRaw, result.raw);
+
+    // Show the MUNS rows immediately; verification fills in next.
+    setState((prev) => ({
+      ...prev,
+      status: "partial",
+      munsRaw: result.raw,
+      munsError: null,
+      governanceRows: rows,
+      dataSource: "live",
+      storedAt: null,
+      verifying: true,
+      message: "Verifying remarks via web search… this can take a few minutes.",
+      progress: { ...prev.progress, diff },
+    }));
+
+    // 3. Fire the verification routine and wait for its callback.
+    const refreshedAtIso = new Date().toISOString();
+    // The run itself succeeded once MUNS returned; verification is best-effort.
+    const outcome: RefreshOutcome = "success";
+    let message = "Analysis verified and saved.";
+    let verification = {};
+
+    const started = await startVerification(company, rows);
+    if (!started.ok || !started.runId) {
+      message = `Loaded MUNS analysis. Verification couldn't start: ${
+        started.error || "unknown error"
+      }`;
+    } else {
+      const verified = await pollVerification(started.runId);
+      if (verified.ok) {
+        verification = indexResults(verified.results ?? []);
+      } else {
+        message = `Loaded MUNS analysis. Verification failed: ${
+          verified.error || "unknown error"
+        }`;
+      }
+    }
+
+    setState((prev) => ({
+      ...prev,
+      status: "ready",
+      lastRefreshedAt: refreshedAtIso,
+      message,
+      verification,
+      verifying: false,
+      progress: {
+        startedAt: prev.progress.startedAt,
+        finishedAt: Date.now(),
+        outcome,
+        diff,
+        error: null,
+      },
+    }));
 
     recordRefreshHistory(identity, outcome, refreshedAtIso);
   }, []);

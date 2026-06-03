@@ -54,6 +54,8 @@ export interface RefreshProgress {
   error: string | null;
 }
 
+export type DataSource = "cache" | "live" | null;
+
 export interface CompanyState {
   identity: CompanyIdentity;
   status: DataStatus;
@@ -62,4 +64,10 @@ export interface CompanyState {
   munsRaw: string;
   munsError: string | null;
   progress: RefreshProgress;
+  // Final governance output (from cache or a live run) and its verification.
+  governanceRows: import("@/lib/types/governance").GovernanceRow[] | null;
+  verification: import("@/lib/verify/mergeResults").VerificationMap;
+  dataSource: DataSource;
+  storedAt: string | null;
+  verifying: boolean;
 }

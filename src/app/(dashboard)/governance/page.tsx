@@ -1,42 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GovernanceExportButton } from "@/components/governance/GovernanceExportButton";
-import { VerifyRemarksButton } from "@/components/governance/VerifyRemarksButton";
-import type { VerificationMap } from "@/lib/verify/mergeResults";
 import { GovernanceFinalSummary } from "@/components/governance/GovernanceFinalSummary";
 import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
 import { GovernanceSectionTable } from "@/components/governance/GovernanceSectionTable";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
-import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
 import {
   calculateGovernanceScore,
   getGovernanceSectionSummaries,
 } from "@/lib/services/calculations/governanceCalc";
 import { useCompany } from "@/lib/state/CompanyContext";
 
+const describeAge = (iso: string): string => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days}d ago`;
+};
+
 export default function GovernancePage() {
   const { state } = useCompany();
-  const { munsRaw, munsError } = state;
+  const { governanceRows, verification, dataSource, storedAt, verifying } =
+    state;
 
-  const rows = useMemo(() => {
-    if (munsRaw && !munsError) {
-      const parsed = munsHtmlToGovernanceRows(munsRaw);
-      if (parsed.length > 0) return parsed;
-    }
-    return MOCK_GOVERNANCE_ROWS;
-  }, [munsRaw, munsError]);
+  const rows = useMemo(
+    () =>
+      governanceRows && governanceRows.length > 0
+        ? governanceRows
+        : MOCK_GOVERNANCE_ROWS,
+    [governanceRows],
+  );
 
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
 
-  const isLive = Boolean(munsRaw && !munsError);
-
-  const [verification, setVerification] = useState<VerificationMap>({});
+  const hasVerification = Object.keys(verification).length > 0;
 
   return (
     <div className="grid gap-5">
@@ -45,15 +48,30 @@ export default function GovernancePage() {
           title="Corporate Governance Score"
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
           action={
-            <div className="flex items-start gap-3">
-              <Badge tone={isLive ? "good" : "info"}>
-                {isLive ? "Live MUNS data" : "Mock data"}
+            <div className="flex items-center gap-3">
+              <Badge
+                tone={
+                  verifying
+                    ? "warn"
+                    : dataSource === "cache"
+                      ? "info"
+                      : dataSource === "live"
+                        ? "good"
+                        : "info"
+                }
+              >
+                {verifying
+                  ? "Verifying…"
+                  : dataSource === "cache"
+                    ? `Saved${
+                        storedAt ? ` · ${describeAge(storedAt)}` : ""
+                      }`
+                    : dataSource === "live"
+                      ? hasVerification
+                        ? "Live · verified"
+                        : "Live MUNS data"
+                      : "Mock data"}
               </Badge>
-              <VerifyRemarksButton
-                rows={rows}
-                disabled={!isLive}
-                onResults={setVerification}
-              />
               <GovernanceExportButton rows={rows} />
             </div>
           }
@@ -80,9 +98,7 @@ export default function GovernancePage() {
               key={section.sectionId}
               title={section.title}
               rows={sectionRows}
-              verification={
-                Object.keys(verification).length > 0 ? verification : undefined
-              }
+              verification={hasVerification ? verification : undefined}
             />
           );
         })}

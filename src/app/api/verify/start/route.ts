@@ -5,10 +5,9 @@ import {
   routineFireUrl,
 } from "@/lib/munsConfig";
 import { putRecord } from "@/lib/verify/store";
-import type {
-  VerificationRowInput,
-  VerificationRunInput,
-} from "@/lib/verify/types";
+import { rowsToVerificationInput } from "@/lib/verify/buildPayload";
+import type { VerificationRunInput } from "@/lib/verify/types";
+import type { GovernanceRow } from "@/lib/types/governance";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +16,7 @@ const MAX_TEXT_LENGTH = 60000;
 
 interface StartRequest {
   company?: { name?: string; ticker?: string; country?: string };
-  rows?: VerificationRowInput[];
+  rows?: GovernanceRow[];
 }
 
 const randomHex = (bytes: number): string => {
@@ -80,12 +79,14 @@ export async function POST(request: Request) {
   const callbackSecret = randomHex(24);
   const callbackUrl = `${resolveCallbackBase(request)}/api/verify/callback`;
 
+  // The routine only needs the lean per-remark fields; the full rows are kept
+  // in the run record so the callback can build + cache the final output.
   const runInput: VerificationRunInput = {
     runId,
     callbackUrl,
     callbackSecret,
     company,
-    rows,
+    rows: rowsToVerificationInput(rows),
   };
 
   const text = JSON.stringify(runInput);
@@ -107,6 +108,7 @@ export async function POST(request: Request) {
     callbackSecret,
     company,
     createdAt: new Date().toISOString(),
+    rows,
   });
 
   try {
@@ -158,6 +160,7 @@ export async function POST(request: Request) {
       company,
       createdAt: new Date().toISOString(),
       sessionUrl,
+      rows,
     });
 
     return NextResponse.json({ ok: true, runId, sessionUrl });

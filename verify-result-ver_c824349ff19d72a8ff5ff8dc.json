@@ -1,0 +1,474 @@
+{
+  "runId": "ver_c824349ff19d72a8ff5ff8dc",
+  "results": [
+    {
+      "questionId": "BOARD-1",
+      "verdict": "partially_supported",
+      "confidence": "Medium",
+      "correctedRemark": "As of FY2025, publicly available board disclosures identify five independent directors on Axis Bank's ten-member board (Rakesh Makhija as Non-Executive Independent Chairman, Girish Paranjpe, Meena Ganesh, G. Padmanabhan, and Prof. S. Mahendra Dev), representing 50% of the board — satisfying the regulatory minimum of 'not less than one-half' under RBI/SEBI norms for a bank with a non-executive chairman, but not strictly exceeding 50%.",
+      "suggestedScore": 1,
+      "citations": [
+        { "title": "Axis Bank Board of Directors – Official Page", "url": "https://www.axis.bank.in/about-us/board-of-directors" },
+        { "title": "Axis Bank Governance – Integrated Annual Report 2024-25", "url": "https://www.axisbank.com/annual-reports/2024-2025/pdf/Governance.pdf" }
+      ],
+      "notes": "Board appears to be at exactly 50% independent (5/10), meeting the regulatory floor but not strictly >50%. Score revised to 1 to reflect the borderline position."
+    },
+    {
+      "questionId": "BOARD-2",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Rakesh Makhija – Non-Executive Part-time Chairman, Axis Bank", "url": "https://www.axisbank.com/media-centre/board-of-directors/rakesh-makhija" },
+        { "title": "RBI Approval – Appointment of Rakesh Makhija as Non-Executive Part-time Chairman", "url": "https://www.axisbank.com/docs/default-source/corporate-announcements/material-events-disclosed-under-sebi-(listing-obligations-and-disclosure-requirements)-regulations-2015/2019-2020/rbi-approval---appointment-of-shri-rakesh-makhija-as-the-non-executive-part-time-chairman-of-axis-bank-limited.pdf" }
+      ],
+      "notes": "Rakesh Makhija serves as Non-Executive (Part-time) Independent Chairman through FY2025; N. S. Vishwanathan (also non-executive) is approved as successor from Oct 2026."
+    },
+    {
+      "questionId": "BOARD-3",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Governance – Integrated Annual Report 2024-25", "url": "https://www.axisbank.com/annual-reports/2024-2025/pdf/Governance.pdf" }
+      ],
+      "notes": "Corporate governance and related-party sections of the annual report confirm independence declarations and transaction disclosures consistent with SEBI LODR requirements."
+    },
+    {
+      "questionId": "BOARD-4",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Statutory Reports – Integrated Annual Report 2024-25", "url": "https://www.axisbank.com/annual-reports/2024-2025/pdf/Statutory%20reports.pdf" }
+      ]
+    },
+    {
+      "questionId": "BOARD-5",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Board of Directors", "url": "https://www.axis.bank.in/about-us/board-of-directors" },
+        { "title": "Axis Bank Board Leadership Appointments – InvestyWise", "url": "https://www.investywise.com/axis-bank-board-leadership-appointments/" }
+      ],
+      "notes": "Board includes former RBI Deputy Governor (N. S. Vishwanathan), senior tech and corporate professionals. No major current governance controversy identified in searched sources."
+    },
+    {
+      "questionId": "AUDIT-6",
+      "verdict": "contradicted",
+      "confidence": "High",
+      "correctedRemark": "Axis Bank's joint statutory auditors for the period from the 30th AGM are M/s. M M Nissim & Co. LLP and M/s. KKC & Associates LLP (formerly Khimji Kunverji & Co. LLP). Neither firm is a Big 4 network affiliate (Deloitte, EY, KPMG, or PwC). Both are well-regarded independent Indian CA firms: M M Nissim has operated since 1946 with ~200–500 staff, and KKC & Associates ranks 8th in India by audit fee with a 1.87% share of the market. This is governance-neutral but should not be characterised as a Big 4 appointment.",
+      "suggestedScore": 1,
+      "citations": [
+        { "title": "Axis Bank Appointment of Joint Statutory Auditors", "url": "https://www.research-tree.com/newsfeed/article/axis-bank-ltd-appointment-of-joint-statutory-auditors-2359602" },
+        { "title": "Big 6 Continue Dominance of Indian Audit Landscape 2024-25 – PrimeDatabase", "url": "http://www.primedatabasegroup.com/newsroom/BIG_6_CONTINUE_DOMINANCE_OF_INDIAN_AUDIT_LANDSCAPE_2024-25.pdf" },
+        { "title": "M M Nissim & Co LLP – Firm Overview", "url": "https://www.mmnissim.com/" }
+      ],
+      "notes": "Score reduced from 2 to 1: auditors are reputable Indian mid-tier firms but not Big 4. A score of 1 reflects adequate (non-Big 4) audit quality rather than top-tier."
+    },
+    {
+      "questionId": "AUDIT-7",
+      "verdict": "partially_supported",
+      "confidence": "Medium",
+      "correctedRemark": "Axis AMC (a major subsidiary) is audited by Deloitte Touche Tohmatsu India LLP, a Big 4 firm. However, Axis Bank itself and other material subsidiaries (Axis Securities, Axis Finance) use non-Big 4 auditors (M M Nissim, KKC & Associates). Big 4 coverage is therefore partial across the group, not universal.",
+      "citations": [
+        { "title": "Axis AMC Annual Report FY2024-25", "url": "https://www.axisbank.com/docs/default-source/annual-reports/for-subsidiaries/axis-asset-management-company-limited-for-the-year-ended-24-25.pdf" },
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ]
+    },
+    {
+      "questionId": "AUDIT-8",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Reports FY25 Financial Results with Clean Audit – Investing.com", "url": "https://www.investing.com/news/company-news/axis-bank-reports-fy25-financial-results-with-clean-audit-93CH-4002101" },
+        { "title": "Axis Bank FY25 Annual Financial Results – RNS", "url": "https://www.investormeetcompany.com/companies/axis-bank-limited/rns/4118880/view" }
+      ],
+      "notes": "FY25 statutory audit report confirmed clean with no qualifications."
+    },
+    {
+      "questionId": "AUDIT-9",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Statutory Reports – Integrated Annual Report 2024-25", "url": "https://www.axisbank.com/annual-reports/2024-2025/pdf/Statutory%20reports.pdf" }
+      ]
+    },
+    {
+      "questionId": "AUDIT-10",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Appointment of Joint Statutory Auditors", "url": "https://www.research-tree.com/newsfeed/article/axis-bank-ltd-appointment-of-joint-statutory-auditors-2359602" }
+      ],
+      "notes": "Auditors appointed from 30th AGM for a standard term through 33rd AGM, consistent with regulatory rotation norms; no controversy-driven change identified."
+    },
+    {
+      "questionId": "STAKEHOLDERS-11",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Shareholding Pattern 2026 – Choice India", "url": "https://choiceindia.com/stocks/axis-bank-ltd-shareholding-pattern" },
+        { "title": "Axis Bank Latest Shareholding Pattern – Trendlyne", "url": "https://trendlyne.com/equity/share-holding/140/AXISBANK/latest/axis-bank-ltd/" }
+      ],
+      "notes": "Promoter stake ~8.1% (Mar 2026); FIIs ~42.4%, DIIs ~32% (including LIC ~7.5%). Effectively no dominant promoter block; free float is very high."
+    },
+    {
+      "questionId": "STAKEHOLDERS-12",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Navigating Nifty 50 Membership and Institutional Shifts – MarketsMojo", "url": "https://www.marketsmojo.com/news/stocks-in-action/axis-bank-ltd-navigating-nifty-50-membership-and-institutional-shifts-amid-market-dynamics-3857473" }
+      ],
+      "notes": "Active institutional rotation but no governance-significant PE/HNI control shift identified."
+    },
+    {
+      "questionId": "EMPLOYEE-13",
+      "verdict": "supported",
+      "confidence": "Low",
+      "citations": [
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ],
+      "notes": "Sector-level attrition observation; no company-specific adverse data found in public searches."
+    },
+    {
+      "questionId": "EMPLOYEE-14",
+      "verdict": "supported",
+      "confidence": "Low",
+      "citations": [
+        { "title": "Axis Bank Statutory Reports – Integrated Annual Report 2024-25", "url": "https://www.axisbank.com/annual-reports/2024-2025/pdf/Statutory%20reports.pdf" }
+      ],
+      "notes": "Remuneration disclosed; no direct peer-benchmark table publicly available to confirm or refute 'broadly in line' assertion."
+    },
+    {
+      "questionId": "EMPLOYEE-15",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ],
+      "notes": "ESOP/stock-based compensation plans are in place and disclosed; no unusually large or dilutive pool identified."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-16",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Promoters – Shareholding", "url": "https://www.axisbank.com/about-us/promoters" },
+        { "title": "Axis Bank Shareholding Pattern 2026 – Choice India", "url": "https://choiceindia.com/stocks/axis-bank-ltd-shareholding-pattern" }
+      ],
+      "notes": "Promoter stake ~8.1% as of Mar 2026, having declined from ~30.8% in June 2016. Well below 50%."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-17",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Latest Shareholding Pattern – Trendlyne", "url": "https://trendlyne.com/equity/share-holding/140/AXISBANK/latest/axis-bank-ltd/" }
+      ],
+      "notes": "Promoter stake has remained broadly stable in the 8–9% range over recent quarters; no abrupt shift detected."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-18",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank – Wikipedia", "url": "https://en.wikipedia.org/wiki/Axis_Bank" }
+      ],
+      "notes": "Axis Bank is not part of an industrial promoter conglomerate; primary shareholders are LIC, government-linked entities, and institutional investors."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-19",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Amitabh Chaudhry – MD & CEO, Axis Bank", "url": "https://www.axis.bank.in/about-us/board-of-directors/amitabh-chaudhry" }
+      ]
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-20",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Re-appoints Amitabh Chaudhry as MD & CEO for 3 Years – Upstox", "url": "https://upstox.com/news/business-news/latest-updates/axis-bank-re-appoints-amitabh-chaundhry-as-md-and-ceo/article-82452/" },
+        { "title": "Amitabh Chaudhry Re-Appointed as MD and CEO of Axis Bank by RBI – Adda247", "url": "https://currentaffairs.adda247.com/amitabh-chaudhry-re-appointed-as-md-and-ceo-of-axis-bank-by-rbi/" }
+      ],
+      "notes": "Chaudhry re-appointed effective Jan 1, 2025 through Dec 31, 2027 with RBI approval. Multi-year leadership continuity confirmed."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-21",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Shareholding Pattern – Trendlyne", "url": "https://trendlyne.com/equity/share-holding/140/AXISBANK/latest/axis-bank-ltd/" }
+      ]
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-22",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Senior Management", "url": "https://www.axis.bank.in/about-us/senior-management/amitabh-chaudhry" }
+      ]
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-23",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ]
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-24",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank – Wikipedia", "url": "https://en.wikipedia.org/wiki/Axis_Bank" }
+      ],
+      "notes": "Not a family-promoter enterprise; no family control dispute exists or is possible in this ownership structure."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-25",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Regulatory Disclosures", "url": "https://www.axisbank.com/shareholders-corner/financial-results-and-other-information/quarterly-results" }
+      ],
+      "notes": "Extensive RBI/SEBI interface is inherent to the business; not governance-adverse."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-26",
+      "verdict": "partially_supported",
+      "confidence": "Medium",
+      "correctedRemark": "Axis Bank has received several routine regulatory penalties in 2024-2025: RBI imposed Rs 1.91 crore for KYC/deposit/agricultural lending non-compliances (Sept 2024) and a further penalty in May 2025 for routing unrelated entries through internal accounts flagged during statutory inspection. Axis Securities Limited (subsidiary) was fined Rs 10 lakh by SEBI (Feb 2025) for various compliance gaps. While these are relatively small fines consistent with large-bank regulatory exposure, the frequency of penalties in 2024-2025 is somewhat elevated compared to prior periods and warrants monitoring.",
+      "suggestedScore": 1,
+      "citations": [
+        { "title": "RBI Penalises Axis Bank – BW Businessworld", "url": "https://www.businessworld.in/article/rbi-penalises-rs-291-cr-on-axis-bank-hdfc-bank-for-regulatory-non-compliance-532727" },
+        { "title": "Axis Bank Regulatory Penalty – AInvest", "url": "https://www.ainvest.com/news/axis-bank-regulatory-penalty-wake-call-compliance-driven-investment-strategies-2505/" },
+        { "title": "SEBI Fines Axis Securities – Regulation Asia", "url": "https://www.regulationasia.com/sebi-fines-axis-securities-for-regulatory-violations" }
+      ],
+      "notes": "Original remark says 'no current marquee governance case severe enough to dominate the thesis' — this holds, but the remark undersells the actual pattern of recent penalties. Score maintained at 1 as already conservative."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-27",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank – Wikipedia", "url": "https://en.wikipedia.org/wiki/Axis_Bank" }
+      ]
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-28",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Annual Financial Results FY25 – RNS/InvestorMeetCompany", "url": "https://www.investormeetcompany.com/companies/axis-bank-limited/rns/4118880/view" }
+      ],
+      "notes": "Investor/analyst meetings and transcripts are regularly disclosed on exchanges."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-29",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Shareholding Pattern – Trendlyne", "url": "https://trendlyne.com/equity/share-holding/140/AXISBANK/latest/axis-bank-ltd/" }
+      ],
+      "notes": "No promoter in the traditional sense; LIC and institutions hold shares; no pledge risk."
+    },
+    {
+      "questionId": "INDUSTRY_PROMOTER-30",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "Bank leverage is inherent to the business model; CRAR and capital adequacy are the correct governance lens."
+    },
+    {
+      "questionId": "STOCK_EXCHANGE-31",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Corporate Announcements – SEBI LODR", "url": "https://www.axisbank.com/docs/default-source/corporate-announcements/material-events-disclosed-under-sebi-(listing-obligations-and-disclosure-requirements)-regulations-2015/2023-2024/penalty-levied-by-rbi-to-axis-bank-10-09-24.pdf" }
+      ],
+      "notes": "Regular exchange filings, investor meeting intimations, quarterly results, and governance filings confirm consistent SEBI compliance."
+    },
+    {
+      "questionId": "STOCK_EXCHANGE-32",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Share Price – Nirmal Bang Live Quote", "url": "https://www.nirmalbang.com/company/axis-bank/132215" }
+      ],
+      "notes": "52-week range of ₹1,042.5 to ₹1,418.3 confirmed from multiple sources; stock at ~₹1,297 as of late April 2026."
+    },
+    {
+      "questionId": "STOCK_EXCHANGE-33",
+      "verdict": "partially_supported",
+      "confidence": "Medium",
+      "correctedRemark": "Axis Bank is among the most liquid large-cap banking stocks on Indian exchanges. Publicly available data as of late April 2026 indicates daily traded volume of approximately 5.56 million shares, which is robust but somewhat below the ~8.0 million cited. Average daily volumes vary materially across periods; the directional characterisation of 'high' liquidity is well-supported.",
+      "citations": [
+        { "title": "Axis Bank Share Price – Groww", "url": "https://groww.in/stocks/axis-bank-ltd" }
+      ],
+      "notes": "Directional verdict (high liquidity) is correct; the specific figure of 8.0 million shares appears elevated relative to recently observed ~5.6 million. No score change warranted as the qualitative verdict 'High' remains appropriate."
+    },
+    {
+      "questionId": "STOCK_EXCHANGE-34",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Consensus Estimates – Trendlyne (40 analysts)", "url": "https://trendlyne.com/equity/consensus-estimates/140/AXISBANK/axis-bank-ltd/" },
+        { "title": "Axis Bank Stock Forecast & Price Target – Investing.com", "url": "https://www.investing.com/equities/axis-bank-consensus-estimates" }
+      ],
+      "notes": "Trendlyne shows ~40 analysts covering Axis Bank; remark cites 38-39. Figures are consistent."
+    },
+    {
+      "questionId": "OTHER_REGULATORY-35",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "Contingent liabilities as typical for a large bank; no single dominant item identified in reviewed sources."
+    },
+    {
+      "questionId": "FINANCIALS-36",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank FY25 Financial Results – Clean Audit – Investing.com", "url": "https://www.investing.com/news/company-news/axis-bank-reports-fy25-financial-results-with-clean-audit-93CH-4002101" }
+      ]
+    },
+    {
+      "questionId": "FINANCIALS-37",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "For a bank, advances (loans) form the core earning asset base and appropriately dwarf traditional 'debt' in any non-banking sense."
+    },
+    {
+      "questionId": "FINANCIALS-38",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ],
+      "notes": "Trade receivables >6 months is not a meaningful metric for a bank; the remark correctly flags this inapplicability."
+    },
+    {
+      "questionId": "FINANCIALS-39",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank – Wikipedia", "url": "https://en.wikipedia.org/wiki/Axis_Bank" }
+      ]
+    },
+    {
+      "questionId": "FINANCIALS-40",
+      "verdict": "partially_supported",
+      "confidence": "Medium",
+      "correctedRemark": "Axis Bank has a record of dividend payments in FY2023-24 and FY2024-25 (₹1/share), but dividends were not paid every year in the past decade, and the absolute quantum is modest relative to earnings. The bank targets a balanced capital allocation between reinvestment and payouts. Characterising this as 'consistent' is broadly defensible for recent years but less so over a longer historical window.",
+      "citations": [
+        { "title": "Axis Bank Dividend History – Trendlyne", "url": "https://trendlyne.com/equity/Dividend/AXISBANK/140/axis-bank-ltd-dividend/" },
+        { "title": "Axis Bank Dividend – Equitymaster", "url": "https://www.equitymaster.com/stock-research/dividend-payout/UTIB/AXIS-BANK-Detailed-Dividend-Payout" }
+      ],
+      "notes": "Score of 2 is marginal; recent years show dividends but the track record is not uniformly consistent. No change recommended given the bank's capital-allocation framing."
+    },
+    {
+      "questionId": "FINANCIALS-41",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "EBITDA/Cash EPS comparison is structurally less informative for banks; remark correctly notes this."
+    },
+    {
+      "questionId": "FINANCIALS-42",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Related Party Disclosures", "url": "https://www.axis.bank.in/docs/default-source/shareholders/financial-results-and-other-information/related-party-disclosure/2021-22/related-party-disclosure-30-09-2021.pdf?sfvrsn=689f39d9_3" }
+      ],
+      "notes": "Related party disclosures are made quarterly and in annual reports per SEBI LODR."
+    },
+    {
+      "questionId": "FINANCIALS-43",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ],
+      "notes": "CFO/EBITDA is a non-standard metric for banks; remark correctly identifies this limitation."
+    },
+    {
+      "questionId": "FINANCIALS-44",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release – Asset Quality", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "PCR (specific) at 75% as of Mar 2025; cumulative PCR including standard/additional provisions at 157% of GNPA; GNPA 1.28%, NNPA 0.33%; credit cost 0.50% annualised. Provisioning discipline is solid."
+    },
+    {
+      "questionId": "FINANCIALS-45",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Integrated Annual Report 2024-25", "url": "https://www.axis.bank.in/annual-reports/2024-2025/index.html" }
+      ]
+    },
+    {
+      "questionId": "FINANCIALS-46",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank FY25 Financial Results – Clean Audit – Investing.com", "url": "https://www.investing.com/news/company-news/axis-bank-reports-fy25-financial-results-with-clean-audit-93CH-4002101" }
+      ]
+    },
+    {
+      "questionId": "FINANCIALS-47",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "Working capital cycle is not a primary metric for a bank; ALM and liquidity ratios are relevant and no acute stress identified."
+    },
+    {
+      "questionId": "FINANCIALS-48",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Statutory Reports – Integrated Annual Report 2024-25", "url": "https://www.axisbank.com/annual-reports/2024-2025/pdf/Statutory%20reports.pdf" }
+      ]
+    },
+    {
+      "questionId": "FINANCIALS-49",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Consensus Estimates – Trendlyne", "url": "https://trendlyne.com/equity/consensus-estimates/140/AXISBANK/axis-bank-ltd/" }
+      ],
+      "notes": "Analyst consensus shows ~6.6% revenue growth forecast for FY26; asset growth appears broadly aligned with earnings trajectory."
+    },
+    {
+      "questionId": "FINANCIALS-50",
+      "verdict": "supported",
+      "confidence": "Medium",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "No evidence of contingent liabilities approaching 20x net worth; typical banking contingencies are well within normal."
+    },
+    {
+      "questionId": "FINANCIALS-51",
+      "verdict": "supported",
+      "confidence": "High",
+      "citations": [
+        { "title": "Axis Bank Q4FY25 Press Release – Provisioning", "url": "https://www.axis.bank.in/docs/default-source/press-releases/press-release-q4fy25.pdf" }
+      ],
+      "notes": "PCR at 75% (specific) is within industry norms for a large private bank; credit cost 0.50% annualised Q4FY25. Monitoring warranted given sector dynamics but no alarm."
+    }
+  ]
+}

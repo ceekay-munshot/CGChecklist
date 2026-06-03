@@ -21,6 +21,7 @@ interface RunRouteResponse {
 
 export const fetchGovernanceAnalysis = async (
   input: MunsAgentInput,
+  signal?: AbortSignal,
 ): Promise<MunsGovernanceResponse> => {
   if (!input.ticker?.trim() || !input.companyName?.trim()) {
     return {
@@ -40,6 +41,7 @@ export const fetchGovernanceAnalysis = async (
         companyName: input.companyName.trim(),
         country: input.country,
       }),
+      signal,
     });
 
     const data = (await response.json()) as RunRouteResponse;

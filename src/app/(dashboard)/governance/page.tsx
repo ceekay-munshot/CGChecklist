@@ -10,29 +10,38 @@ import { GovernanceSectionSummaryTable } from "@/components/governance/Governanc
 import { GovernanceSectionTable } from "@/components/governance/GovernanceSectionTable";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
-import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
 import {
   calculateGovernanceScore,
   getGovernanceSectionSummaries,
 } from "@/lib/services/calculations/governanceCalc";
 import { useCompany } from "@/lib/state/CompanyContext";
+import { applyVerification } from "@/lib/verify/mergeResults";
+
+const describeAge = (iso: string): string => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days}d ago`;
+};
 
 export default function GovernancePage() {
   const { state } = useCompany();
-  const { munsRaw, munsError } = state;
+  const { governanceRows, verification, dataSource, storedAt, verifying } =
+    state;
+
+  const hasVerification = Object.keys(verification).length > 0;
 
   const rows = useMemo(() => {
-    if (munsRaw && !munsError) {
-      const parsed = munsHtmlToGovernanceRows(munsRaw);
-      if (parsed.length > 0) return parsed;
-    }
-    return MOCK_GOVERNANCE_ROWS;
-  }, [munsRaw, munsError]);
+    const base =
+      governanceRows && governanceRows.length > 0
+        ? governanceRows
+        : MOCK_GOVERNANCE_ROWS;
+    // Routine remarks/sources/scores replace the agent values where verified.
+    return hasVerification ? applyVerification(base, verification) : base;
+  }, [governanceRows, hasVerification, verification]);
 
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
-
-  const isLive = Boolean(munsRaw && !munsError);
 
   return (
     <div className="grid gap-5">
@@ -42,8 +51,28 @@ export default function GovernancePage() {
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
           action={
             <div className="flex items-center gap-3">
-              <Badge tone={isLive ? "good" : "info"}>
-                {isLive ? "Live MUNS data" : "Mock data"}
+              <Badge
+                tone={
+                  verifying
+                    ? "warn"
+                    : dataSource === "cache"
+                      ? "info"
+                      : dataSource === "live"
+                        ? "good"
+                        : "info"
+                }
+              >
+                {verifying
+                  ? "Verifying…"
+                  : dataSource === "cache"
+                    ? `Saved${
+                        storedAt ? ` · ${describeAge(storedAt)}` : ""
+                      }`
+                    : dataSource === "live"
+                      ? hasVerification
+                        ? "Verified"
+                        : "Live data"
+                      : "Mock data"}
               </Badge>
               <GovernanceExportButton rows={rows} />
             </div>
@@ -71,6 +100,7 @@ export default function GovernancePage() {
               key={section.sectionId}
               title={section.title}
               rows={sectionRows}
+              verification={hasVerification ? verification : undefined}
             />
           );
         })}

@@ -33,7 +33,7 @@ export function GovernanceExportButton({ rows, fileBaseName }: Props) {
         exchange: state.identity.exchange || "—",
         country: state.identity.country || "—",
         reportDate,
-        dataSource: isLive ? "Live MUNS analysis" : "Sample data",
+        dataSource: isLive ? "Verified analysis" : "Sample data",
       });
 
       const blob = new Blob([buffer], {

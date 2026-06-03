@@ -13,5 +13,11 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  // KV namespace backing the async routine-verification loop. The dashboard
+  // writes a pending record on /api/verify/start, the routine callback fills it
+  // in on /api/verify/callback, and the browser reads it via /api/verify/result.
+  "kv_namespaces": [
+    { "binding": "VERIFY_KV", "id": "4c87f1ed28f2402aaec4fa22a92bb1fd" }
+  ]
 }

@@ -25,7 +25,7 @@ export function RefreshNotifier() {
         title: "Refresh failed",
         description:
           state.message ||
-          "We couldn't reach the MUNS analysis service. Please try again.",
+          "We couldn't reach the analysis service. Please try again.",
       });
     }
     prevStatusRef.current = state.status;

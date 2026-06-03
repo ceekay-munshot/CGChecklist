@@ -23,10 +23,11 @@ import type {
 const SUCCESS_HOLD_MS = 2200;
 
 export function SelectionPanel() {
-  const { state, setIdentity, refresh, unlockDashboard } = useCompany();
+  const { state, setIdentity, refresh, cancelRun, unlockDashboard } =
+    useCompany();
   const { entries } = useRefreshHistory();
   const { push } = useToast();
-  const { identity, status, progress } = state;
+  const { identity, status, progress, logs } = state;
 
   const isLoading = status === "loading";
   const showError =
@@ -114,6 +115,8 @@ export function SelectionPanel() {
                 companyName={identity.name}
                 ticker={identity.ticker}
                 elapsedMs={elapsedMs}
+                logs={logs}
+                onCancel={cancelRun}
               />
             ) : showSuccess ? (
               <SuccessBody
@@ -153,7 +156,7 @@ export function SelectionPanel() {
         </article>
 
         <p className="mt-4 text-center text-[11px] text-[var(--color-fg-subtle)]">
-          Governance &amp; Forensic Scorecard · MUNS-powered
+          Governance &amp; Forensic Scorecard
         </p>
       </div>
     </div>
@@ -189,7 +192,7 @@ function CardHeader() {
           <div className="flex items-center gap-2">
             <LivePulse />
             <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-white/80">
-              Buy-side analytics · MUNS-powered
+              Buy-side analytics
             </span>
           </div>
           <h1 className="mt-1.5 text-[19px] font-semibold tracking-tight sm:text-xl">
@@ -225,7 +228,7 @@ function FormBody({
           Choose a company to analyse
         </h2>
         <p className="mt-0.5 text-xs text-[var(--color-fg-muted)]">
-          Search by name or ticker. We&apos;ll spin up the MUNS agent and
+          Search by name or ticker. We&apos;ll spin up the analysis agent and
           stream progress here.
         </p>
       </div>
@@ -303,10 +306,14 @@ function ProgressBody({
   companyName,
   ticker,
   elapsedMs,
+  logs,
+  onCancel,
 }: {
   companyName: string;
   ticker: string;
   elapsedMs: number;
+  logs: string[];
+  onCancel: () => void;
 }) {
   const phaseIdx = currentPhaseIndex(elapsedMs);
   const percent = progressPercent(elapsedMs, false);
@@ -382,10 +389,45 @@ function ProgressBody({
         })}
       </ol>
 
-      <p className="text-[11.5px] leading-relaxed text-[var(--color-fg-muted)]">
-        Leave this tab open — the dashboard will appear automatically when the
-        analysis lands.
+      {logs.length > 0 ? <LiveLogs logs={logs} /> : null}
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11.5px] leading-relaxed text-[var(--color-fg-muted)]">
+          Leave this tab open — the dashboard will appear automatically when the
+          analysis lands.
+        </p>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="focus-ring inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-risk-200,#f3c6c6)] bg-[var(--color-surface-raised)] px-3 text-[13px] font-medium text-[var(--color-risk-700)] transition hover:bg-[var(--color-risk-50,#fdf2f2)]"
+        >
+          Stop run
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LiveLogs({ logs }: { logs: string[] }) {
+  const endRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [logs.length]);
+  return (
+    <div className="rounded-lg border border-[#1e2a3d] bg-[#0b1220] p-2.5">
+      <p className="mb-1 text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#5eead4]">
+        Live log
       </p>
+      <div className="max-h-32 overflow-y-auto">
+        <ul className="space-y-0.5 font-mono text-[11px] leading-relaxed text-[#e6ebf2]">
+          {logs.map((line, i) => (
+            <li key={i} className="[overflow-wrap:anywhere]">
+              {line}
+            </li>
+          ))}
+        </ul>
+        <div ref={endRef} />
+      </div>
     </div>
   );
 }

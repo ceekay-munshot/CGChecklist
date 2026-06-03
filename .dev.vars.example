@@ -15,3 +15,19 @@ TEMPORARY_TOKEN=
 
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=
+
+# --- Routine-based remark verification (async) ---
+# Per-routine API-trigger token (sk-ant-oat01-…), generated once in the Claude
+# Code web UI: open the routine → Add trigger → API → Generate token.
+# Used server-side by /api/verify/start to fire the routine.
+#   npx wrangler secret put ROUTINE_FIRE_TOKEN
+ROUTINE_FIRE_TOKEN=
+
+# The routine's trigger id (trig_…), shown alongside the API trigger.
+#   npx wrangler secret put ROUTINE_TRIGGER_ID
+ROUTINE_TRIGGER_ID=
+
+# Optional: absolute base URL the routine should call back to (no trailing
+# slash), e.g. https://cgchecklist.<account>.workers.dev. If unset, the start
+# route derives it from the incoming request origin.
+# VERIFY_CALLBACK_BASE_URL=

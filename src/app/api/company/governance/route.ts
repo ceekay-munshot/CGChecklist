@@ -4,7 +4,7 @@ import type { CompanyCacheResponse } from "@/lib/verify/types";
 
 export const dynamic = "force-dynamic";
 
-// Cache-first lookup for a company's final (MUNS + verified) governance output.
+// Cache-first lookup for a company's final (analysis + verified) governance output.
 // Returns the stored copy if a run landed within the last 15 days, else
 // { fromCache: false } so the dashboard knows to run the full pipeline.
 export async function GET(request: Request) {

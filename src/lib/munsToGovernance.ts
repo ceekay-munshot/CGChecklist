@@ -94,7 +94,7 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
         score: clampScore(scoreNum),
         maxScore: 2,
         remarks,
-        source: "MUNS Analysis",
+        source: "Agent analysis",
         confidence: responseToConfidence(response),
       });
     }

@@ -5,7 +5,7 @@ export interface RefreshPhase {
 }
 
 export const REFRESH_PHASES: RefreshPhase[] = [
-  { id: "connecting", label: "Connecting to MUNS agent", startMs: 0 },
+  { id: "connecting", label: "Connecting to analysis agent", startMs: 0 },
   { id: "sending", label: "Sending request payload", startMs: 15_000 },
   { id: "fetching", label: "Agent retrieving company filings", startMs: 45_000 },
   {

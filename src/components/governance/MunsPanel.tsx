@@ -126,8 +126,8 @@ export function MunsPanel({ raw, error, open }: MunsPanelProps) {
   return (
     <Card>
       <CardHeader
-        title="MUNS Governance Analysis"
-        description="Live MUNS agent output rendered as governance tables."
+        title="Governance Analysis"
+        description="Live agent output rendered as governance tables."
       />
       {error ? (
         <p className="text-sm text-[var(--color-risk-700)]">{error}</p>

@@ -15,6 +15,7 @@ import {
   getGovernanceSectionSummaries,
 } from "@/lib/services/calculations/governanceCalc";
 import { useCompany } from "@/lib/state/CompanyContext";
+import { applyVerification } from "@/lib/verify/mergeResults";
 
 const describeAge = (iso: string): string => {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -28,18 +29,19 @@ export default function GovernancePage() {
   const { governanceRows, verification, dataSource, storedAt, verifying } =
     state;
 
-  const rows = useMemo(
-    () =>
+  const hasVerification = Object.keys(verification).length > 0;
+
+  const rows = useMemo(() => {
+    const base =
       governanceRows && governanceRows.length > 0
         ? governanceRows
-        : MOCK_GOVERNANCE_ROWS,
-    [governanceRows],
-  );
+        : MOCK_GOVERNANCE_ROWS;
+    // Routine remarks/sources/scores replace the agent values where verified.
+    return hasVerification ? applyVerification(base, verification) : base;
+  }, [governanceRows, hasVerification, verification]);
 
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
-
-  const hasVerification = Object.keys(verification).length > 0;
 
   return (
     <div className="grid gap-5">
@@ -68,8 +70,8 @@ export default function GovernancePage() {
                       }`
                     : dataSource === "live"
                       ? hasVerification
-                        ? "Live · verified"
-                        : "Live MUNS data"
+                        ? "Verified"
+                        : "Live data"
                       : "Mock data"}
               </Badge>
               <GovernanceExportButton rows={rows} />

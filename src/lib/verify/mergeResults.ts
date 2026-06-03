@@ -1,3 +1,4 @@
+import type { GovernanceRow } from "@/lib/types/governance";
 import type { VerificationResultItem } from "./types";
 
 export type VerificationMap = Record<string, VerificationResultItem>;
@@ -12,3 +13,25 @@ export const indexResults = (
   }
   return map;
 };
+
+// Where the routine verified a row, its remark / score / confidence / sources
+// replace the agent's original values. Untouched rows pass through unchanged.
+export const applyVerification = (
+  rows: GovernanceRow[],
+  map: VerificationMap,
+): GovernanceRow[] =>
+  rows.map((row) => {
+    const result = map[row.questionId];
+    if (!result) return row;
+    const source =
+      result.citations.length > 0
+        ? result.citations.map((c) => c.title || c.url).join("; ")
+        : row.source;
+    return {
+      ...row,
+      remarks: result.remark || row.remarks,
+      score: result.suggestedScore ?? row.score,
+      confidence: result.confidence || row.confidence,
+      source,
+    };
+  });

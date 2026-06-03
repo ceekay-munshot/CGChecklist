@@ -63,10 +63,10 @@ const normalizeResults = (value: unknown): VerificationResultItem[] => {
       const questionId = String(obj.questionId ?? "").trim();
       if (!questionId) return null;
       const suggestedScore = normalizeScore(obj.suggestedScore);
-      const correctedRemark =
-        typeof obj.correctedRemark === "string" && obj.correctedRemark.trim()
-          ? obj.correctedRemark.trim()
-          : undefined;
+      const rawRemark =
+        (typeof obj.remark === "string" && obj.remark.trim()) ||
+        (typeof obj.correctedRemark === "string" && obj.correctedRemark.trim());
+      const remark = rawRemark ? String(rawRemark) : undefined;
       const notes =
         typeof obj.notes === "string" && obj.notes.trim()
           ? obj.notes.trim()
@@ -77,7 +77,7 @@ const normalizeResults = (value: unknown): VerificationResultItem[] => {
         confidence: normalizeConfidence(obj.confidence),
         citations: normalizeCitations(obj.citations),
       };
-      if (correctedRemark) result.correctedRemark = correctedRemark;
+      if (remark) result.remark = remark;
       if (suggestedScore !== undefined) result.suggestedScore = suggestedScore;
       if (notes) result.notes = notes;
       return result;

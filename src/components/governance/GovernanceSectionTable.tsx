@@ -105,8 +105,11 @@ export function GovernanceSectionTable({
                 <td className="px-3 py-3 text-[var(--color-fg-muted)] [overflow-wrap:anywhere]">
                   {row.remarks}
                 </td>
-                <td className="whitespace-nowrap px-3 py-3 text-[var(--color-fg-muted)]">
-                  {row.source}
+                <td className="px-3 py-3 text-[var(--color-fg-muted)]">
+                  <SourceCell
+                    source={row.source}
+                    citations={verification?.[row.questionId]?.citations}
+                  />
                 </td>
                 <td className="px-3 py-3">
                   <Badge tone={CONFIDENCE_TONE[row.confidence]}>
@@ -157,7 +160,7 @@ function VerificationCell({
     return <span className="text-xs text-[var(--color-fg-subtle)]">—</span>;
   }
   return (
-    <div className="flex max-w-[16rem] flex-col gap-1">
+    <div className="flex max-w-[14rem] flex-col gap-1">
       <Badge tone={VERDICT_TONE[result.verdict]}>
         {VERDICT_LABEL[result.verdict]}
       </Badge>
@@ -166,24 +169,36 @@ function VerificationCell({
           {result.notes}
         </p>
       ) : null}
-      {result.citations.length > 0 ? (
-        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-          {result.citations.slice(0, 3).map((citation, idx) => (
-            <a
-              key={`${citation.url}-${idx}`}
-              href={citation.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-[var(--color-teal-700)] underline [overflow-wrap:anywhere]"
-              title={citation.title || citation.url}
-            >
-              {citation.title || `Source ${idx + 1}`}
-            </a>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
+}
+
+function SourceCell({
+  source,
+  citations,
+}: {
+  source: string;
+  citations?: VerificationMap[string]["citations"];
+}) {
+  if (citations && citations.length > 0) {
+    return (
+      <div className="flex max-w-[12rem] flex-col gap-0.5">
+        {citations.slice(0, 3).map((citation, idx) => (
+          <a
+            key={`${citation.url}-${idx}`}
+            href={citation.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[var(--color-teal-700)] underline [overflow-wrap:anywhere]"
+            title={citation.title || citation.url}
+          >
+            {citation.title || `Source ${idx + 1}`}
+          </a>
+        ))}
+      </div>
+    );
+  }
+  return <span className="whitespace-nowrap">{source}</span>;
 }
 
 function scoreTextClass(score: GovernanceScoreValue): string {

@@ -27,6 +27,7 @@ interface CompanyContextValue {
   dashboardUnlocked: boolean;
   setIdentity: (patch: Partial<CompanyIdentity>) => void;
   refresh: () => Promise<void>;
+  cancelRun: () => void;
   dismissProgress: () => void;
   unlockDashboard: () => void;
   lockDashboard: () => void;
@@ -71,6 +72,7 @@ export function CompanyProvider({
   const [state, setState] = useState<CompanyState>(INITIAL_STATE);
   const [dashboardUnlocked, setDashboardUnlocked] = useState(false);
   const stateRef = useRef(state);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -104,6 +106,12 @@ export function CompanyProvider({
     const previousRaw = stateRef.current.munsRaw;
     const startedAt = Date.now();
 
+    // Cancel any in-flight run, then track this one so it can be stopped.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const aborted = () => controller.signal.aborted;
+
     const log = (line: string) => {
       const secs = Math.floor((Date.now() - startedAt) / 1000);
       setState((prev) => ({ ...prev, logs: [...prev.logs, `[+${secs}s] ${line}`] }));
@@ -132,6 +140,7 @@ export function CompanyProvider({
       identity.ticker,
       identity.country || undefined,
     );
+    if (aborted()) return;
     if (cached.fromCache && cached.rows) {
       const refreshedAtIso = new Date().toISOString();
       const age = describeAge(cached.storedAt || refreshedAtIso);
@@ -157,24 +166,28 @@ export function CompanyProvider({
       recordRefreshHistory(identity, "success", refreshedAtIso);
       return;
     }
-    log("No saved run within 15 days — running MUNS agent…");
+    log("No saved run within 15 days — running analysis agent…");
 
-    // 2. Cache miss / stale → run the live MUNS agent.
-    setState((prev) => ({ ...prev, message: "Running MUNS analysis (7–9 min)…" }));
-    const result = await fetchGovernanceAnalysis({
-      ticker: identity.ticker,
-      companyName: identity.name,
-      country: identity.country || undefined,
-    });
+    // 2. Cache miss / stale → run the live analysis agent.
+    setState((prev) => ({ ...prev, message: "Running analysis (7–9 min)…" }));
+    const result = await fetchGovernanceAnalysis(
+      {
+        ticker: identity.ticker,
+        companyName: identity.name,
+        country: identity.country || undefined,
+      },
+      controller.signal,
+    );
+    if (aborted()) return;
 
     if (!result.ok) {
       const refreshedAtIso = new Date().toISOString();
-      log(`MUNS failed: ${result.error || "unknown error"}`);
+      log(`Analysis failed: ${result.error || "unknown error"}`);
       setState((prev) => ({
         ...prev,
         status: "error",
         lastRefreshedAt: refreshedAtIso,
-        message: result.error || "Failed to fetch MUNS analysis.",
+        message: result.error || "Failed to fetch analysis.",
         munsError: result.error || "Failed to fetch.",
         verifying: false,
         progress: {
@@ -191,7 +204,7 @@ export function CompanyProvider({
 
     const rows = munsHtmlToGovernanceRows(result.raw);
     const diff = diffMuns(previousRaw, result.raw);
-    log(`MUNS analysis loaded — ${rows.length} checklist rows.`);
+    log(`Analysis loaded — ${rows.length} checklist rows.`);
 
     // Keep the run on the progress screen; stash rows and start verifying.
     setState((prev) => ({
@@ -213,9 +226,10 @@ export function CompanyProvider({
     let verification = {};
 
     const started = await startVerification(company, rows);
+    if (aborted()) return;
     if (!started.ok || !started.runId) {
       log(`Verification couldn't start: ${started.error || "unknown error"}`);
-      message = `Loaded MUNS analysis. Verification couldn't start: ${
+      message = `Loaded analysis. Verification couldn't start: ${
         started.error || "unknown error"
       }`;
     } else {
@@ -224,6 +238,7 @@ export function CompanyProvider({
       log("Verifying remarks via web search… (polling for callback)");
       let lastTick = Date.now();
       const verified = await pollVerification(started.runId, {
+        signal: controller.signal,
         onTick: () => {
           if (Date.now() - lastTick >= 30_000) {
             lastTick = Date.now();
@@ -232,12 +247,13 @@ export function CompanyProvider({
           }
         },
       });
+      if (aborted()) return;
       if (verified.ok) {
         verification = indexResults(verified.results ?? []);
         log(`Verification complete — ${verified.results?.length ?? 0} remark(s) verified.`);
       } else {
         log(`Verification failed: ${verified.error || "unknown error"}`);
-        message = `Loaded MUNS analysis. Verification failed: ${
+        message = `Loaded analysis. Verification failed: ${
           verified.error || "unknown error"
         }`;
       }
@@ -269,6 +285,28 @@ export function CompanyProvider({
     recordRefreshHistory(identity, "success", refreshedAtIso);
   }, []);
 
+  const cancelRun = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setState((prev) =>
+      prev.status === "loading"
+        ? {
+            ...prev,
+            status: "idle",
+            verifying: false,
+            message: "Run cancelled.",
+            logs: [...prev.logs, "Cancelled by user."],
+            progress: {
+              ...prev.progress,
+              finishedAt: Date.now(),
+              outcome: null,
+              error: null,
+            },
+          }
+        : prev,
+    );
+  }, []);
+
   const unlockDashboard = useCallback(() => setDashboardUnlocked(true), []);
   const lockDashboard = useCallback(() => setDashboardUnlocked(false), []);
 
@@ -291,6 +329,7 @@ export function CompanyProvider({
       dashboardUnlocked,
       setIdentity,
       refresh,
+      cancelRun,
       dismissProgress,
       unlockDashboard,
       lockDashboard,
@@ -300,6 +339,7 @@ export function CompanyProvider({
       dashboardUnlocked,
       setIdentity,
       refresh,
+      cancelRun,
       dismissProgress,
       unlockDashboard,
       lockDashboard,

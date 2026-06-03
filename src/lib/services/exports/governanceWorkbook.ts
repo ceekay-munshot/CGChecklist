@@ -949,7 +949,7 @@ function buildMethodologySheet(wb: Workbook) {
   ws.mergeCells(r, 2, r, 3);
   const disclaimer = ws.getCell(r, 2);
   disclaimer.value =
-    "This report is generated from the MUNS governance agent and the CG Checklist scoring methodology. It is intended for internal analyst review and does not constitute investment advice.";
+    "This report is generated from the governance analysis agent and the CG Checklist scoring methodology. It is intended for internal analyst review and does not constitute investment advice.";
   disclaimer.font = {
     name: "Calibri",
     size: 9,

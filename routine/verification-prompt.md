@@ -45,11 +45,21 @@ it. It has this shape:
    - `contradicted` — sources conflict with the remark.
    - `unverifiable` — no adequate public source found.
 3. Set `confidence` (`High` / `Medium` / `Low`) based on source quality/agreement.
-4. If the remark is wrong or out of date, put a corrected one-paragraph version
-   in `correctedRemark`, and a `suggestedScore` (0, 1, or 2) if the score should
-   change. Omit these when no change is warranted.
-5. Include up to ~3 `citations` (each `{ "title": "...", "url": "..." }`) — the
-   actual source URLs you relied on. A short `notes` line is optional.
+4. **Write a fresh `remark` for every row** — this replaces the agent's remark
+   in the dashboard. Rules for the remark:
+   - **Detailed and non-generic, specific to THIS company.** No boilerplate.
+   - **Numerical** — state exact figures, dates, and the precise problem (e.g.
+     "promoter pledge rose from 5.71% (Jan-2026) to 9.99% (May-2026)"), not vague
+     prose.
+   - **Use exact names** of the CEO / company / directors / auditors / entities
+     in the answer — never "the CEO" or "the company".
+   - **Keep it to one or two lines.** It must fit a dashboard cell — concise but
+     concrete. Do not write paragraphs.
+5. Set `suggestedScore` (0, 1, or 2) whenever the verified facts imply a
+   different score than the agent's; otherwise echo the agent's score.
+6. Include up to ~3 `citations` (each `{ "title": "...", "url": "..." }`) — the
+   actual sources you relied on; these replace the Source column. A short
+   `notes` line (optional) may flag a one-line caveat.
 
 ## How to return results
 
@@ -64,12 +74,12 @@ Build a JSON object exactly like this (one entry per row, keyed by the same
       "questionId": "BOARD-1",
       "verdict": "supported",
       "confidence": "High",
-      "correctedRemark": "optional — only if the remark needs fixing",
+      "remark": "8 of 10 board members independent (80%); led by Lead Independent Director D. Sundaram — exceeds SEBI's 50% floor for FY2025.",
       "suggestedScore": 2,
       "citations": [
         { "title": "Infosys FY2025 Annual Report", "url": "https://…" }
       ],
-      "notes": "optional short note"
+      "notes": "optional one-line caveat"
     }
   ]
 }

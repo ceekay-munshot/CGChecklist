@@ -45,12 +45,13 @@ export interface VerificationCitation {
   url: string;
 }
 
-// One verified remark returned by the routine.
+// One verified remark returned by the routine. `remark` and `citations`
+// replace the agent's original remark/source in the rendered table.
 export interface VerificationResultItem {
   questionId: string;
   verdict: VerificationVerdict;
   confidence: VerificationConfidence;
-  correctedRemark?: string;
+  remark?: string;
   suggestedScore?: GovernanceScoreValue;
   citations: VerificationCitation[];
   notes?: string;

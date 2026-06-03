@@ -31,7 +31,7 @@ export function RefreshSuccessBanner() {
         <p className="min-w-0 flex-1 text-sm text-[var(--color-fg)]">
           <strong>Refresh failed.</strong>{" "}
           <span className="text-[var(--color-fg-muted)]">
-            {progress.error || "MUNS analysis could not be loaded."}
+            {progress.error || "Analysis could not be loaded."}
           </span>
         </p>
         <DismissButton onClick={dismissProgress} />

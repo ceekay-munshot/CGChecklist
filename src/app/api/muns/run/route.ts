@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         {
           ok: false,
           raw,
-          error: `MUNS request failed with status ${upstream.status}.`,
+          error: `Analysis request failed with status ${upstream.status}.`,
         },
         { status: 502 },
       );

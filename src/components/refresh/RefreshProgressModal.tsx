@@ -194,7 +194,7 @@ function LoadingFrame({
       </ul>
 
       <p className="mt-5 rounded-[var(--radius-control)] bg-[var(--color-mist-50)] px-3 py-2 text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
-        The MUNS agent typically takes <strong>7–9 minutes</strong> to compile a
+        The analysis agent typically takes <strong>7–9 minutes</strong> to compile a
         full governance analysis. You can leave this tab open — we&apos;ll
         update the dashboard the moment results land.
       </p>

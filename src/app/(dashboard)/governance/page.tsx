@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { GovernanceExportButton } from "@/components/governance/GovernanceExportButton";
+import { VerifyRemarksButton } from "@/components/governance/VerifyRemarksButton";
+import type { VerificationMap } from "@/lib/verify/mergeResults";
 import { GovernanceFinalSummary } from "@/components/governance/GovernanceFinalSummary";
 import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
@@ -34,6 +36,8 @@ export default function GovernancePage() {
 
   const isLive = Boolean(munsRaw && !munsError);
 
+  const [verification, setVerification] = useState<VerificationMap>({});
+
   return (
     <div className="grid gap-5">
       <Card>
@@ -41,10 +45,15 @@ export default function GovernancePage() {
           title="Corporate Governance Score"
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
           action={
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <Badge tone={isLive ? "good" : "info"}>
                 {isLive ? "Live MUNS data" : "Mock data"}
               </Badge>
+              <VerifyRemarksButton
+                rows={rows}
+                disabled={!isLive}
+                onResults={setVerification}
+              />
               <GovernanceExportButton rows={rows} />
             </div>
           }
@@ -71,6 +80,9 @@ export default function GovernancePage() {
               key={section.sectionId}
               title={section.title}
               rows={sectionRows}
+              verification={
+                Object.keys(verification).length > 0 ? verification : undefined
+              }
             />
           );
         })}

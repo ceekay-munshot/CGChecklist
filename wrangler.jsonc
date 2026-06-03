@@ -13,5 +13,16 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  // KV namespace backing the async routine-verification loop. The dashboard
+  // writes a pending record on /api/verify/start, the routine callback fills it
+  // in on /api/verify/callback, and the browser reads it via /api/verify/result.
+  // Create the namespace once and replace the placeholder id:
+  //   npx wrangler kv namespace create VERIFY_KV
+  "kv_namespaces": [
+    {
+      "binding": "VERIFY_KV",
+      "id": "REPLACE_WITH_VERIFY_KV_NAMESPACE_ID"
+    }
+  ]
 }

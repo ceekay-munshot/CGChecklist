@@ -25,7 +25,7 @@ const SECTION_MAP: Record<string, GovernanceSectionId> = {
 };
 
 const mapSectionName = (title: string): GovernanceSectionId => {
-  let normalized = title
+  const normalized = title
     .toLowerCase()
     .trim()
     .replace(/^section\s+\d+:\s*/i, "");
@@ -74,7 +74,6 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
     const scoreCol = table.headers.find(
       (h) => h.toLowerCase().trim() === "score",
     );
-    const maxScoreCol = findColumn(table.headers, ["max"]);
     const remarksCol = findColumn(table.headers, ["remark"]);
 
     if (!particularsCol || !responseCol) continue;
@@ -83,7 +82,6 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
       const particulars = row[particularsCol] || "";
       const response = row[responseCol] || "";
       const scoreNum = scoreCol ? parseInt(row[scoreCol], 10) || 0 : 0;
-      const maxScoreNum = maxScoreCol ? parseInt(row[maxScoreCol], 10) || 2 : 2;
       const remarks = remarksCol ? row[remarksCol] || "" : "";
 
       if (!particulars.trim()) continue;

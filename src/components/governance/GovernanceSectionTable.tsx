@@ -4,6 +4,8 @@ import type {
   GovernanceRow,
   GovernanceScoreValue,
 } from "@/lib/types/governance";
+import type { VerificationVerdict } from "@/lib/verify/types";
+import type { VerificationMap } from "@/lib/verify/mergeResults";
 
 const SCORE_TONE: Record<GovernanceScoreValue, "good" | "warn" | "risk"> = {
   2: "good",
@@ -17,13 +19,33 @@ const CONFIDENCE_TONE: Record<GovernanceConfidence, "good" | "warn" | "risk"> = 
   Low: "risk",
 };
 
+const VERDICT_TONE: Record<
+  VerificationVerdict,
+  "good" | "warn" | "risk" | "unknown"
+> = {
+  supported: "good",
+  partially_supported: "warn",
+  contradicted: "risk",
+  unverifiable: "unknown",
+};
+
+const VERDICT_LABEL: Record<VerificationVerdict, string> = {
+  supported: "Supported",
+  partially_supported: "Partial",
+  contradicted: "Contradicted",
+  unverifiable: "Unverifiable",
+};
+
 export function GovernanceSectionTable({
   title,
   rows,
+  verification,
 }: {
   title: string;
   rows: GovernanceRow[];
+  verification?: VerificationMap;
 }) {
+  const showVerification = Boolean(verification);
   const subtotal = rows.reduce((acc, r) => acc + r.score, 0);
   const subtotalMax = rows.reduce((acc, r) => acc + r.maxScore, 0);
 
@@ -35,7 +57,11 @@ export function GovernanceSectionTable({
         </h4>
       </header>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] border-collapse text-sm">
+        <table
+          className={`w-full ${
+            showVerification ? "min-w-[1320px]" : "min-w-[1080px]"
+          } border-collapse text-sm`}
+        >
           <thead>
             <tr className="border-b border-[var(--color-border)] text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
               <th className="w-[28%] px-3 py-2.5">Particulars</th>
@@ -45,6 +71,9 @@ export function GovernanceSectionTable({
               <th className="px-3 py-2.5">Remarks</th>
               <th className="px-3 py-2.5">Source</th>
               <th className="px-3 py-2.5">Confidence</th>
+              {showVerification ? (
+                <th className="px-3 py-2.5">Web-verified</th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -84,6 +113,11 @@ export function GovernanceSectionTable({
                     {row.confidence}
                   </Badge>
                 </td>
+                {showVerification ? (
+                  <td className="px-3 py-3">
+                    <VerificationCell result={verification?.[row.questionId]} />
+                  </td>
+                ) : null}
               </tr>
             ))}
             <tr className="bg-[var(--color-mist-50)]">
@@ -105,12 +139,50 @@ export function GovernanceSectionTable({
               >
                 {subtotalMax}
               </td>
-              <td colSpan={3} />
+              <td colSpan={showVerification ? 4 : 3} />
             </tr>
           </tbody>
         </table>
       </div>
     </section>
+  );
+}
+
+function VerificationCell({
+  result,
+}: {
+  result?: VerificationMap[string];
+}) {
+  if (!result) {
+    return <span className="text-xs text-[var(--color-fg-subtle)]">—</span>;
+  }
+  return (
+    <div className="flex max-w-[16rem] flex-col gap-1">
+      <Badge tone={VERDICT_TONE[result.verdict]}>
+        {VERDICT_LABEL[result.verdict]}
+      </Badge>
+      {result.notes ? (
+        <p className="text-xs text-[var(--color-fg-muted)] [overflow-wrap:anywhere]">
+          {result.notes}
+        </p>
+      ) : null}
+      {result.citations.length > 0 ? (
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+          {result.citations.slice(0, 3).map((citation, idx) => (
+            <a
+              key={`${citation.url}-${idx}`}
+              href={citation.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[var(--color-teal-700)] underline [overflow-wrap:anywhere]"
+              title={citation.title || citation.url}
+            >
+              {citation.title || `Source ${idx + 1}`}
+            </a>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

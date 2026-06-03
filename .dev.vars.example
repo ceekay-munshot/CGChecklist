@@ -8,10 +8,14 @@ NEXTJS_ENV=development
 #   npx wrangler secret put MUNS_BEARER_TOKEN
 MUNS_BEARER_TOKEN=
 
-# Temporary token — used server-side by /api/muns/run to call the
-# birdnest.muns.io agents API. In production, set via:
-#   npx wrangler secret put TEMPORARY_TOKEN
-TEMPORARY_TOKEN=
+# Anthropic API key — used server-side by /api/muns/run to generate the
+# corporate governance checklist via Claude (with the web_search tool).
+# In production, set via:
+#   npx wrangler secret put ANTHROPIC_API_KEY
+ANTHROPIC_API_KEY=
+
+# Optional: override the governance model (defaults to claude-sonnet-4-6).
+# GOVERNANCE_MODEL=claude-sonnet-4-6
 
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=

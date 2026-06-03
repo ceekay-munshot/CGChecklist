@@ -22,7 +22,6 @@
   // validates KV ids against the account, so a placeholder id would break the
   // deploy. Create the namespace once, then uncomment and paste the id:
   //   npx wrangler kv namespace create VERIFY_KV
-  // "kv_namespaces": [
-  //   { "binding": "VERIFY_KV", "id": "PASTE_VERIFY_KV_NAMESPACE_ID" }
-  // ]
+"kv_namespaces": [
+  { "binding": "VERIFY_KV", "id": "4c87f1ed28f2402aaec4fa22a92bb1fd" }]
 }

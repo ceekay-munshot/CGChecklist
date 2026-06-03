@@ -26,6 +26,7 @@ export interface StartVerificationResult {
   ok: boolean;
   runId?: string;
   sessionUrl?: string;
+  callbackUrl?: string;
   error?: string;
 }
 

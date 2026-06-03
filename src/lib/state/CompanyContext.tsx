@@ -219,6 +219,7 @@ export function CompanyProvider({
         started.error || "unknown error"
       }`;
     } else {
+      if (started.callbackUrl) log(`Callback URL: ${started.callbackUrl}`);
       if (started.sessionUrl) log(`Routine session: ${started.sessionUrl}`);
       log("Verifying remarks via web search… (polling for callback)");
       let lastTick = Date.now();

@@ -163,7 +163,7 @@ export async function POST(request: Request) {
       rows,
     });
 
-    return NextResponse.json({ ok: true, runId, sessionUrl });
+    return NextResponse.json({ ok: true, runId, sessionUrl, callbackUrl });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     await putRecord({

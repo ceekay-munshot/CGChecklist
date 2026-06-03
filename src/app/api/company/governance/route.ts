@@ -10,7 +10,6 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const ticker = params.get("ticker")?.trim();
-  const country = params.get("country")?.trim() || undefined;
 
   if (!ticker) {
     return NextResponse.json(
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const cached = await getCompanyCache(ticker, country);
+  const cached = await getCompanyCache(ticker);
   if (!cached) {
     const miss: CompanyCacheResponse = { fromCache: false };
     return NextResponse.json(miss);

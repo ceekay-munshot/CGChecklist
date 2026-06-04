@@ -69,6 +69,7 @@ export default function GovernancePage() {
           return (
             <GovernanceSectionTable
               key={section.sectionId}
+              sectionId={section.sectionId}
               title={section.title}
               rows={sectionRows}
             />

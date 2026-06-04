@@ -23,7 +23,7 @@ import type {
 const SUCCESS_HOLD_MS = 2200;
 
 export function SelectionPanel() {
-  const { state, setIdentity, refresh, unlockDashboard } = useCompany();
+  const { state, setIdentity, refresh, cancel, unlockDashboard } = useCompany();
   const { entries } = useRefreshHistory();
   const { push } = useToast();
   const { identity, status, progress } = state;
@@ -114,6 +114,7 @@ export function SelectionPanel() {
                 companyName={identity.name}
                 ticker={identity.ticker}
                 elapsedMs={elapsedMs}
+                onCancel={cancel}
               />
             ) : showSuccess ? (
               <SuccessBody
@@ -303,10 +304,12 @@ function ProgressBody({
   companyName,
   ticker,
   elapsedMs,
+  onCancel,
 }: {
   companyName: string;
   ticker: string;
   elapsedMs: number;
+  onCancel: () => void;
 }) {
   const phaseIdx = currentPhaseIndex(elapsedMs);
   const percent = progressPercent(elapsedMs, false);
@@ -382,11 +385,34 @@ function ProgressBody({
         })}
       </ol>
 
-      <p className="text-[11.5px] leading-relaxed text-[var(--color-fg-muted)]">
-        Leave this tab open — the dashboard will appear automatically when the
-        analysis lands.
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11.5px] leading-relaxed text-[var(--color-fg-muted)]">
+          Leave this tab open — the dashboard will appear automatically when the
+          analysis lands.
+        </p>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="focus-ring inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-fg-muted)] transition hover:bg-[var(--color-risk-50)] hover:text-[var(--color-risk-700)]"
+        >
+          <CancelIcon />
+          Cancel
+        </button>
+      </div>
     </div>
+  );
+}
+
+function CancelIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" aria-hidden>
+      <path
+        d="M4 4l8 8M12 4l-8 8"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

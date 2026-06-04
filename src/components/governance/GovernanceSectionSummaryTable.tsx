@@ -1,4 +1,7 @@
+"use client";
+
 import { Badge } from "@/components/ui/Badge";
+import { sectionAnchorId } from "@/components/governance/GovernanceSectionTable";
 import type {
   GovernanceRating,
   GovernanceSectionSummary,
@@ -9,6 +12,11 @@ const RATING_TONE: Record<GovernanceRating, "good" | "warn" | "risk" | "info"> =
   Good: "info",
   Moderate: "warn",
   Weak: "risk",
+};
+
+const scrollToSection = (sectionId: string) => {
+  const el = document.getElementById(sectionAnchorId(sectionId));
+  el?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 export function GovernanceSectionSummaryTable({
@@ -34,10 +42,26 @@ export function GovernanceSectionSummaryTable({
           {summaries.map((s) => (
             <tr
               key={s.sectionId}
-              className="border-b border-[var(--color-border)] last:border-b-0"
+              role="button"
+              tabIndex={0}
+              aria-label={`Jump to ${s.title} section`}
+              title={`Jump to ${s.title} section`}
+              onClick={() => scrollToSection(s.sectionId)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  scrollToSection(s.sectionId);
+                }
+              }}
+              className="group cursor-pointer border-b border-[var(--color-border)] transition-colors last:border-b-0 hover:bg-[var(--color-navy-50)] focus-visible:bg-[var(--color-navy-50)] focus-visible:outline-none"
             >
               <td className="px-3 py-2.5 font-medium text-[var(--color-fg)]">
-                {s.title}
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="group-hover:text-[var(--color-brand)] group-focus-visible:text-[var(--color-brand)]">
+                    {s.title}
+                  </span>
+                  <JumpArrow />
+                </span>
               </td>
               <td
                 className="px-3 py-2.5 text-right text-[var(--color-fg)]"
@@ -85,5 +109,24 @@ export function GovernanceSectionSummaryTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+function JumpArrow() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden
+      className="h-3.5 w-3.5 shrink-0 text-[var(--color-fg-subtle)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+      fill="none"
+    >
+      <path
+        d="M8 3v10M8 13l-3.5-3.5M8 13l3.5-3.5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

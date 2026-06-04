@@ -17,10 +17,14 @@ const CONFIDENCE_TONE: Record<GovernanceConfidence, "good" | "warn" | "risk"> = 
   Low: "risk",
 };
 
+export const sectionAnchorId = (sectionId: string) => `section-${sectionId}`;
+
 export function GovernanceSectionTable({
+  sectionId,
   title,
   rows,
 }: {
+  sectionId: string;
   title: string;
   rows: GovernanceRow[];
 }) {
@@ -28,7 +32,10 @@ export function GovernanceSectionTable({
   const subtotalMax = rows.reduce((acc, r) => acc + r.maxScore, 0);
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-[0_1px_2px_rgba(10,20,34,0.04)]">
+    <section
+      id={sectionAnchorId(sectionId)}
+      className="scroll-mt-6 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-[0_1px_2px_rgba(10,20,34,0.04)]"
+    >
       <header className="border-b border-[var(--color-border)] bg-[var(--color-navy-50)] px-4 py-3 sm:px-5">
         <h4 className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--color-navy-700)]">
           {title}

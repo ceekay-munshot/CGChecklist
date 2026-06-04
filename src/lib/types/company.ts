@@ -52,6 +52,8 @@ export interface RefreshProgress {
   outcome: RefreshOutcome | null;
   diff: import("@/lib/refresh/diffMuns").MunsDiff | null;
   error: string | null;
+  /** True when the most recent run was cancelled by the user. */
+  cancelled: boolean;
 }
 
 export interface CompanyState {

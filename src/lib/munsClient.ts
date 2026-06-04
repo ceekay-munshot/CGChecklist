@@ -9,6 +9,13 @@ export interface MunsGovernanceResponse {
   cached?: boolean;
   /** ISO timestamp of when a cached result was originally stored. */
   cachedAt?: string;
+  /** True when the request was aborted by the caller. */
+  cancelled?: boolean;
+}
+
+export interface FetchGovernanceOptions {
+  /** Abort signal used to cancel an in-flight run. */
+  signal?: AbortSignal;
 }
 
 export interface MunsAgentInput {
@@ -27,6 +34,7 @@ interface RunRouteResponse {
 
 export const fetchGovernanceAnalysis = async (
   input: MunsAgentInput,
+  options: FetchGovernanceOptions = {},
 ): Promise<MunsGovernanceResponse> => {
   if (!input.ticker?.trim() || !input.companyName?.trim()) {
     return {
@@ -46,6 +54,7 @@ export const fetchGovernanceAnalysis = async (
         companyName: input.companyName.trim(),
         country: input.country,
       }),
+      signal: options.signal,
     });
 
     const data = (await response.json()) as RunRouteResponse;
@@ -68,6 +77,15 @@ export const fetchGovernanceAnalysis = async (
       cachedAt: data.cachedAt,
     };
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return {
+        ok: false,
+        raw: "",
+        parsed: null,
+        cancelled: true,
+        error: "Run cancelled.",
+      };
+    }
     const message = error instanceof Error ? error.message : "Unknown error";
     return {
       ok: false,

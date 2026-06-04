@@ -25,6 +25,7 @@ interface CompanyContextValue {
   dashboardUnlocked: boolean;
   setIdentity: (patch: Partial<CompanyIdentity>) => void;
   refresh: () => Promise<void>;
+  cancel: () => void;
   dismissProgress: () => void;
   unlockDashboard: () => void;
   lockDashboard: () => void;
@@ -45,6 +46,7 @@ const INITIAL_STATE: CompanyState = {
     outcome: null,
     diff: null,
     error: null,
+    cancelled: false,
   },
 };
 
@@ -56,6 +58,7 @@ export function CompanyProvider({
   const [state, setState] = useState<CompanyState>(INITIAL_STATE);
   const [dashboardUnlocked, setDashboardUnlocked] = useState(false);
   const stateRef = useRef(state);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -83,6 +86,11 @@ export function CompanyProvider({
 
     const previousRaw = stateRef.current.munsRaw;
 
+    // Abort any run still in flight before starting a new one.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setState((prev) => ({
       ...prev,
       status: "loading",
@@ -94,14 +102,42 @@ export function CompanyProvider({
         outcome: null,
         diff: null,
         error: null,
+        cancelled: false,
       },
     }));
 
-    const result = await fetchGovernanceAnalysis({
-      ticker: identity.ticker,
-      companyName: identity.name,
-      country: identity.country || undefined,
-    });
+    const result = await fetchGovernanceAnalysis(
+      {
+        ticker: identity.ticker,
+        companyName: identity.name,
+        country: identity.country || undefined,
+      },
+      { signal: controller.signal },
+    );
+
+    // Ignore the outcome of a run that has been superseded by a newer one.
+    if (abortRef.current !== controller) return;
+    abortRef.current = null;
+
+    if (result.cancelled) {
+      // Roll back to where we were: keep prior data if we had any, otherwise
+      // return to the empty/idle state so the start form reappears.
+      const hadData = Boolean(previousRaw.trim());
+      setState((prev) => ({
+        ...prev,
+        status: hadData ? "ready" : "idle",
+        message: "Run cancelled.",
+        progress: {
+          startedAt: null,
+          finishedAt: Date.now(),
+          outcome: null,
+          diff: null,
+          error: null,
+          cancelled: true,
+        },
+      }));
+      return;
+    }
 
     const refreshedAtIso = new Date().toISOString();
     const outcome: RefreshOutcome = result.ok ? "success" : "error";
@@ -125,11 +161,16 @@ export function CompanyProvider({
           outcome,
           diff,
           error: result.ok ? null : result.error || "Failed to fetch.",
+          cancelled: false,
         },
       };
     });
 
     recordRefreshHistory(identity, outcome, refreshedAtIso);
+  }, []);
+
+  const cancel = useCallback(() => {
+    abortRef.current?.abort();
   }, []);
 
   const unlockDashboard = useCallback(() => setDashboardUnlocked(true), []);
@@ -144,6 +185,7 @@ export function CompanyProvider({
         outcome: null,
         diff: null,
         error: null,
+        cancelled: false,
       },
     }));
   }, []);
@@ -154,6 +196,7 @@ export function CompanyProvider({
       dashboardUnlocked,
       setIdentity,
       refresh,
+      cancel,
       dismissProgress,
       unlockDashboard,
       lockDashboard,
@@ -163,6 +206,7 @@ export function CompanyProvider({
       dashboardUnlocked,
       setIdentity,
       refresh,
+      cancel,
       dismissProgress,
       unlockDashboard,
       lockDashboard,

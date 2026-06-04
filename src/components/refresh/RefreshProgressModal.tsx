@@ -21,12 +21,13 @@ interface CompletionState {
 }
 
 export function RefreshProgressModal() {
-  const { state } = useCompany();
+  const { state, cancel } = useCompany();
   const isLoading = state.status === "loading";
   const startedAt = state.progress.startedAt;
   const finishedAt = state.progress.finishedAt;
   const progressDiff = state.progress.diff;
   const progressError = state.progress.error;
+  const progressCancelled = state.progress.cancelled;
 
   const [elapsedMs, setElapsedMs] = useState(0);
   const [completion, setCompletion] = useState<CompletionState | null>(null);
@@ -45,7 +46,8 @@ export function RefreshProgressModal() {
     const prev = prevStatusRef.current;
     if (
       prev === "loading" &&
-      (state.status === "ready" || state.status === "error")
+      (state.status === "ready" || state.status === "error") &&
+      !progressCancelled
     ) {
       const total = startedAt && finishedAt ? finishedAt - startedAt : 0;
       setCompletion({
@@ -59,7 +61,14 @@ export function RefreshProgressModal() {
       setElapsedMs(0);
     }
     prevStatusRef.current = state.status;
-  }, [state.status, startedAt, finishedAt, progressDiff, progressError]);
+  }, [
+    state.status,
+    startedAt,
+    finishedAt,
+    progressDiff,
+    progressError,
+    progressCancelled,
+  ]);
 
   useEffect(() => {
     if (!completion) return;
@@ -89,6 +98,7 @@ export function RefreshProgressModal() {
             companyName={state.identity.name}
             ticker={state.identity.ticker}
             elapsedMs={elapsedMs}
+            onCancel={cancel}
           />
         ) : completion ? (
           <CompletionFrame
@@ -107,10 +117,12 @@ function LoadingFrame({
   companyName,
   ticker,
   elapsedMs,
+  onCancel,
 }: {
   companyName: string;
   ticker: string;
   elapsedMs: number;
+  onCancel: () => void;
 }) {
   const phaseIdx = currentPhaseIndex(elapsedMs);
   const percent = progressPercent(elapsedMs, false);
@@ -198,7 +210,31 @@ function LoadingFrame({
         full governance analysis. You can leave this tab open — we&apos;ll
         update the dashboard the moment results land.
       </p>
+
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="focus-ring inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-fg-muted)] transition hover:bg-[var(--color-risk-50)] hover:text-[var(--color-risk-700)]"
+        >
+          <CancelIcon />
+          Cancel run
+        </button>
+      </div>
     </>
+  );
+}
+
+function CancelIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" aria-hidden>
+      <path
+        d="M4 4l8 8M12 4l-8 8"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

@@ -5,6 +5,10 @@ export interface MunsGovernanceResponse {
   raw: string;
   parsed: ReturnType<typeof parseMunsResponse> | null;
   error?: string;
+  /** True when the result came from the KV cache rather than a fresh run. */
+  cached?: boolean;
+  /** ISO timestamp of when a cached result was originally stored. */
+  cachedAt?: string;
 }
 
 export interface MunsAgentInput {
@@ -17,6 +21,8 @@ interface RunRouteResponse {
   ok: boolean;
   raw: string;
   error?: string;
+  cached?: boolean;
+  cachedAt?: string;
 }
 
 export const fetchGovernanceAnalysis = async (
@@ -58,6 +64,8 @@ export const fetchGovernanceAnalysis = async (
       ok: true,
       raw: data.raw,
       parsed: parseMunsResponse(data.raw),
+      cached: data.cached,
+      cachedAt: data.cachedAt,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

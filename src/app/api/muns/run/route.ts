@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { MUNS_API_BASE, GOVERNANCE_AGENT_UUID } from "@/lib/munsConfig";
+import { getCachedRun, putCachedRun, runCacheKey } from "@/lib/munsCache";
 
 const COUNTRY_CODE_TO_NAME: Record<string, string> = {
   IN: "INDIA",
@@ -23,14 +24,6 @@ interface RunRequest {
 }
 
 export async function POST(request: Request) {
-  const token = process.env.TEMPORARY_TOKEN;
-  if (!token) {
-    return NextResponse.json(
-      { ok: false, raw: "", error: "TEMPORARY_TOKEN not configured." },
-      { status: 500 },
-    );
-  }
-
   let body: RunRequest;
   try {
     body = (await request.json()) as RunRequest;
@@ -54,6 +47,29 @@ export async function POST(request: Request) {
     );
   }
 
+  const country = resolveCountry(body.country);
+  const cacheKey = runCacheKey({ ticker, country });
+
+  // Serve a stored run if we produced one for this ticker within the last
+  // month — no need to re-run the model.
+  const cached = await getCachedRun(cacheKey);
+  if (cached) {
+    return NextResponse.json({
+      ok: true,
+      raw: cached.raw,
+      cached: true,
+      cachedAt: new Date(cached.storedAt).toISOString(),
+    });
+  }
+
+  const token = process.env.TEMPORARY_TOKEN;
+  if (!token) {
+    return NextResponse.json(
+      { ok: false, raw: "", error: "TEMPORARY_TOKEN not configured." },
+      { status: 500 },
+    );
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const payload = {
     agent_library_id: GOVERNANCE_AGENT_UUID,
@@ -61,7 +77,7 @@ export async function POST(request: Request) {
       stock_ticker: ticker.toUpperCase(),
       stock_company_name: companyName,
       context_company_name: companyName,
-      stock_country: resolveCountry(body.country),
+      stock_country: country,
       to_date: today,
       timezone: "UTC",
     },
@@ -90,7 +106,11 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true, raw });
+    // Persist the fresh run so subsequent requests within a month are served
+    // from KV instead of re-running the model.
+    await putCachedRun(cacheKey, raw);
+
+    return NextResponse.json({ ok: true, raw, cached: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

@@ -8,6 +8,16 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets"
   },
+  // Caches MUNS model runs keyed by ticker/country so a run produced within the
+  // last month is served from KV instead of re-running the model.
+  // Create the namespace once and paste its id below:
+  //   npx wrangler kv namespace create MUNS_RUNS
+  "kv_namespaces": [
+    {
+      "binding": "MUNS_RUNS",
+      "id": "<REPLACE_WITH_KV_NAMESPACE_ID>"
+    }
+  ],
   "build": {
     "command": "npx opennextjs-cloudflare build"
   },

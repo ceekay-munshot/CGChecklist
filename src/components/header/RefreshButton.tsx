@@ -19,7 +19,9 @@ export function RefreshButton() {
       });
       return;
     }
-    void refresh();
+    // A manual refresh from the dashboard regenerates the analysis as of today,
+    // bypassing the month-long cached run.
+    void refresh({ force: true });
   };
 
   return (
@@ -32,10 +34,10 @@ export function RefreshButton() {
       {isLoading ? (
         <>
           <Spinner />
-          Refreshing
+          Updating
         </>
       ) : (
-        <>Refresh data</>
+        <>Update to today</>
       )}
     </button>
   );

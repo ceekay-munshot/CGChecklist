@@ -21,6 +21,8 @@ interface RunRequest {
   ticker?: string;
   companyName?: string;
   country?: string;
+  /** When true, bypass the cached run and force a fresh model run. */
+  force?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -51,15 +53,18 @@ export async function POST(request: Request) {
   const cacheKey = runCacheKey({ ticker, country });
 
   // Serve a stored run if we produced one for this ticker within the last
-  // month — no need to re-run the model.
-  const cached = await getCachedRun(cacheKey);
-  if (cached) {
-    return NextResponse.json({
-      ok: true,
-      raw: cached.raw,
-      cached: true,
-      cachedAt: new Date(cached.storedAt).toISOString(),
-    });
+  // month — no need to re-run the model. A forced run skips this and
+  // regenerates the analysis as of today.
+  if (!body.force) {
+    const cached = await getCachedRun(cacheKey);
+    if (cached) {
+      return NextResponse.json({
+        ok: true,
+        raw: cached.raw,
+        cached: true,
+        cachedAt: new Date(cached.storedAt).toISOString(),
+      });
+    }
   }
 
   const token = process.env.TEMPORARY_TOKEN;

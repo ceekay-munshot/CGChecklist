@@ -24,7 +24,7 @@ interface CompanyContextValue {
   state: CompanyState;
   dashboardUnlocked: boolean;
   setIdentity: (patch: Partial<CompanyIdentity>) => void;
-  refresh: () => Promise<void>;
+  refresh: (options?: { force?: boolean }) => Promise<void>;
   cancel: () => void;
   dismissProgress: () => void;
   unlockDashboard: () => void;
@@ -71,7 +71,7 @@ export function CompanyProvider({
     }));
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options?: { force?: boolean }) => {
     const identity = stateRef.current.identity;
 
     if (!isComplete(identity)) {
@@ -112,7 +112,7 @@ export function CompanyProvider({
         companyName: identity.name,
         country: identity.country || undefined,
       },
-      { signal: controller.signal },
+      { signal: controller.signal, force: options?.force },
     );
 
     // Ignore the outcome of a run that has been superseded by a newer one.
@@ -146,10 +146,15 @@ export function CompanyProvider({
       const status: DataStatus = result.ok ? "ready" : "error";
       const newRaw = result.ok ? result.raw : prev.munsRaw;
       const diff = result.ok ? diffMuns(previousRaw, result.raw) : null;
+      // Reflect when the analysis was actually produced: for a cached run that
+      // is the KV store time; for a fresh run it is now.
+      const dataAsOf = result.cached
+        ? result.cachedAt ?? refreshedAtIso
+        : refreshedAtIso;
       return {
         ...prev,
         status,
-        lastRefreshedAt: refreshedAtIso,
+        lastRefreshedAt: result.ok ? dataAsOf : prev.lastRefreshedAt,
         message: result.ok
           ? "Live MUNS analysis loaded."
           : result.error || "Failed to fetch MUNS analysis.",

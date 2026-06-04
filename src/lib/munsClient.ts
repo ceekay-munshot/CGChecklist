@@ -16,6 +16,8 @@ export interface MunsGovernanceResponse {
 export interface FetchGovernanceOptions {
   /** Abort signal used to cancel an in-flight run. */
   signal?: AbortSignal;
+  /** When true, bypass the cached run and force a fresh model run. */
+  force?: boolean;
 }
 
 export interface MunsAgentInput {
@@ -53,6 +55,7 @@ export const fetchGovernanceAnalysis = async (
         ticker: input.ticker.trim(),
         companyName: input.companyName.trim(),
         country: input.country,
+        force: options.force,
       }),
       signal: options.signal,
     });

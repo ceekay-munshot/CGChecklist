@@ -9,7 +9,6 @@ import { GovernanceKpiCards } from "@/components/governance/GovernanceKpiCards";
 import { GovernanceSectionSummaryTable } from "@/components/governance/GovernanceSectionSummaryTable";
 import { GovernanceSectionTable } from "@/components/governance/GovernanceSectionTable";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
-import { MOCK_GOVERNANCE_ROWS } from "@/lib/mock/governanceMock";
 import { munsHtmlToGovernanceRows } from "@/lib/munsToGovernance";
 import {
   calculateGovernanceScore,
@@ -22,17 +21,18 @@ export default function GovernancePage() {
   const { munsRaw, munsError } = state;
 
   const rows = useMemo(() => {
-    if (munsRaw && !munsError) {
-      const parsed = munsHtmlToGovernanceRows(munsRaw);
-      if (parsed.length > 0) return parsed;
-    }
-    return MOCK_GOVERNANCE_ROWS;
-  }, [munsRaw, munsError]);
+    if (!munsRaw) return [];
+    return munsHtmlToGovernanceRows(munsRaw);
+  }, [munsRaw]);
+
+  const hasData = rows.length > 0;
 
   const totals = calculateGovernanceScore(rows);
   const summaries = getGovernanceSectionSummaries(rows);
 
-  const isLive = Boolean(munsRaw && !munsError);
+  if (!hasData) {
+    return <GovernanceEmptyState error={munsError} />;
+  }
 
   return (
     <div className="grid gap-5">
@@ -42,9 +42,7 @@ export default function GovernancePage() {
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
           action={
             <div className="flex items-center gap-3">
-              <Badge tone={isLive ? "good" : "info"}>
-                {isLive ? "Live MUNS data" : "Mock data"}
-              </Badge>
+              <Badge tone="good">Live MUNS data</Badge>
               <GovernanceExportButton rows={rows} />
             </div>
           }
@@ -79,5 +77,27 @@ export default function GovernancePage() {
 
       <GovernanceFinalSummary totals={totals} />
     </div>
+  );
+}
+
+function GovernanceEmptyState({ error }: { error: string | null }) {
+  return (
+    <Card>
+      <CardHeader
+        title="Corporate Governance Score"
+        description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
+        action={<Badge tone="unknown">Awaiting data</Badge>}
+      />
+      <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+        <p className="text-[15px] font-semibold tracking-tight text-[var(--color-fg)]">
+          {error ? "Couldn't load governance analysis" : "No analysis yet"}
+        </p>
+        <p className="max-w-md text-sm text-[var(--color-fg-muted)]">
+          {error
+            ? error
+            : "Run an analysis from the header to populate the governance scorecard with live MUNS data."}
+        </p>
+      </div>
+    </Card>
   );
 }

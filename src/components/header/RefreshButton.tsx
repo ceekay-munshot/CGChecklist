@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useCompany } from "@/lib/state/CompanyContext";
 import { useToast } from "@/lib/state/ToastContext";
 
@@ -7,8 +8,9 @@ export function RefreshButton() {
   const { state, refresh } = useCompany();
   const { push } = useToast();
   const isLoading = state.status === "loading";
+  const [pending, setPending] = useState<null | "refresh" | "update">(null);
 
-  const handleClick = () => {
+  const ensureIdentity = () => {
     const { name, ticker } = state.identity;
     if (!name.trim() || !ticker.trim()) {
       push({
@@ -17,29 +19,60 @@ export function RefreshButton() {
         description:
           "Please choose a company and confirm its ticker before refreshing.",
       });
-      return;
+      return false;
     }
-    // A manual refresh from the dashboard regenerates the analysis as of today,
-    // bypassing the month-long cached run.
+    return true;
+  };
+
+  // Cache-respecting refresh: serves the stored run if one exists from the
+  // last month, otherwise runs the model.
+  const handleRefresh = () => {
+    if (!ensureIdentity()) return;
+    setPending("refresh");
+    void refresh();
+  };
+
+  // Forces a fresh run as of today, bypassing the cached run.
+  const handleUpdate = () => {
+    if (!ensureIdentity()) return;
+    setPending("update");
     void refresh({ force: true });
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isLoading}
-      className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-fg-inverse)] shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {isLoading ? (
-        <>
-          <Spinner />
-          Updating
-        </>
-      ) : (
-        <>Update to today</>
-      )}
-    </button>
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={handleRefresh}
+        disabled={isLoading}
+        className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-fg-inverse)] shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isLoading && pending === "refresh" ? (
+          <>
+            <Spinner />
+            Refreshing
+          </>
+        ) : (
+          <>Refresh data</>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={handleUpdate}
+        disabled={isLoading}
+        title="Re-run the analysis as of today, ignoring the cached run"
+        className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-fg)] shadow-sm transition hover:bg-[var(--color-mist-50)] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isLoading && pending === "update" ? (
+          <>
+            <Spinner />
+            Updating
+          </>
+        ) : (
+          <>Update to today</>
+        )}
+      </button>
+    </div>
   );
 }
 

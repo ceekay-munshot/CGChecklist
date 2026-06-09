@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import type { CompanySuggestion } from "@/lib/types/search";
 
-const DEVDE_SEARCH_URL = "https://devde.muns.io/stock/search";
+const BIRDNEST_SEARCH_URL = "https://birdnest.muns.io/stock/search";
 
-type DevdeEntry = [string | null, string | null, string | null];
+type BirdnestEntry = [string | null, string | null, string | null];
 
-interface DevdeResponse {
+interface BirdnestResponse {
   success?: boolean;
   message?: string;
   data?: {
     total_results?: number;
-    results?: Record<string, DevdeEntry>;
+    results?: Record<string, BirdnestEntry>;
   };
 }
 
@@ -27,9 +27,9 @@ const COUNTRY_TO_LISTING: Record<
   Singapore: { exchange: "OTHER", countryCode: "SG", suffix: ".SI" },
 };
 
-const mapDevdeEntry = (
+const mapBirdnestEntry = (
   ticker: string,
-  entry: DevdeEntry,
+  entry: BirdnestEntry,
 ): CompanySuggestion | null => {
   const [country, name, industry] = entry;
   if (!ticker || !name) return null;
@@ -66,45 +66,45 @@ const rankSuggestions = (
   });
 };
 
-const fetchDevde = async (
+const fetchBirdnest = async (
   query: string,
 ): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
   const token = process.env.MUNS_BEARER_TOKEN;
   if (!token) {
-    return { suggestions: [], debug: "devde -> no token" };
+    return { suggestions: [], debug: "birdnest -> no token" };
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {
-    const res = await fetch(DEVDE_SEARCH_URL, {
+    const res = await fetch(BIRDNEST_SEARCH_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, user_index: 124 }),
+      body: JSON.stringify({ query }),
       signal: controller.signal,
     });
     if (!res.ok) {
-      return { suggestions: [], debug: `devde -> ${res.status}` };
+      return { suggestions: [], debug: `birdnest -> ${res.status}` };
     }
-    const data = (await res.json()) as DevdeResponse;
+    const data = (await res.json()) as BirdnestResponse;
     const results = data.data?.results;
     if (!results) {
-      return { suggestions: [], debug: "devde -> empty" };
+      return { suggestions: [], debug: "birdnest -> empty" };
     }
     const mapped: CompanySuggestion[] = [];
     for (const [ticker, entry] of Object.entries(results)) {
-      const suggestion = mapDevdeEntry(ticker, entry);
+      const suggestion = mapBirdnestEntry(ticker, entry);
       if (suggestion) mapped.push(suggestion);
     }
     return {
       suggestions: rankSuggestions(mapped, query).slice(0, 8),
-      debug: `devde -> ${mapped.length}`,
+      debug: `birdnest -> ${mapped.length}`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    return { suggestions: [], debug: `devde -> ${msg}` };
+    return { suggestions: [], debug: `birdnest -> ${msg}` };
   } finally {
     clearTimeout(timer);
   }
@@ -237,13 +237,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const { suggestions: devdeHits, debug: devdeDebug } =
-    await fetchDevde(q);
-  if (devdeHits.length > 0) {
+  const { suggestions: birdnestHits, debug: birdnestDebug } =
+    await fetchBirdnest(q);
+  if (birdnestHits.length > 0) {
     return NextResponse.json(
       debug
-        ? { suggestions: devdeHits, debug: devdeDebug }
-        : { suggestions: devdeHits },
+        ? { suggestions: birdnestHits, debug: birdnestDebug }
+        : { suggestions: birdnestHits },
       {
         headers: {
           "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
@@ -260,7 +260,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     debug
-      ? { suggestions, debug: `${devdeDebug}; yahoo -> ${upstreamDebug}` }
+      ? { suggestions, debug: `${birdnestDebug}; yahoo -> ${upstreamDebug}` }
       : { suggestions },
     {
       headers: {

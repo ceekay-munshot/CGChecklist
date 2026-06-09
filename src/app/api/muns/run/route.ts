@@ -67,10 +67,10 @@ export async function POST(request: Request) {
     }
   }
 
-  const token = process.env.MUNS_BEARER_TOKEN;
+  const token = process.env.TEMPORARY_TOKEN;
   if (!token) {
     return NextResponse.json(
-      { ok: false, raw: "", error: "MUNS_BEARER_TOKEN not configured." },
+      { ok: false, raw: "", error: "TEMPORARY_TOKEN not configured." },
       { status: 500 },
     );
   }
@@ -78,7 +78,6 @@ export async function POST(request: Request) {
   const today = new Date().toISOString().slice(0, 10);
   const payload = {
     agent_library_id: GOVERNANCE_AGENT_UUID,
-    user_index: 124,
     metadata: {
       stock_ticker: ticker.toUpperCase(),
       stock_company_name: companyName,

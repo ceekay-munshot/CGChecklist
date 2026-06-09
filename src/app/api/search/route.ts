@@ -3,9 +3,9 @@ import type { CompanySuggestion } from "@/lib/types/search";
 
 const DEVDE_SEARCH_URL = "https://devde.muns.io/stock/search";
 
-type BirdnestEntry = [string | null, string | null, string | null];
+type DevdeEntry = [string | null, string | null, string | null];
 
-interface BirdnestResponse {
+interface DevdeResponse {
   success?: boolean;
   message?: string;
   data?: {
@@ -27,9 +27,9 @@ const COUNTRY_TO_LISTING: Record<
   Singapore: { exchange: "OTHER", countryCode: "SG", suffix: ".SI" },
 };
 
-const mapBirdnestEntry = (
+const mapDevdeEntry = (
   ticker: string,
-  entry: BirdnestEntry,
+  entry: DevdeEntry,
 ): CompanySuggestion | null => {
   const [country, name, industry] = entry;
   if (!ticker || !name) return null;
@@ -66,7 +66,7 @@ const rankSuggestions = (
   });
 };
 
-const fetchBirdnest = async (
+const fetchDevde = async (
   query: string,
 ): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
   const token = process.env.MUNS_BEARER_TOKEN;
@@ -76,7 +76,7 @@ const fetchBirdnest = async (
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {
-    const res = await fetch(BIRDNEST_SEARCH_URL, {
+    const res = await fetch(DEVDE_SEARCH_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -88,14 +88,14 @@ const fetchBirdnest = async (
     if (!res.ok) {
       return { suggestions: [], debug: `devde -> ${res.status}` };
     }
-    const data = (await res.json()) as BirdnestResponse;
+    const data = (await res.json()) as DevdeResponse;
     const results = data.data?.results;
     if (!results) {
       return { suggestions: [], debug: "devde -> empty" };
     }
     const mapped: CompanySuggestion[] = [];
     for (const [ticker, entry] of Object.entries(results)) {
-      const suggestion = mapBirdnestEntry(ticker, entry);
+      const suggestion = mapDevdeEntry(ticker, entry);
       if (suggestion) mapped.push(suggestion);
     }
     return {
@@ -238,7 +238,7 @@ export async function GET(request: Request) {
   }
 
   const { suggestions: devdeHits, debug: devdeDebug } =
-    await fetchBirdnest(q);
+    await fetchDevde(q);
   if (devdeHits.length > 0) {
     return NextResponse.json(
       debug

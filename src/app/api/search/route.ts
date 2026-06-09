@@ -82,7 +82,7 @@ const fetchDevde = async (
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, user_index: 124 }),
       signal: controller.signal,
     });
     if (!res.ok) {

@@ -10,7 +10,7 @@ interface DevdeResponse {
   message?: string;
   data?: {
     total_results?: number;
-    results?: Record<string, BirdnestEntry>;
+    results?: Record<string, DevdeEntry>;
   };
 }
 

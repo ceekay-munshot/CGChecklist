@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { CompanySuggestion } from "@/lib/types/search";
 
-const BIRDNEST_SEARCH_URL = "https://birdnest.muns.io/stock/search";
+const DEVDE_SEARCH_URL = "https://devde.muns.io/stock/search";
 
 type BirdnestEntry = [string | null, string | null, string | null];
 
@@ -71,7 +71,7 @@ const fetchBirdnest = async (
 ): Promise<{ suggestions: CompanySuggestion[]; debug: string }> => {
   const token = process.env.MUNS_BEARER_TOKEN;
   if (!token) {
-    return { suggestions: [], debug: "birdnest -> no token" };
+    return { suggestions: [], debug: "devde -> no token" };
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
@@ -86,12 +86,12 @@ const fetchBirdnest = async (
       signal: controller.signal,
     });
     if (!res.ok) {
-      return { suggestions: [], debug: `birdnest -> ${res.status}` };
+      return { suggestions: [], debug: `devde -> ${res.status}` };
     }
     const data = (await res.json()) as BirdnestResponse;
     const results = data.data?.results;
     if (!results) {
-      return { suggestions: [], debug: "birdnest -> empty" };
+      return { suggestions: [], debug: "devde -> empty" };
     }
     const mapped: CompanySuggestion[] = [];
     for (const [ticker, entry] of Object.entries(results)) {
@@ -100,11 +100,11 @@ const fetchBirdnest = async (
     }
     return {
       suggestions: rankSuggestions(mapped, query).slice(0, 8),
-      debug: `birdnest -> ${mapped.length}`,
+      debug: `devde -> ${mapped.length}`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    return { suggestions: [], debug: `birdnest -> ${msg}` };
+    return { suggestions: [], debug: `devde -> ${msg}` };
   } finally {
     clearTimeout(timer);
   }
@@ -237,13 +237,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const { suggestions: birdnestHits, debug: birdnestDebug } =
+  const { suggestions: devdeHits, debug: devdeDebug } =
     await fetchBirdnest(q);
-  if (birdnestHits.length > 0) {
+  if (devdeHits.length > 0) {
     return NextResponse.json(
       debug
-        ? { suggestions: birdnestHits, debug: birdnestDebug }
-        : { suggestions: birdnestHits },
+        ? { suggestions: devdeHits, debug: devdeDebug }
+        : { suggestions: devdeHits },
       {
         headers: {
           "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
@@ -260,7 +260,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     debug
-      ? { suggestions, debug: `${birdnestDebug}; yahoo -> ${upstreamDebug}` }
+      ? { suggestions, debug: `${devdeDebug}; yahoo -> ${upstreamDebug}` }
       : { suggestions },
     {
       headers: {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { MUNS_API_BASE, GOVERNANCE_AGENT_UUID } from "@/lib/munsConfig";
 import { getCachedRun, putCachedRun, runCacheKey } from "@/lib/munsCache";
+import { runMunsChatGovernance } from "@/lib/munsChatService";
 
 const COUNTRY_CODE_TO_NAME: Record<string, string> = {
   IN: "INDIA",
@@ -75,47 +75,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const payload = {
-    agent_library_id: GOVERNANCE_AGENT_UUID,
-    metadata: {
-      stock_ticker: ticker.toUpperCase(),
-      stock_company_name: companyName,
-      context_company_name: companyName,
-      stock_country: country,
-      to_date: today,
-      timezone: "UTC",
-    },
-  };
-
   try {
-    const upstream = await fetch(`${MUNS_API_BASE}/agents/run`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    const result = await runMunsChatGovernance(
+      ticker,
+      companyName,
+      country,
+      token,
+    );
 
-    const raw = await upstream.text();
-
-    if (!upstream.ok) {
+    if (!result.ok) {
       return NextResponse.json(
-        {
-          ok: false,
-          raw,
-          error: `MUNS request failed with status ${upstream.status}.`,
-        },
+        { ok: false, raw: "", error: result.error ?? "Chat analysis failed." },
         { status: 502 },
       );
     }
 
-    // Persist the fresh run so subsequent requests within a month are served
-    // from KV instead of re-running the model.
-    await putCachedRun(cacheKey, raw);
+    await putCachedRun(cacheKey, result.raw);
 
-    return NextResponse.json({ ok: true, raw, cached: false });
+    return NextResponse.json({ ok: true, raw: result.raw, cached: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

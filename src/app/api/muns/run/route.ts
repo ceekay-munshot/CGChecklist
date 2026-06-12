@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       companyName,
       country,
       token,
+      request.signal,
     );
 
     if (!result.ok) {

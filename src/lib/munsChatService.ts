@@ -141,7 +141,20 @@ function makeQueryContext(
   };
 }
 
-// Handles both SSE and regular JSON/text responses from the chat API
+// Strip MUNS response wrapper tags (e.g. <ans>…</ans>, <docsource>…</docsource>)
+// so they don't appear as extra header cells when the table parser splits on "|".
+function stripMunsTags(text: string): string {
+  return text
+    .replace(/<ans>([\s\S]*?)<\/ans>/gi, "$1")
+    .replace(/<\/?ans\b[^>]*>/gi, "")
+    .replace(/<docsource\b[^>]*>[\s\S]*?<\/docsource>/gi, "")
+    .replace(/<\/?docsource\b[^>]*>/gi, "")
+    .trim();
+}
+
+// Handles both SSE and regular JSON/text responses from the chat API.
+// SSE frames are buffered across read() chunks so partial lines are never
+// parsed mid-fragment.
 async function extractText(res: Response): Promise<string> {
   const contentType = res.headers.get("content-type") ?? "";
 
@@ -150,11 +163,16 @@ async function extractText(res: Response): Promise<string> {
     if (!reader) return "";
     const chunks: string[] = [];
     const decoder = new TextDecoder();
+    let lineBuffer = "";
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      for (const line of chunk.split("\n")) {
+      lineBuffer += decoder.decode(value, { stream: true });
+      const lines = lineBuffer.split("\n");
+      // Keep the last (potentially incomplete) fragment in the buffer
+      lineBuffer = lines.pop() ?? "";
+      for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
         const data = line.slice(6).trim();
         if (data === "[DONE]") continue;
@@ -171,7 +189,7 @@ async function extractText(res: Response): Promise<string> {
         }
       }
     }
-    return chunks.join("");
+    return stripMunsTags(chunks.join(""));
   }
 
   const text = await res.text();
@@ -183,11 +201,11 @@ async function extractText(res: Response): Promise<string> {
       json.text ??
       json.content ??
       json.message;
-    if (typeof candidate === "string") return candidate;
+    if (typeof candidate === "string") return stripMunsTags(candidate);
   } catch {
     // use raw text as-is
   }
-  return text;
+  return stripMunsTags(text);
 }
 
 async function sendMessage(
@@ -285,9 +303,10 @@ function parseResponseRow(text: string): {
         h.includes("note"),
     );
 
+    const rawScore = scoreIdx >= 0 ? parseInt(cells[scoreIdx] ?? "") : NaN;
     return {
       response: respIdx >= 0 ? (cells[respIdx] ?? "N/A") : inferResponse(text),
-      score: scoreIdx >= 0 ? parseInt(cells[scoreIdx] ?? "1") || 1 : 1,
+      score: isNaN(rawScore) ? 1 : rawScore,
       remarks:
         remarksIdx >= 0
           ? (cells[remarksIdx] ?? text.slice(0, 500))
@@ -451,6 +470,22 @@ export async function runMunsChatGovernance(
       });
       sectionHistory.push(`User: ${q.prompt}`, "AI: [Error]");
     }
+  }
+
+  const errorCount = results.filter((r) =>
+    r.rawResponse.startsWith("Error:"),
+  ).length;
+
+  // Refuse to cache a run where more than half the questions failed — this
+  // typically means the Workers subrequest limit was hit and the remaining
+  // sections are entirely absent.  Return an error so the UI surfaces the
+  // problem rather than caching a permanently broken result.
+  if (errorCount > CHAT_QUESTIONS.length / 2) {
+    return {
+      ok: false,
+      raw: "",
+      error: `Too many questions failed (${errorCount}/${CHAT_QUESTIONS.length}). Check subrequest limits or token validity.`,
+    };
   }
 
   const raw = assembleMarkdown(results);

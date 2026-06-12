@@ -476,15 +476,14 @@ export async function runMunsChatGovernance(
     r.rawResponse.startsWith("Error:"),
   ).length;
 
-  // Refuse to cache a run where more than half the questions failed — this
-  // typically means the Workers subrequest limit was hit and the remaining
-  // sections are entirely absent.  Return an error so the UI surfaces the
-  // problem rather than caching a permanently broken result.
-  if (errorCount > CHAT_QUESTIONS.length / 2) {
+  // Any failed question produces an Error: row that the parser scores as 1/2
+  // and would be cached for 30 days.  Reject the run entirely so the UI
+  // surfaces the real failure rather than persisting incorrect data.
+  if (errorCount > 0) {
     return {
       ok: false,
       raw: "",
-      error: `Too many questions failed (${errorCount}/${CHAT_QUESTIONS.length}). Check subrequest limits or token validity.`,
+      error: `${errorCount} of ${CHAT_QUESTIONS.length} questions failed. Check subrequest limits or token validity and retry.`,
     };
   }
 

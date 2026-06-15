@@ -2,7 +2,7 @@ import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MUNS_CHAT_API_URL, MUNS_CHAT_CONTEXT_EMAIL } from "@/lib/munsConfig";
 
 // ---------------------------------------------------------------------------
-// Mega prompt — sent as the very first message to initialise the chat session
+// Mega prompt — sent as the very first message of each chain
 // ---------------------------------------------------------------------------
 export const MEGA_PROMPT =
   "Make structured tables answering the below questions for the company . " +
@@ -13,8 +13,11 @@ export const MEGA_PROMPT =
   "of the ceo/company/elements in each answer only.  DOUBLE CHECK AND VERIFY " +
   "EACH ANSWER BEFORE ANSWERING.";
 
+// Appended to every individual question so the AI keeps answers concise.
+const ANSWER_FORMAT = " Answer in THREE BULLET POINTS ONLY.";
+
 // ---------------------------------------------------------------------------
-// Section number labels used in the first question of each section
+// Section metadata
 // ---------------------------------------------------------------------------
 const SECTION_NUMBERS: Record<string, string> = {
   BOARD: "1",
@@ -39,6 +42,20 @@ const SECTION_HEADINGS: Record<string, string> = {
   FINANCIALS: "Financials",
 };
 
+// Sections assigned to each parallel chain (4 sections each)
+const CHAIN_A_SECTIONS = new Set([
+  "BOARD",
+  "AUDIT",
+  "STAKEHOLDERS",
+  "EMPLOYEE",
+]);
+const CHAIN_B_SECTIONS = new Set([
+  "INDUSTRY_PROMOTER",
+  "STOCK_EXCHANGE",
+  "OTHER_REGULATORY",
+  "FINANCIALS",
+]);
+
 const ALPHA = "abcdefghijklmnopqrstuvwxyz";
 
 // ---------------------------------------------------------------------------
@@ -48,7 +65,7 @@ interface ChatQuestion {
   questionId: string;
   sectionId: string;
   sectionTitle: string;
-  prompt: string;       // sent to the chat API
+  prompt: string;       // sent to the chat API (includes ANSWER_FORMAT suffix)
   particulars: string;  // clean label written into the assembled markdown
 }
 
@@ -57,18 +74,18 @@ function buildChatQuestions(): ChatQuestion[] {
   for (const section of GOVERNANCE_CHECKLIST) {
     section.items.forEach((item, idx) => {
       const letter = ALPHA[idx] ?? String(idx + 1);
-      let prompt: string;
+      let basePrompt: string;
       if (idx === 0) {
         const num = SECTION_NUMBERS[section.sectionId] ?? "";
-        prompt = `${num}\t${section.title}\n\n\t${letter})${item.particulars}`;
+        basePrompt = `${num}\t${section.title}\n\n\t${letter})${item.particulars}`;
       } else {
-        prompt = `\t${letter})\t${item.particulars}`;
+        basePrompt = `\t${letter})\t${item.particulars}`;
       }
       questions.push({
         questionId: item.questionId,
         sectionId: section.sectionId,
         sectionTitle: SECTION_HEADINGS[section.sectionId] ?? section.title,
-        prompt,
+        prompt: basePrompt + ANSWER_FORMAT,
         particulars: item.particulars,
       });
     });
@@ -77,6 +94,14 @@ function buildChatQuestions(): ChatQuestion[] {
 }
 
 export const CHAT_QUESTIONS = buildChatQuestions();
+
+// Derived sub-lists for each chain, preserving checklist order
+export const CHAIN_A_QUESTIONS = CHAT_QUESTIONS.filter((q) =>
+  CHAIN_A_SECTIONS.has(q.sectionId),
+);
+export const CHAIN_B_QUESTIONS = CHAT_QUESTIONS.filter((q) =>
+  CHAIN_B_SECTIONS.has(q.sectionId),
+);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -98,6 +123,7 @@ interface QueryContext {
 }
 
 interface ChatPayload {
+  user_index: number;
   tasks: string[];
   chat_id?: string;
   query_context: QueryContext;
@@ -141,20 +167,40 @@ function makeQueryContext(
   };
 }
 
-// Strip MUNS response wrapper tags (e.g. <ans>…</ans>, <docsource>…</docsource>)
-// so they don't appear as extra header cells when the table parser splits on "|".
+// The Muns Chat API wraps every answer in <ans>…</ans> nested inside a
+// <task><1><tool>…</tool><ans>…</ans></1></task><sources>…</sources><eos/>
+// envelope.  Extract ONLY the <ans> content and strip everything else so the
+// table parser receives clean markdown/prose rather than raw XML.
 function stripMunsTags(text: string): string {
-  return text
-    .replace(/<ans>([\s\S]*?)<\/ans>/gi, "$1")
-    .replace(/<\/?ans\b[^>]*>/gi, "")
-    .replace(/<docsource\b[^>]*>[\s\S]*?<\/docsource>/gi, "")
-    .replace(/<\/?docsource\b[^>]*>/gi, "")
+  const ansRegex = /<ans>([\s\S]*?)<\/ans>/gi;
+  const blocks: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = ansRegex.exec(text)) !== null) {
+    blocks.push(m[1].trim());
+  }
+
+  const content = blocks.length > 0
+    ? blocks.join("\n\n")
+    : text;
+
+  return content
+    .replace(/<doc_source\b[^>]*>[\s\S]*?<\/doc_source>/gi, "")
+    .replace(/<\/?doc_source\b[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCharCode(parseInt(code, 10)),
+    )
     .trim();
 }
 
-// Handles both SSE and regular JSON/text responses from the chat API.
-// SSE frames are buffered across read() chunks so partial lines are never
-// parsed mid-fragment.
+// Handles both SSE and regular JSON/text responses.
+// SSE frames are buffered across read() chunks to avoid mid-fragment parses.
 async function extractText(res: Response): Promise<string> {
   const contentType = res.headers.get("content-type") ?? "";
 
@@ -170,7 +216,6 @@ async function extractText(res: Response): Promise<string> {
       if (done) break;
       lineBuffer += decoder.decode(value, { stream: true });
       const lines = lineBuffer.split("\n");
-      // Keep the last (potentially incomplete) fragment in the buffer
       lineBuffer = lines.pop() ?? "";
       for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
@@ -220,7 +265,9 @@ async function sendMessage(
   toDate: string,
   signal?: AbortSignal,
 ): Promise<{ text: string; chatId: string }> {
+  const userIndex = parseInt(process.env.MUNS_USER_INDEX ?? "1", 10) || 1;
   const payload: ChatPayload = {
+    user_index: userIndex,
     tasks: [task],
     query_context: makeQueryContext(
       ticker,
@@ -314,7 +361,6 @@ function parseResponseRow(text: string): {
     };
   }
 
-  // No table found — infer from prose
   return { response: inferResponse(text), score: 1, remarks: text.slice(0, 500) };
 }
 
@@ -333,8 +379,7 @@ function inferResponse(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Assemble individual responses into a markdown document the existing parser
-// can read without modification.
+// Assemble individual responses into markdown for the existing parser
 // ---------------------------------------------------------------------------
 function assembleMarkdown(results: QuestionResult[]): string {
   const bySection: Map<string, QuestionResult[]> = new Map();
@@ -349,9 +394,7 @@ function assembleMarkdown(results: QuestionResult[]): string {
     if (items.length === 0) continue;
     const heading = items[0].sectionTitle;
     parts.push(`\n## ${heading}\n`);
-    parts.push(
-      "| Particulars | Response | Score | Max Score | Remarks |",
-    );
+    parts.push("| Particulars | Response | Score | Max Score | Remarks |");
     parts.push("| --- | --- | --- | --- | --- |");
 
     for (const item of items) {
@@ -368,20 +411,19 @@ function assembleMarkdown(results: QuestionResult[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Public entry point
+// Single chain: mega prompt → sequential questions for a subset of sections
 // ---------------------------------------------------------------------------
-export async function runMunsChatGovernance(
+async function runChain(
+  questions: ChatQuestion[],
   ticker: string,
   companyName: string,
   country: string,
   token: string,
+  fromDate: string,
+  toDate: string,
   signal?: AbortSignal,
-): Promise<{ ok: boolean; raw: string; error?: string }> {
-  const toDate = new Date().toISOString().slice(0, 10);
-  const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000);
-  const fromDate = twoYearsAgo.toISOString().slice(0, 10);
-
-  // ── Step 1: mega prompt ─────────────────────────────────────────────────
+): Promise<{ ok: boolean; results: QuestionResult[]; error?: string }> {
+  // Each chain opens its own chat session with the same mega prompt
   let chatId: string | null = null;
   let megaResponse = "";
 
@@ -401,11 +443,9 @@ export async function runMunsChatGovernance(
     chatId = init.chatId || null;
     megaResponse = init.text;
   } catch (err) {
-    if (signal?.aborted) {
-      return { ok: false, raw: "", error: "Cancelled." };
-    }
+    if (signal?.aborted) return { ok: false, results: [], error: "Cancelled." };
     const msg = err instanceof Error ? err.message : String(err);
-    return { ok: false, raw: "", error: `Initial prompt failed: ${msg}` };
+    return { ok: false, results: [], error: `Mega prompt failed: ${msg}` };
   }
 
   const megaHistory: string[] = [
@@ -413,17 +453,13 @@ export async function runMunsChatGovernance(
     `AI: ${megaResponse}`,
   ];
 
-  // ── Step 2: 51 individual questions ────────────────────────────────────
   const results: QuestionResult[] = [];
   let currentSection = "";
   let sectionHistory: string[] = [];
 
-  for (const q of CHAT_QUESTIONS) {
-    if (signal?.aborted) {
-      return { ok: false, raw: "", error: "Cancelled." };
-    }
+  for (const q of questions) {
+    if (signal?.aborted) return { ok: false, results, error: "Cancelled." };
 
-    // Reset section-local history on every new section
     if (q.sectionId !== currentSection) {
       currentSection = q.sectionId;
       sectionHistory = [];
@@ -453,14 +489,10 @@ export async function runMunsChatGovernance(
         rawResponse: result.text,
       });
 
-      // Append only this question's exchange to section history
       sectionHistory.push(`User: ${q.prompt}`, `AI: ${result.text}`);
     } catch (err) {
-      if (signal?.aborted) {
-        return { ok: false, raw: "", error: "Cancelled." };
-      }
+      if (signal?.aborted) return { ok: false, results, error: "Cancelled." };
       const msg = err instanceof Error ? err.message : String(err);
-      // Record the failure but keep going so the rest of the checklist fills
       results.push({
         questionId: q.questionId,
         sectionId: q.sectionId,
@@ -472,13 +504,43 @@ export async function runMunsChatGovernance(
     }
   }
 
-  const errorCount = results.filter((r) =>
+  return { ok: true, results };
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point — two parallel chains covering all 51 questions
+// ---------------------------------------------------------------------------
+export async function runMunsChatGovernance(
+  ticker: string,
+  companyName: string,
+  country: string,
+  token: string,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; raw: string; error?: string }> {
+  const toDate = new Date().toISOString().slice(0, 10);
+  const fromDate = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const args = [ticker, companyName, country, token, fromDate, toDate, signal] as const;
+
+  // Chain A (BOARD → EMPLOYEE) and Chain B (INDUSTRY_PROMOTER → FINANCIALS)
+  // run concurrently — each opens its own chat session with the mega prompt.
+  const [chainA, chainB] = await Promise.all([
+    runChain(CHAIN_A_QUESTIONS, ...args),
+    runChain(CHAIN_B_QUESTIONS, ...args),
+  ]);
+
+  if (!chainA.ok) return { ok: false, raw: "", error: chainA.error };
+  if (!chainB.ok) return { ok: false, raw: "", error: chainB.error };
+
+  // Merge in original checklist order (A sections precede B sections)
+  const allResults = [...chainA.results, ...chainB.results];
+
+  const errorCount = allResults.filter((r) =>
     r.rawResponse.startsWith("Error:"),
   ).length;
 
-  // Any failed question produces an Error: row that the parser scores as 1/2
-  // and would be cached for 30 days.  Reject the run entirely so the UI
-  // surfaces the real failure rather than persisting incorrect data.
   if (errorCount > 0) {
     return {
       ok: false,
@@ -487,6 +549,5 @@ export async function runMunsChatGovernance(
     };
   }
 
-  const raw = assembleMarkdown(results);
-  return { ok: true, raw };
+  return { ok: true, raw: assembleMarkdown(allResults) };
 }

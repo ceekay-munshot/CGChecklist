@@ -1,6 +1,10 @@
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import { MUNS_CHAT_API_URL, MUNS_CHAT_CONTEXT_EMAIL } from "@/lib/munsConfig";
 
+// Appended to the mega prompt AND every individual question — matches the
+// answer-format suffix used by cool_script.sh.
+const ANSWER_FORMAT = " Answer in THREE BULLET POINTS ONLY.";
+
 // ---------------------------------------------------------------------------
 // Mega prompt — sent as the very first message of each chain
 // ---------------------------------------------------------------------------
@@ -11,10 +15,8 @@ export const MEGA_PROMPT =
   "and non generic , specifically suited for the company. keep remarks more " +
   "numerical stating exact problems instead of being concise. use exact name " +
   "of the ceo/company/elements in each answer only.  DOUBLE CHECK AND VERIFY " +
-  "EACH ANSWER BEFORE ANSWERING.";
-
-// Appended to every individual question so the AI keeps answers concise.
-const ANSWER_FORMAT = " Answer in THREE BULLET POINTS. End with 'Score: X/2' on a new line where X is 0, 1, or 2.";
+  "EACH ANSWER BEFORE ANSWERING." +
+  ANSWER_FORMAT;
 
 // ---------------------------------------------------------------------------
 // Section metadata
@@ -222,47 +224,46 @@ function stripMunsTags(text: string): string {
     .trim();
 }
 
-// Handles both SSE and regular JSON/text responses.
-// SSE frames are buffered across read() chunks to avoid mid-fragment parses.
+// Extracts the answer from a chat response. The Muns Chat API returns the full
+// `<task>…<ans>…</ans>…<sources>…<eos>` document directly in the body (often
+// with a text/event-stream content-type but WITHOUT data: framing), so we read
+// the whole body and pull the <ans> block out first — the same approach as
+// cool_script.sh. SSE-framed JSON and plain JSON envelopes are fallbacks only.
 async function extractText(res: Response): Promise<string> {
-  const contentType = res.headers.get("content-type") ?? "";
+  const raw = await res.text();
 
-  if (contentType.includes("text/event-stream")) {
-    const reader = res.body?.getReader();
-    if (!reader) return "";
+  // Primary path: the raw body already contains the <ans> envelope.
+  if (/<ans>/i.test(raw)) {
+    return stripMunsTags(raw);
+  }
+
+  // Fallback: genuine SSE framing (data: {json}) — concatenate text deltas,
+  // then look for an <ans> block in the reconstructed stream.
+  if (/^data:/m.test(raw)) {
     const chunks: string[] = [];
-    const decoder = new TextDecoder();
-    let lineBuffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      lineBuffer += decoder.decode(value, { stream: true });
-      const lines = lineBuffer.split("\n");
-      lineBuffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        const data = line.slice(6).trim();
-        if (data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data) as Record<string, unknown>;
-          const text =
-            (parsed.content as string | undefined) ??
-            (parsed.text as string | undefined) ??
-            ((parsed.delta as Record<string, unknown> | undefined)
-              ?.text as string | undefined);
-          if (text) chunks.push(text);
-        } catch {
-          chunks.push(data);
-        }
+    for (const line of raw.split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(data) as Record<string, unknown>;
+        const t =
+          (parsed.content as string | undefined) ??
+          (parsed.text as string | undefined) ??
+          ((parsed.delta as Record<string, unknown> | undefined)?.text as
+            | string
+            | undefined);
+        chunks.push(typeof t === "string" ? t : data);
+      } catch {
+        chunks.push(data);
       }
     }
     return stripMunsTags(chunks.join(""));
   }
 
-  const text = await res.text();
+  // Fallback: plain JSON envelope with a known text field.
   try {
-    const json = JSON.parse(text) as Record<string, unknown>;
+    const json = JSON.parse(raw) as Record<string, unknown>;
     const candidate =
       json.response ??
       json.answer ??
@@ -273,7 +274,7 @@ async function extractText(res: Response): Promise<string> {
   } catch {
     // use raw text as-is
   }
-  return stripMunsTags(text);
+  return stripMunsTags(raw);
 }
 
 async function sendMessage(

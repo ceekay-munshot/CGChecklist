@@ -98,6 +98,7 @@ interface QueryContext {
 }
 
 interface ChatPayload {
+  user_index: number;
   tasks: string[];
   chat_id?: string;
   query_context: QueryContext;
@@ -141,14 +142,39 @@ function makeQueryContext(
   };
 }
 
-// Strip MUNS response wrapper tags (e.g. <ans>…</ans>, <docsource>…</docsource>)
-// so they don't appear as extra header cells when the table parser splits on "|".
+// The Muns Chat API wraps every answer in <ans>…</ans> nested inside a
+// <task><1><tool>…</tool><ans>…</ans></1></task><sources>…</sources><eos/>
+// envelope.  Extract ONLY the <ans> content and strip everything else so the
+// table parser receives clean markdown/prose rather than raw XML.
 function stripMunsTags(text: string): string {
-  return text
-    .replace(/<ans>([\s\S]*?)<\/ans>/gi, "$1")
-    .replace(/<\/?ans\b[^>]*>/gi, "")
-    .replace(/<docsource\b[^>]*>[\s\S]*?<\/docsource>/gi, "")
-    .replace(/<\/?docsource\b[^>]*>/gi, "")
+  // Collect all <ans>…</ans> blocks (there is normally exactly one per response)
+  const ansRegex = /<ans>([\s\S]*?)<\/ans>/gi;
+  const blocks: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = ansRegex.exec(text)) !== null) {
+    blocks.push(m[1].trim());
+  }
+
+  const content = blocks.length > 0
+    ? blocks.join("\n\n")
+    : text; // fallback to raw text when no <ans> wrapper is present
+
+  return content
+    // strip inline citation tags: <doc_source>…</doc_source>
+    .replace(/<doc_source\b[^>]*>[\s\S]*?<\/doc_source>/gi, "")
+    .replace(/<\/?doc_source\b[^>]*>/gi, "")
+    // strip any remaining XML-like tags from the ans content
+    .replace(/<[^>]+>/g, "")
+    // HTML entity decode
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCharCode(parseInt(code, 10)),
+    )
     .trim();
 }
 
@@ -220,7 +246,9 @@ async function sendMessage(
   toDate: string,
   signal?: AbortSignal,
 ): Promise<{ text: string; chatId: string }> {
+  const userIndex = parseInt(process.env.MUNS_USER_INDEX ?? "1", 10) || 1;
   const payload: ChatPayload = {
+    user_index: userIndex,
     tasks: [task],
     query_context: makeQueryContext(
       ticker,

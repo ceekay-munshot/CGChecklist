@@ -8,10 +8,13 @@ NEXTJS_ENV=development
 #   npx wrangler secret put MUNS_BEARER_TOKEN
 MUNS_BEARER_TOKEN=
 
-# Temporary token — used server-side by /api/muns/run to call the
-# birdnest.muns.io agents API. In production, set via:
+# Bearer token for the Muns Chat API (devde.muns.io/chat/chat-muns).
+# In production, set via:
 #   npx wrangler secret put TEMPORARY_TOKEN
 TEMPORARY_TOKEN=
+
+# Optional: Muns user index passed in each chat payload (defaults to 1).
+# MUNS_USER_INDEX=1
 
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=

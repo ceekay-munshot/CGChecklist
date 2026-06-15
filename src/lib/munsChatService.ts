@@ -423,8 +423,21 @@ function assembleMarkdown(results: QuestionResult[]): string {
     parts.push("| --- | --- | --- | --- | --- |");
 
     for (const item of items) {
-      const { response, score, remarks } = parseResponseRow(item.rawResponse);
       const safeParticulars = item.particulars.replace(/\|/g, "/");
+      // A question that failed to fetch is recorded honestly as score 0 with
+      // the underlying error in remarks — never a fabricated answer/score.
+      if (item.rawResponse.startsWith("Error:")) {
+        const err = item.rawResponse
+          .slice(6)
+          .trim()
+          .replace(/\|/g, "/")
+          .replace(/\n/g, " ");
+        parts.push(
+          `| ${safeParticulars} | Not retrieved | 0 | 2 | Not retrieved — ${err} |`,
+        );
+        continue;
+      }
+      const { response, score, remarks } = parseResponseRow(item.rawResponse);
       const safeRemarks = remarks.replace(/\|/g, "/").replace(/\n/g, " ");
       parts.push(
         `| ${safeParticulars} | ${response} | ${score} | 2 | ${safeRemarks} |`,
@@ -594,11 +607,17 @@ export async function runMunsChatGovernance(
     r.rawResponse.startsWith("Error:"),
   ).length;
 
-  if (errorCount > 0) {
+  // Both chats opened (mega prompts succeeded), so a handful of failures is the
+  // Cloudflare free-plan subrequest cap (≈50/invocation) clipping the tail —
+  // not a broken token. Don't discard ~48 good answers over it: deliver the
+  // dashboard with the failed rows marked "Not retrieved". Only reject when a
+  // large share failed, which signals a real token/connectivity problem.
+  const failureLimit = Math.ceil(total * 0.25); // tolerate up to ~12 of 51
+  if (errorCount > failureLimit) {
     return {
       ok: false,
       raw: "",
-      error: `${errorCount} of ${CHAT_QUESTIONS.length} questions failed. Check subrequest limits or token validity and retry.`,
+      error: `${errorCount} of ${total} questions failed. Check the token or connectivity and retry.`,
     };
   }
 

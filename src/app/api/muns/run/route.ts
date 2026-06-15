@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getCachedRun, putCachedRun, runCacheKey } from "@/lib/munsCache";
 import { runMunsChatGovernance } from "@/lib/munsChatService";
 
+// Never cache or buffer this route — it streams live progress as SSE.
+export const dynamic = "force-dynamic";
+
 const COUNTRY_CODE_TO_NAME: Record<string, string> = {
   IN: "INDIA",
   US: "UNITED STATES",
@@ -86,6 +89,19 @@ export async function POST(request: Request) {
           encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
         );
       };
+
+      // Flush an immediate frame so the browser shows live activity within a
+      // second (rather than waiting for the first mega prompt to return) and we
+      // confirm the stream isn't being buffered.
+      send("progress", {
+        chain: "A",
+        phase: "mega",
+        section: "",
+        particulars: "Connecting to MUNS…",
+        ok: true,
+        completed: 0,
+        total: 51,
+      });
 
       try {
         const result = await runMunsChatGovernance(

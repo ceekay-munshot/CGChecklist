@@ -131,7 +131,7 @@ export function CompanyProvider({
             };
             const label =
               e.phase === "mega"
-                ? `Chain ${e.chain}: opened chat session`
+                ? e.particulars || `Chain ${e.chain}: chat session ready`
                 : `${e.section} — ${e.particulars}`;
             const item = {
               chain: e.chain,

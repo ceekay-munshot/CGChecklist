@@ -103,6 +103,35 @@ async function consumeRunStream(
   return done ?? { ok: false, raw: "", error: "Run ended without a result." };
 }
 
+/** Runs a single chain (A or B) and resolves with its terminal payload. */
+async function runChainRequest(
+  chain: "A" | "B",
+  input: MunsAgentInput,
+  options: FetchGovernanceOptions,
+  onProgress?: (event: GovernanceProgress) => void,
+): Promise<RunRouteResponse> {
+  const response = await fetch("/api/muns/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ticker: input.ticker.trim(),
+      companyName: input.companyName.trim(),
+      country: input.country,
+      force: options.force,
+      chain,
+    }),
+    signal: options.signal,
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+
+  // Fresh runs stream SSE; a cached half comes back as plain JSON.
+  if (contentType.includes("text/event-stream")) {
+    return consumeRunStream(response, onProgress);
+  }
+  return (await response.json()) as RunRouteResponse;
+}
+
 export const fetchGovernanceAnalysis = async (
   input: MunsAgentInput,
   options: FetchGovernanceOptions = {},
@@ -116,43 +145,50 @@ export const fetchGovernanceAnalysis = async (
     };
   }
 
+  // Fire Chain A and Chain B as two parallel requests so each runs in its own
+  // Cloudflare invocation (own ≈50 subrequest budget). Progress from both
+  // streams is aggregated into a single 0/51 counter before reaching the UI.
+  const tally: Record<"A" | "B", { completed: number; total: number }> = {
+    A: { completed: 0, total: 15 },
+    B: { completed: 0, total: 36 },
+  };
+
+  const makeProgressHandler =
+    (chain: "A" | "B") => (event: GovernanceProgress) => {
+      tally[chain] = { completed: event.completed, total: event.total };
+      options.onProgress?.({
+        ...event,
+        completed: tally.A.completed + tally.B.completed,
+        total: tally.A.total + tally.B.total,
+      });
+    };
+
   try {
-    const response = await fetch("/api/muns/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ticker: input.ticker.trim(),
-        companyName: input.companyName.trim(),
-        country: input.country,
-        force: options.force,
-      }),
-      signal: options.signal,
-    });
+    const [a, b] = await Promise.all([
+      runChainRequest("A", input, options, makeProgressHandler("A")),
+      runChainRequest("B", input, options, makeProgressHandler("B")),
+    ]);
 
-    const contentType = response.headers.get("content-type") ?? "";
-
-    // Fresh runs stream Server-Sent Events: progress events as questions
-    // resolve, then a terminal "done" event with the assembled markdown.
-    const data = contentType.includes("text/event-stream")
-      ? await consumeRunStream(response, options.onProgress)
-      : ((await response.json()) as RunRouteResponse);
-
-    if (!data.ok) {
+    if (!a.ok || !b.ok) {
       return {
         ok: false,
-        raw: data.raw ?? "",
+        raw: "",
         parsed: null,
         error:
-          data.error || `MUNS request failed with status ${response.status}.`,
+          (!a.ok ? a.error : b.error) ||
+          "MUNS request failed while running the checklist.",
       };
     }
 
+    // Concatenate the two markdown halves (A's sections precede B's) into the
+    // full document the existing parser expects.
+    const raw = `${a.raw}\n${b.raw}`;
     return {
       ok: true,
-      raw: data.raw,
-      parsed: parseMunsResponse(data.raw),
-      cached: data.cached,
-      cachedAt: data.cachedAt,
+      raw,
+      parsed: parseMunsResponse(raw),
+      cached: Boolean(a.cached && b.cached),
+      cachedAt: a.cachedAt ?? b.cachedAt,
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {

@@ -566,9 +566,13 @@ async function runChain(
 }
 
 // ---------------------------------------------------------------------------
-// Public entry point — two parallel chains covering all 51 questions
+// Public entry point — runs ONE chain. The two chains (A: BOARD→EMPLOYEE,
+// B: INDUSTRY_PROMOTER→FINANCIALS) are fired as SEPARATE requests by the
+// client so each gets its own Cloudflare invocation (and its own ≈50
+// subrequest budget): A uses ~17, B uses ~38, both safely under the cap.
 // ---------------------------------------------------------------------------
-export async function runMunsChatGovernance(
+export async function runMunsChatChain(
+  chainLabel: "A" | "B",
   ticker: string,
   companyName: string,
   country: string,
@@ -581,46 +585,47 @@ export async function runMunsChatGovernance(
     .toISOString()
     .slice(0, 10);
 
-  const total = CHAT_QUESTIONS.length;
+  const questions = chainLabel === "A" ? CHAIN_A_QUESTIONS : CHAIN_B_QUESTIONS;
+  const total = questions.length;
   let completed = 0;
 
-  // Shared emitter: forwards each chain's raw event with global counts attached.
-  // Only "question" phases advance the completed counter.
+  // Counts are per-chain; the client aggregates the two streams into 51 total.
   const emit = (e: Omit<ChatProgressEvent, "completed" | "total">) => {
     if (e.phase === "question") completed += 1;
     onProgress?.({ ...e, completed, total });
   };
 
-  // Chain A (BOARD → EMPLOYEE) and Chain B (INDUSTRY_PROMOTER → FINANCIALS)
-  // run concurrently — each opens its own chat session with the mega prompt.
-  const [chainA, chainB] = await Promise.all([
-    runChain("A", CHAIN_A_QUESTIONS, ticker, companyName, country, token, fromDate, toDate, emit, signal),
-    runChain("B", CHAIN_B_QUESTIONS, ticker, companyName, country, token, fromDate, toDate, emit, signal),
-  ]);
+  const chain = await runChain(
+    chainLabel,
+    questions,
+    ticker,
+    companyName,
+    country,
+    token,
+    fromDate,
+    toDate,
+    emit,
+    signal,
+  );
 
-  if (!chainA.ok) return { ok: false, raw: "", error: chainA.error };
-  if (!chainB.ok) return { ok: false, raw: "", error: chainB.error };
+  if (!chain.ok) return { ok: false, raw: "", error: chain.error };
 
-  // Merge in original checklist order (A sections precede B sections)
-  const allResults = [...chainA.results, ...chainB.results];
-
-  const errorCount = allResults.filter((r) =>
+  const errorCount = chain.results.filter((r) =>
     r.rawResponse.startsWith("Error:"),
   ).length;
 
-  // Both chats opened (mega prompts succeeded), so a handful of failures is the
-  // Cloudflare free-plan subrequest cap (≈50/invocation) clipping the tail —
-  // not a broken token. Don't discard ~48 good answers over it: deliver the
-  // dashboard with the failed rows marked "Not retrieved". Only reject when a
-  // large share failed, which signals a real token/connectivity problem.
-  const failureLimit = Math.ceil(total * 0.25); // tolerate up to ~12 of 51
+  // The mega prompt opened, so a few failures are at worst the residual
+  // subrequest tail — don't discard the chain's good answers; mark failed rows
+  // "Not retrieved". Only reject when a large share failed (real token/conn
+  // problem). Threshold is per-chain.
+  const failureLimit = Math.ceil(total * 0.25);
   if (errorCount > failureLimit) {
     return {
       ok: false,
       raw: "",
-      error: `${errorCount} of ${total} questions failed. Check the token or connectivity and retry.`,
+      error: `${errorCount} of ${total} questions failed in chain ${chainLabel}. Check the token or connectivity and retry.`,
     };
   }
 
-  return { ok: true, raw: assembleMarkdown(allResults) };
+  return { ok: true, raw: assembleMarkdown(chain.results) };
 }

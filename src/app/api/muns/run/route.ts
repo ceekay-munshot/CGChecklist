@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCachedRun, putCachedRun, runCacheKey } from "@/lib/munsCache";
-import { runMunsChatGovernance } from "@/lib/munsChatService";
+import { runMunsChatChain } from "@/lib/munsChatService";
 
 // Never cache or buffer this route — it streams live progress as SSE.
 export const dynamic = "force-dynamic";
@@ -26,6 +26,11 @@ interface RunRequest {
   country?: string;
   /** When true, bypass the cached run and force a fresh model run. */
   force?: boolean;
+  /**
+   * Which parallel chain to run. The client fires one request per chain so
+   * each runs in its own Cloudflare invocation (own ≈50 subrequest budget).
+   */
+  chain?: "A" | "B";
 }
 
 export async function POST(request: Request) {
@@ -52,8 +57,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const chain: "A" | "B" = body.chain === "B" ? "B" : "A";
   const country = resolveCountry(body.country);
-  const cacheKey = runCacheKey({ ticker, country });
+  const cacheKey = runCacheKey({ ticker, country, chain });
 
   // Serve a stored run if we produced one for this ticker within the last
   // month — no need to re-run the model. A forced run skips this and
@@ -94,17 +100,18 @@ export async function POST(request: Request) {
       // second (rather than waiting for the first mega prompt to return) and we
       // confirm the stream isn't being buffered.
       send("progress", {
-        chain: "A",
+        chain,
         phase: "mega",
         section: "",
         particulars: "Connecting to MUNS…",
         ok: true,
         completed: 0,
-        total: 51,
+        total: chain === "A" ? 15 : 36,
       });
 
       try {
-        const result = await runMunsChatGovernance(
+        const result = await runMunsChatChain(
+          chain,
           ticker,
           companyName,
           country,

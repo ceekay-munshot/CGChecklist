@@ -47,7 +47,10 @@ const getKv = (): KVNamespaceLike | null => {
 export const runCacheKey = (input: {
   ticker: string;
   country: string;
-}): string => `run:${input.country.toUpperCase()}:${input.ticker.toUpperCase()}`;
+  /** Optional chain label — each parallel chain caches its own half. */
+  chain?: string;
+}): string =>
+  `run:${input.chain ? `${input.chain}:` : ""}${input.country.toUpperCase()}:${input.ticker.toUpperCase()}`;
 
 /**
  * Return a cached run only if one exists and was stored within the last month.

@@ -47,8 +47,11 @@ const INITIAL_STATE: CompanyState = {
     diff: null,
     error: null,
     cancelled: false,
+    live: null,
   },
 };
+
+const LIVE_LOG_CAP = 8;
 
 export function CompanyProvider({
   children,
@@ -103,6 +106,7 @@ export function CompanyProvider({
         diff: null,
         error: null,
         cancelled: false,
+        live: { completed: 0, total: 0, failed: 0, log: [] },
       },
     }));
 
@@ -112,7 +116,44 @@ export function CompanyProvider({
         companyName: identity.name,
         country: identity.country || undefined,
       },
-      { signal: controller.signal, force: options?.force },
+      {
+        signal: controller.signal,
+        force: options?.force,
+        onProgress: (e) => {
+          // Ignore late events from a superseded run.
+          if (abortRef.current !== controller) return;
+          setState((prev) => {
+            const prevLive = prev.progress.live ?? {
+              completed: 0,
+              total: 0,
+              failed: 0,
+              log: [],
+            };
+            const label =
+              e.phase === "mega"
+                ? `Chain ${e.chain}: opened chat session`
+                : `${e.section} — ${e.particulars}`;
+            const item = {
+              chain: e.chain,
+              label,
+              ok: e.ok,
+              error: e.error,
+            };
+            return {
+              ...prev,
+              progress: {
+                ...prev.progress,
+                live: {
+                  completed: e.completed,
+                  total: e.total,
+                  failed: prevLive.failed + (e.ok ? 0 : 1),
+                  log: [item, ...prevLive.log].slice(0, LIVE_LOG_CAP),
+                },
+              },
+            };
+          });
+        },
+      },
     );
 
     // Ignore the outcome of a run that has been superseded by a newer one.
@@ -134,6 +175,7 @@ export function CompanyProvider({
           diff: null,
           error: null,
           cancelled: true,
+          live: null,
         },
       }));
       return;
@@ -167,6 +209,7 @@ export function CompanyProvider({
           diff,
           error: result.ok ? null : result.error || "Failed to fetch.",
           cancelled: false,
+          live: prev.progress.live,
         },
       };
     });
@@ -191,6 +234,7 @@ export function CompanyProvider({
         diff: null,
         error: null,
         cancelled: false,
+        live: null,
       },
     }));
   }, []);

@@ -114,6 +114,7 @@ export function SelectionPanel() {
                 companyName={identity.name}
                 ticker={identity.ticker}
                 elapsedMs={elapsedMs}
+                live={progress.live}
                 onCancel={cancel}
               />
             ) : showSuccess ? (
@@ -304,16 +305,32 @@ function ProgressBody({
   companyName,
   ticker,
   elapsedMs,
+  live,
   onCancel,
 }: {
   companyName: string;
   ticker: string;
   elapsedMs: number;
+  live: import("@/lib/types/company").LiveProgress | null;
   onCancel: () => void;
 }) {
+  // Use real streamed progress once we have a total; otherwise fall back to the
+  // simulated phase timer (e.g. before the first event arrives).
+  const hasLive = Boolean(live && live.total > 0);
   const phaseIdx = currentPhaseIndex(elapsedMs);
-  const percent = progressPercent(elapsedMs, false);
   const activePhase = REFRESH_PHASES[phaseIdx];
+
+  const percent = hasLive
+    ? Math.round((live!.completed / live!.total) * 100)
+    : Math.round(progressPercent(elapsedMs, false));
+
+  const statusLine = hasLive
+    ? `${live!.completed} / ${live!.total} questions${
+        live!.failed > 0 ? ` · ${live!.failed} failed` : ""
+      }`
+    : activePhase
+      ? activePhase.label
+      : "Working on it…";
 
   return (
     <div className="grid gap-4">
@@ -340,7 +357,7 @@ function ProgressBody({
       <div>
         <div
           role="progressbar"
-          aria-valuenow={Math.round(percent)}
+          aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
           className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-mist-100)]"
@@ -355,35 +372,63 @@ function ProgressBody({
           />
         </div>
         <div className="mt-1.5 flex items-center justify-between text-[11px] text-[var(--color-fg-muted)]">
-          <span className="truncate">
-            {activePhase ? activePhase.label : "Working on it…"}
-          </span>
+          <span className="truncate">{statusLine}</span>
           <span data-numeric className="shrink-0 font-semibold text-[var(--color-fg)]">
-            {Math.round(percent)}%
+            {percent}%
           </span>
         </div>
       </div>
 
-      <ol className="grid grid-cols-7 gap-1.5">
-        {REFRESH_PHASES.map((phase, i) => {
-          const phaseStatus =
-            i < phaseIdx ? "done" : i === phaseIdx ? "active" : "pending";
-          return (
+      {hasLive && live!.log.length > 0 ? (
+        <ol className="max-h-40 overflow-y-auto rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-mist-50)]/60 p-2 text-[11.5px]">
+          {live!.log.map((item, i) => (
             <li
-              key={phase.id}
-              title={phase.label}
-              aria-label={phase.label}
-              className={`h-1.5 rounded-full ${
-                phaseStatus === "done"
-                  ? "bg-[var(--color-good-500)]"
-                  : phaseStatus === "active"
-                    ? "bg-[var(--color-teal-500)]"
-                    : "bg-[var(--color-mist-200)]"
-              }`}
-            />
-          );
-        })}
-      </ol>
+              key={`${item.label}-${i}`}
+              className="flex items-start gap-2 px-1 py-1"
+            >
+              <span
+                aria-hidden
+                className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                  item.ok
+                    ? "bg-[var(--color-good-50)] text-[var(--color-good-600)]"
+                    : "bg-[var(--color-risk-50)] text-[var(--color-risk-600)]"
+                }`}
+              >
+                {item.ok ? <CheckIcon /> : <FailIcon />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="text-[var(--color-fg)]">{item.label}</span>
+                {!item.ok && item.error ? (
+                  <span className="ml-1 text-[var(--color-risk-600)]">
+                    — {item.error}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <ol className="grid grid-cols-7 gap-1.5">
+          {REFRESH_PHASES.map((phase, i) => {
+            const phaseStatus =
+              i < phaseIdx ? "done" : i === phaseIdx ? "active" : "pending";
+            return (
+              <li
+                key={phase.id}
+                title={phase.label}
+                aria-label={phase.label}
+                className={`h-1.5 rounded-full ${
+                  phaseStatus === "done"
+                    ? "bg-[var(--color-good-500)]"
+                    : phaseStatus === "active"
+                      ? "bg-[var(--color-teal-500)]"
+                      : "bg-[var(--color-mist-200)]"
+                }`}
+              />
+            );
+          })}
+        </ol>
+      )}
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11.5px] leading-relaxed text-[var(--color-fg-muted)]">

@@ -104,6 +104,29 @@ export const CHAIN_B_QUESTIONS = CHAT_QUESTIONS.filter((q) =>
 );
 
 // ---------------------------------------------------------------------------
+// Live progress events — emitted as each question resolves so the UI can show
+// real-time status instead of a simulated timer.
+// ---------------------------------------------------------------------------
+export interface ChatProgressEvent {
+  /** Which parallel chain produced this event. */
+  chain: "A" | "B";
+  /** "mega" for the opening mega-prompt, "question" for a checklist item. */
+  phase: "mega" | "question";
+  /** Section heading the item belongs to. */
+  section: string;
+  /** Clean question label ("" for the mega prompt). */
+  particulars: string;
+  /** Whether this step succeeded. */
+  ok: boolean;
+  /** Error message when ok is false. */
+  error?: string;
+  /** Questions resolved so far across BOTH chains (excludes mega prompts). */
+  completed: number;
+  /** Total questions across both chains. */
+  total: number;
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 interface QueryContext {
@@ -416,6 +439,7 @@ function assembleMarkdown(results: QuestionResult[]): string {
 // Single chain: mega prompt → sequential questions for a subset of sections
 // ---------------------------------------------------------------------------
 async function runChain(
+  chainLabel: "A" | "B",
   questions: ChatQuestion[],
   ticker: string,
   companyName: string,
@@ -423,6 +447,7 @@ async function runChain(
   token: string,
   fromDate: string,
   toDate: string,
+  onEvent: (e: Omit<ChatProgressEvent, "completed" | "total">) => void,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean; results: QuestionResult[]; error?: string }> {
   // Each chain opens its own chat session with the same mega prompt
@@ -444,9 +469,11 @@ async function runChain(
     );
     chatId = init.chatId || null;
     megaResponse = init.text;
+    onEvent({ chain: chainLabel, phase: "mega", section: "", particulars: "", ok: true });
   } catch (err) {
     if (signal?.aborted) return { ok: false, results: [], error: "Cancelled." };
     const msg = err instanceof Error ? err.message : String(err);
+    onEvent({ chain: chainLabel, phase: "mega", section: "", particulars: "", ok: false, error: msg });
     return { ok: false, results: [], error: `Mega prompt failed: ${msg}` };
   }
 
@@ -492,6 +519,13 @@ async function runChain(
       });
 
       sectionHistory.push(`User: ${q.prompt}`, `AI: ${result.text}`);
+      onEvent({
+        chain: chainLabel,
+        phase: "question",
+        section: q.sectionTitle,
+        particulars: q.particulars,
+        ok: true,
+      });
     } catch (err) {
       if (signal?.aborted) return { ok: false, results, error: "Cancelled." };
       const msg = err instanceof Error ? err.message : String(err);
@@ -503,6 +537,14 @@ async function runChain(
         rawResponse: `Error: ${msg}`,
       });
       sectionHistory.push(`User: ${q.prompt}`, "AI: [Error]");
+      onEvent({
+        chain: chainLabel,
+        phase: "question",
+        section: q.sectionTitle,
+        particulars: q.particulars,
+        ok: false,
+        error: msg,
+      });
     }
   }
 
@@ -518,19 +560,28 @@ export async function runMunsChatGovernance(
   country: string,
   token: string,
   signal?: AbortSignal,
+  onProgress?: (e: ChatProgressEvent) => void,
 ): Promise<{ ok: boolean; raw: string; error?: string }> {
   const toDate = new Date().toISOString().slice(0, 10);
   const fromDate = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
 
-  const args = [ticker, companyName, country, token, fromDate, toDate, signal] as const;
+  const total = CHAT_QUESTIONS.length;
+  let completed = 0;
+
+  // Shared emitter: forwards each chain's raw event with global counts attached.
+  // Only "question" phases advance the completed counter.
+  const emit = (e: Omit<ChatProgressEvent, "completed" | "total">) => {
+    if (e.phase === "question") completed += 1;
+    onProgress?.({ ...e, completed, total });
+  };
 
   // Chain A (BOARD → EMPLOYEE) and Chain B (INDUSTRY_PROMOTER → FINANCIALS)
   // run concurrently — each opens its own chat session with the mega prompt.
   const [chainA, chainB] = await Promise.all([
-    runChain(CHAIN_A_QUESTIONS, ...args),
-    runChain(CHAIN_B_QUESTIONS, ...args),
+    runChain("A", CHAIN_A_QUESTIONS, ticker, companyName, country, token, fromDate, toDate, emit, signal),
+    runChain("B", CHAIN_B_QUESTIONS, ticker, companyName, country, token, fromDate, toDate, emit, signal),
   ]);
 
   if (!chainA.ok) return { ok: false, raw: "", error: chainA.error };

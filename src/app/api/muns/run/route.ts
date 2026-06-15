@@ -75,30 +75,52 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    const result = await runMunsChatGovernance(
-      ticker,
-      companyName,
-      country,
-      token,
-      request.signal,
-    );
+  // Stream live progress back to the browser as Server-Sent Events so the user
+  // can watch each checklist question resolve in real time. The final "done"
+  // event carries the assembled markdown (or the error).
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: string, data: unknown) => {
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+        );
+      };
 
-    if (!result.ok) {
-      return NextResponse.json(
-        { ok: false, raw: "", error: result.error ?? "Chat analysis failed." },
-        { status: 502 },
-      );
-    }
+      try {
+        const result = await runMunsChatGovernance(
+          ticker,
+          companyName,
+          country,
+          token,
+          request.signal,
+          (e) => send("progress", e),
+        );
 
-    await putCachedRun(cacheKey, result.raw);
+        if (!result.ok) {
+          send("done", {
+            ok: false,
+            raw: "",
+            error: result.error ?? "Chat analysis failed.",
+          });
+        } else {
+          await putCachedRun(cacheKey, result.raw);
+          send("done", { ok: true, raw: result.raw, cached: false });
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        send("done", { ok: false, raw: "", error: `Failed to fetch: ${message}` });
+      } finally {
+        controller.close();
+      }
+    },
+  });
 
-    return NextResponse.json({ ok: true, raw: result.raw, cached: false });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { ok: false, raw: "", error: `Failed to fetch: ${message}` },
-      { status: 502 },
-    );
-  }
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }

@@ -22,9 +22,9 @@ TOKEN="${TEMPORARY_TOKEN:-}"
 if [[ -z "$TOKEN" ]]; then
   TOKEN=$(read_dev_var TEMPORARY_TOKEN)
 fi
-USER_INDEX="${USER_INDEX:-}"
+USER_INDEX="${MUNS_USER_INDEX:-}"
 if [[ -z "$USER_INDEX" ]]; then
-  USER_INDEX=$(read_dev_var USER_INDEX)
+  USER_INDEX=$(read_dev_var MUNS_USER_INDEX)
 fi
 USER_INDEX="${USER_INDEX:-1}"
 [[ -z "$TOKEN" ]] && { printf '\033[31mSet TEMPORARY_TOKEN or add it to .dev.vars\033[0m\n'; exit 1; }

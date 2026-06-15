@@ -186,7 +186,7 @@ function stripMunsTags(text: string): string {
   return content
     .replace(/<doc_source\b[^>]*>[\s\S]*?<\/doc_source>/gi, "")
     .replace(/<\/?doc_source\b[^>]*>/gi, "")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<\/?[a-zA-Z][a-zA-Z0-9_:-]*(?:\s[^>]*)?\s*\/?>/g, "")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")

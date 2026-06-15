@@ -14,7 +14,7 @@ export const MEGA_PROMPT =
   "EACH ANSWER BEFORE ANSWERING.";
 
 // Appended to every individual question so the AI keeps answers concise.
-const ANSWER_FORMAT = " Answer in THREE BULLET POINTS ONLY.";
+const ANSWER_FORMAT = " Answer in THREE BULLET POINTS. End with 'Score: X/2' on a new line where X is 0, 1, or 2.";
 
 // ---------------------------------------------------------------------------
 // Section metadata
@@ -265,7 +265,7 @@ async function sendMessage(
   toDate: string,
   signal?: AbortSignal,
 ): Promise<{ text: string; chatId: string }> {
-  const userIndex = 124;
+  const userIndex = parseInt(process.env.MUNS_USER_INDEX ?? "124", 10) || 124;
   const payload: ChatPayload = {
     user_index: userIndex,
     tasks: [task],
@@ -361,7 +361,9 @@ function parseResponseRow(text: string): {
     };
   }
 
-  return { response: inferResponse(text), score: 1, remarks: text.slice(0, 500) };
+  const scoreMatch = text.match(/\bscore[:\s]+(\d+)/i);
+  const extractedScore = scoreMatch ? parseInt(scoreMatch[1], 10) : NaN;
+  return { response: inferResponse(text), score: isNaN(extractedScore) ? 1 : extractedScore, remarks: text.slice(0, 500) };
 }
 
 function inferResponse(text: string): string {

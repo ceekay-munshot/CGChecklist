@@ -67,10 +67,10 @@ export async function POST(request: Request) {
     }
   }
 
-  const token = process.env.TEMPORARY_TOKEN;
+  const token = process.env.MUNS_BEARER_TOKEN;
   if (!token) {
     return NextResponse.json(
-      { ok: false, raw: "", error: "TEMPORARY_TOKEN not configured." },
+      { ok: false, raw: "", error: "MUNS_BEARER_TOKEN not configured." },
       { status: 500 },
     );
   }

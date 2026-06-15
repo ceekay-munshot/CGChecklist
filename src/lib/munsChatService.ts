@@ -405,6 +405,111 @@ function inferResponse(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Scoring — derive a 0/1/2 governance score from each answer's text.
+//
+// The model returns prose bullets (no explicit score), so we infer the score.
+// Governance polarity flips per question: an affirmative / high finding can be
+// GOOD (e.g. independent board, big-4 auditor) or a RED FLAG (e.g. shareholding
+// pledge, SEBI cases). QUESTION_POLARITY captures that:
+//   +1 → affirmative/high finding is GOOD   (Yes/High → 2, No/Low → 0)
+//   -1 → affirmative/high finding is a FLAG  (Yes/High → 0, No/Low → 2)
+//    0 → descriptive; fall back to plain sentiment of the answer
+// Score 1 is the middle/uncertain bucket (mixed signal, partial, or data not
+// established).
+// ---------------------------------------------------------------------------
+const QUESTION_POLARITY: Record<string, 1 | -1 | 0> = {
+  "BOARD-1": 1, "BOARD-2": 1, "BOARD-3": 1, "BOARD-4": 1, "BOARD-5": 1,
+  "AUDIT-1": 1, "AUDIT-2": 1, "AUDIT-3": -1, "AUDIT-4": 0, "AUDIT-5": 0,
+  "STAKEHOLDERS-1": 1, "STAKEHOLDERS-2": 0,
+  "EMPLOYEE-1": -1, "EMPLOYEE-2": 0, "EMPLOYEE-3": 1,
+  "INDUSTRY_PROMOTER-1": 1, "INDUSTRY_PROMOTER-2": 0, "INDUSTRY_PROMOTER-3": -1,
+  "INDUSTRY_PROMOTER-4": 1, "INDUSTRY_PROMOTER-5": 0, "INDUSTRY_PROMOTER-6": 1,
+  "INDUSTRY_PROMOTER-7": 1, "INDUSTRY_PROMOTER-8": 1, "INDUSTRY_PROMOTER-9": -1,
+  "INDUSTRY_PROMOTER-10": 0, "INDUSTRY_PROMOTER-11": -1, "INDUSTRY_PROMOTER-12": -1,
+  "INDUSTRY_PROMOTER-13": 1, "INDUSTRY_PROMOTER-14": -1, "INDUSTRY_PROMOTER-15": -1,
+  "STOCK_EXCHANGE-1": 1, "STOCK_EXCHANGE-2": -1, "STOCK_EXCHANGE-3": 1, "STOCK_EXCHANGE-4": 1,
+  "OTHER_REGULATORY-1": -1,
+  "FINANCIALS-1": -1, "FINANCIALS-2": -1, "FINANCIALS-3": -1, "FINANCIALS-4": 1,
+  "FINANCIALS-5": 1, "FINANCIALS-6": 0, "FINANCIALS-7": 1, "FINANCIALS-8": 1,
+  "FINANCIALS-9": 0, "FINANCIALS-10": -1, "FINANCIALS-11": -1, "FINANCIALS-12": -1,
+  "FINANCIALS-13": 1, "FINANCIALS-14": -1, "FINANCIALS-15": -1, "FINANCIALS-16": -1,
+};
+
+// Phrases that mean the data could not be found — always the neutral score.
+const UNKNOWN_RE =
+  /\b(not (established|available|determinable|ascertainable|found|disclosed in the available)|could not be (established|determined|verified)|cannot be (established|determined|verified)|unable to (verify|determine|establish)|no (?:public |reliable )?(?:data|information|disclosure) (?:available|found))\b/i;
+
+// Tokens signalling an affirmative / favourable-magnitude finding.
+const POSITIVE_TOKENS = [
+  "yes", "high", "higher", "strong", "robust", "healthy", "solid", "good",
+  "adequate", "sufficient", "ample", "consistent", "consistently", "stable",
+  "transparent", "transparency", "disclosed", "compliant", "complies",
+  "complied", "present", "exists", "majority", "above", "exceeds", "exceeding",
+  "greater", "more than", "big 4", "big four", "top", "reputed", "reputable",
+  "well-regarded", "professional", "experienced", "seasoned", "long-tenured",
+  "long tenure", "increasing", "rising", "improving", "improved", "positive",
+  "clean", "favourable", "favorable", "low leverage", "no red flag",
+  "no material", "no pledge", "no cases", "no concern", "well established",
+];
+
+// Tokens signalling a negative / unfavourable finding or red flag.
+const NEGATIVE_TOKENS = [
+  "weak", "poor", "inadequate", "insufficient", "concern", "concerning",
+  "red flag", "red flags", "qualified", "qualification", "qualifications",
+  "pledge", "pledged", "litigation", "lawsuit", "investigation", "probe",
+  "penalty", "penalties", "fraud", "fight", "dispute", "feud", "conflict",
+  "material", "below", "less than", "fewer", "declining", "decreasing",
+  "falling", "deteriorating", "fluctuating", "volatile", "volatility",
+  "elevated", "elongated", "stretched", "absent", "lacking", "missing",
+  "undisclosed", "non-compliant", "noncompliant", "high attrition",
+  "high debt", "high leverage", "overdue", "delayed",
+];
+
+const countMatches = (text: string, tokens: string[]): number =>
+  tokens.reduce((n, t) => (text.includes(t) ? n + 1 : n), 0);
+
+// Direction of the finding: +1 affirmative/high, -1 negative/low, 0 unclear.
+function detectDirection(text: string): -1 | 0 | 1 {
+  const lower = text.toLowerCase();
+  const head = lower.slice(0, 180);
+
+  let score = 0;
+  // A leading Yes/No dominates (matches "Yes —", "No,", etc. near the start).
+  if (/^[\s\-—*•]*yes\b/.test(head)) score += 2;
+  if (/^[\s\-—*•]*no\b/.test(head)) score -= 2;
+  // "no <something>" / "not <something>" in the head is a negation signal.
+  if (/\bno\b/.test(head)) score -= 1;
+  if (/\bnot\b/.test(head)) score -= 1;
+
+  score += countMatches(lower, POSITIVE_TOKENS);
+  score -= countMatches(lower, NEGATIVE_TOKENS);
+  // "low" is a magnitude-down signal; polarity decides if that is good or bad.
+  if (/\blow\b|\blower\b/.test(lower)) score -= 1;
+
+  if (score > 0) return 1;
+  if (score < 0) return -1;
+  return 0;
+}
+
+function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
+  if (UNKNOWN_RE.test(text)) return 1;
+
+  const polarity = QUESTION_POLARITY[questionId] ?? 0;
+  const direction = detectDirection(text);
+
+  // Descriptive question: map the answer's sentiment straight to a score.
+  if (polarity === 0) {
+    return direction > 0 ? 2 : direction < 0 ? 0 : 1;
+  }
+
+  // Unclear direction → middle bucket.
+  if (direction === 0) return 1;
+
+  // Good when polarity and direction agree in sign.
+  return polarity * direction > 0 ? 2 : 0;
+}
+
+// ---------------------------------------------------------------------------
 // Assemble individual responses into markdown for the existing parser
 // ---------------------------------------------------------------------------
 function assembleMarkdown(results: QuestionResult[]): string {
@@ -438,7 +543,10 @@ function assembleMarkdown(results: QuestionResult[]): string {
         );
         continue;
       }
-      const { response, score, remarks } = parseResponseRow(item.rawResponse);
+      const { response, remarks } = parseResponseRow(item.rawResponse);
+      // Score is inferred from the answer text with per-question polarity,
+      // not the table fallback (which can't read prose bullets).
+      const score = scoreAnswer(item.questionId, item.rawResponse);
       const safeRemarks = remarks.replace(/\|/g, "/").replace(/\n/g, " ");
       parts.push(
         `| ${safeParticulars} | ${response} | ${score} | 2 | ${safeRemarks} |`,

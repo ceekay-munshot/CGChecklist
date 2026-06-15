@@ -265,7 +265,7 @@ async function sendMessage(
   toDate: string,
   signal?: AbortSignal,
 ): Promise<{ text: string; chatId: string }> {
-  const userIndex = parseInt(process.env.MUNS_USER_INDEX ?? "1", 10) || 1;
+  const userIndex = 124;
   const payload: ChatPayload = {
     user_index: userIndex,
     tasks: [task],

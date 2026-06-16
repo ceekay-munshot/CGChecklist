@@ -3,7 +3,7 @@ import { MUNS_CHAT_API_URL, MUNS_CHAT_CONTEXT_EMAIL } from "@/lib/munsConfig";
 
 // Appended to the mega prompt AND every individual question — matches the
 // answer-format suffix used by cool_script.sh.
-const ANSWER_FORMAT = " Answer in THREE BULLET POINTS ONLY.";
+const ANSWER_FORMAT = " Answer in ONE LINE ONLY.";
 
 // ---------------------------------------------------------------------------
 // Mega prompt — sent as the very first message of each chain

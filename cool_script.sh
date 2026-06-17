@@ -7,7 +7,7 @@ set -uo pipefail
 TICKER="${1:?Usage: $0 <TICKER> \"Company Name\"}"; shift
 COMPANY="${*:?Usage: $0 <TICKER> \"Company Name\"}"
 
-CHAT_API="https://devde.muns.io/chat/chat-muns"
+CHAT_API="https://birdnest.muns.io/chat/chat-muns"
 TODAY=$(date +%Y-%m-%d)
 FROM_DATE=$(date -v-2y +%Y-%m-%d 2>/dev/null || date -d '2 years ago' +%Y-%m-%d)
 
@@ -35,7 +35,7 @@ command -v python3 >/dev/null || { printf '\033[31mpython3 is required\033[0m\n'
 HDR=$'\033[1;36m'; QST=$'\033[0;33m'; ANS=$'\033[0;37m'
 OK=$'\033[0;32m'; ERR=$'\033[0;31m'; DIM=$'\033[2m'; NC=$'\033[0m'
 
-ONE_LINE_ONLY=" Answer in 1 LINE ONLY STRICTLY."
+ONE_LINE_ONLY=" Answer in THREE BULLET POINTS ONLY STRICTLY."
 MEGA="Make structured tables answering the below questions for the company . If an answer is Not established or Not available in the annual report - Quickly Websearch and find it . keep answers for each question detailed and non generic , specifically suited for the company. keep remarks more numerical stating exact problems instead of being concise. use exact name of the ceo/company/elements in each answer only.  DOUBLE CHECK AND VERIFY EACH ANSWER BEFORE ANSWERING.${ONE_LINE_ONLY}"
 
 # ── Questions: parallel arrays (section | prompt), 51 items ────────────────
@@ -129,10 +129,9 @@ payload = {
         "CONTEXT_COMPANY_NAME": [os.environ["COMPANY"]],
         "GET_ANNOUNCEMENTS_ENABLED": False,
         "chatHistory": json.loads(os.environ["HIST"]),
-        "mode": "fast",
+        "mode": "expert",
     },
     "autoAddUpcoming": False,
-    "urls": [],
 }
 
 if os.environ.get("CHAT_ID"):

@@ -433,28 +433,6 @@ const NEGATIVE_TOKENS = [
 const countMatches = (text: string, tokens: string[]): number =>
   tokens.reduce((n, t) => (text.includes(t) ? n + 1 : n), 0);
 
-// A negator immediately before a favourable term flips its meaning, e.g.
-// "not transparently disclosed", "non-compliant", "without adequate".
-const NEGATOR_RE =
-  /\b(no|not|non|without|lack|lacks|lacking|absence|absent|fail|fails|failed|never|neither|nor|insufficient|inadequate)\b[\s-]*$/;
-
-// Count favourable tokens, but treat a favourable term that is locally negated
-// as UNfavourable instead of favourable, so "not transparently disclosed" does
-// not read as positive disclosure. (Codex: respect negation around favourable
-// terms.)
-function netPositive(text: string): number {
-  let score = 0;
-  for (const token of POSITIVE_TOKENS) {
-    let idx = text.indexOf(token);
-    while (idx !== -1) {
-      const before = text.slice(Math.max(0, idx - 20), idx);
-      score += NEGATOR_RE.test(before) ? -1 : 1;
-      idx = text.indexOf(token, idx + token.length);
-    }
-  }
-  return score;
-}
-
 // Direction of the finding: +1 affirmative/high, -1 negative/low, 0 unclear.
 function detectDirection(text: string): -1 | 0 | 1 {
   const lower = text.toLowerCase();
@@ -468,7 +446,7 @@ function detectDirection(text: string): -1 | 0 | 1 {
   if (/\bno\b/.test(head)) score -= 1;
   if (/\bnot\b/.test(head)) score -= 1;
 
-  score += netPositive(lower);
+  score += countMatches(lower, POSITIVE_TOKENS);
   score -= countMatches(lower, NEGATIVE_TOKENS);
   // "low" is a magnitude-down signal; polarity decides if that is good or bad.
   if (/\blow\b|\blower\b/.test(lower)) score -= 1;
@@ -478,38 +456,12 @@ function detectDirection(text: string): -1 | 0 | 1 {
   return 0;
 }
 
-// For inverse-polarity (red-flag) questions the question itself asks about a
-// BAD condition, so the score must hinge on whether the answer says that
-// condition is PRESENT or ABSENT — not on prose sentiment. Otherwise an answer
-// like "multiple material red flags" (negative-sounding words) would be flipped
-// into a high score. (Codex: do not invert red-flag wording into a high score.)
-
-// The bad condition is explicitly denied / absent.
-const DENIES_CONDITION_RE =
-  /\b(no |not |without |free of |free from |no material|no red flag|no pledge|no cases|no concern|no litigation|no qualification|unencumbered|unqualified|unmodified|nil\b|none\b)/i;
-
-// The bad condition is explicitly affirmed / present. Plurals matter here —
-// "red flags"/"qualifications" are as common as the singular in real answers.
-const AFFIRMS_CONDITION_RE =
-  /^[\s\-—*•]*yes\b|\b(pledged?|litigations?|lawsuits?|investigations?|probes?|penalt(?:y|ies)|frauds?|qualified opinion|qualifications?|red flags?|material weakness(?:es)?|defaults?|overdue|disputes?|feuds?|non-?compliant|highly volatile|volatility|high attrition|high debt|high leverage)\b/i;
-
 // Infer a 0/1/2 score for a question from its answer text. Failed-fetch rows
 // ("Error: …") are handled by the caller and never reach here.
 function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
   if (UNKNOWN_RE.test(text)) return 1;
 
   const polarity = QUESTION_POLARITY[questionId] ?? 0;
-  const lower = text.toLowerCase();
-
-  // Inverse-polarity (red-flag) question: score on whether the bad condition is
-  // present, not on prose sentiment, so a clear "multiple material red flags"
-  // answer scores 0 instead of being flipped to 2.
-  if (polarity === -1) {
-    if (DENIES_CONDITION_RE.test(lower)) return 2; // condition absent → good
-    if (AFFIRMS_CONDITION_RE.test(lower)) return 0; // condition present → bad
-    return 1; // unclear
-  }
-
   const direction = detectDirection(text);
 
   // Descriptive question: map the answer's sentiment straight to a score.
@@ -517,9 +469,11 @@ function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
     return direction > 0 ? 2 : direction < 0 ? 0 : 1;
   }
 
-  // Positive-polarity question: good when the finding is affirmative/favourable.
+  // Unclear direction → middle bucket.
   if (direction === 0) return 1;
-  return direction > 0 ? 2 : 0;
+
+  // Good when polarity and direction agree in sign.
+  return polarity * direction > 0 ? 2 : 0;
 }
 
 // ---------------------------------------------------------------------------

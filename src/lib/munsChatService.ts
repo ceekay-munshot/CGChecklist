@@ -151,60 +151,80 @@ function makeQueryContext(
   };
 }
 
-// Strip MUNS response wrapper tags (e.g. <ans>…</ans>, <docsource>…</docsource>)
-// so they don't appear as extra header cells when the table parser splits on "|".
+// The Muns Chat API wraps every answer in <ans>…</ans> nested inside a
+// <task><1><tool>…</tool><ans>…</ans></1></task><sources>…</sources><eos/>
+// envelope. Pull out ONLY the <ans> content and drop the tool trace, the
+// <sources> JSON, the <doc_source> citation tags, and any other XML wrapper so
+// the table/score parser receives clean answer prose rather than raw XML.
 function stripMunsTags(text: string): string {
-  return text
-    .replace(/<ans>([\s\S]*?)<\/ans>/gi, "$1")
-    .replace(/<\/?ans\b[^>]*>/gi, "")
-    .replace(/<docsource\b[^>]*>[\s\S]*?<\/docsource>/gi, "")
-    .replace(/<\/?docsource\b[^>]*>/gi, "")
+  const ansRegex = /<ans>([\s\S]*?)<\/ans>/gi;
+  const blocks: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = ansRegex.exec(text)) !== null) {
+    blocks.push(m[1].trim());
+  }
+
+  // If we found <ans> blocks, keep only those; otherwise fall back to the raw
+  // text (already-clean prose, or a JSON field the caller extracted).
+  const content = blocks.length > 0 ? blocks.join("\n\n") : text;
+
+  return content
+    .replace(/<doc_?source\b[^>]*>[\s\S]*?<\/doc_?source>/gi, "")
+    .replace(/<\/?doc_?source\b[^>]*>/gi, "")
+    .replace(/<\/?[a-zA-Z][a-zA-Z0-9_:-]*(?:\s[^>]*)?\s*\/?>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCharCode(parseInt(code, 10)),
+    )
     .trim();
 }
 
-// Handles both SSE and regular JSON/text responses from the chat API.
-// SSE frames are buffered across read() chunks so partial lines are never
-// parsed mid-fragment.
+// Extracts the answer from a chat response. The Muns Chat API returns the full
+// <task>…<ans>…</ans>…<sources>…<eos> document directly in the body (often with
+// a text/event-stream content-type but WITHOUT data: framing), so we read the
+// whole body and pull the <ans> block out first — the same approach as
+// cool_script.sh. Genuine SSE-framed JSON and plain JSON envelopes are
+// fallbacks only.
 async function extractText(res: Response): Promise<string> {
-  const contentType = res.headers.get("content-type") ?? "";
+  const raw = await res.text();
 
-  if (contentType.includes("text/event-stream")) {
-    const reader = res.body?.getReader();
-    if (!reader) return "";
+  // Primary path: the raw body already contains the <ans> envelope.
+  if (/<ans>/i.test(raw)) {
+    return stripMunsTags(raw);
+  }
+
+  // Fallback: genuine SSE framing (data: {json}) — concatenate text deltas,
+  // then look for an <ans> block in the reconstructed stream.
+  if (/^data:/m.test(raw)) {
     const chunks: string[] = [];
-    const decoder = new TextDecoder();
-    let lineBuffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      lineBuffer += decoder.decode(value, { stream: true });
-      const lines = lineBuffer.split("\n");
-      // Keep the last (potentially incomplete) fragment in the buffer
-      lineBuffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        const data = line.slice(6).trim();
-        if (data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data) as Record<string, unknown>;
-          const text =
-            (parsed.content as string | undefined) ??
-            (parsed.text as string | undefined) ??
-            ((parsed.delta as Record<string, unknown> | undefined)
-              ?.text as string | undefined);
-          if (text) chunks.push(text);
-        } catch {
-          chunks.push(data);
-        }
+    for (const line of raw.split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(data) as Record<string, unknown>;
+        const t =
+          (parsed.content as string | undefined) ??
+          (parsed.text as string | undefined) ??
+          ((parsed.delta as Record<string, unknown> | undefined)?.text as
+            | string
+            | undefined);
+        chunks.push(typeof t === "string" ? t : data);
+      } catch {
+        chunks.push(data);
       }
     }
     return stripMunsTags(chunks.join(""));
   }
 
-  const text = await res.text();
+  // Fallback: plain JSON envelope with a known text field.
   try {
-    const json = JSON.parse(text) as Record<string, unknown>;
+    const json = JSON.parse(raw) as Record<string, unknown>;
     const candidate =
       json.response ??
       json.answer ??
@@ -215,7 +235,7 @@ async function extractText(res: Response): Promise<string> {
   } catch {
     // use raw text as-is
   }
-  return stripMunsTags(text);
+  return stripMunsTags(raw);
 }
 
 async function sendMessage(
@@ -350,6 +370,113 @@ function inferResponse(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Scoring — derive a 0/1/2 governance score from each answer's text.
+//
+// The model returns prose bullets (no explicit score), so we infer the score.
+// Governance polarity flips per question: an affirmative / high finding can be
+// GOOD (e.g. independent board, big-4 auditor) or a RED FLAG (e.g. shareholding
+// pledge, SEBI cases). QUESTION_POLARITY captures that:
+//   +1 → affirmative/high finding is GOOD   (Yes/High → 2, No/Low → 0)
+//   -1 → affirmative/high finding is a FLAG  (Yes/High → 0, No/Low → 2)
+//    0 → descriptive; fall back to plain sentiment of the answer
+// Score 1 is the middle/uncertain bucket (mixed signal, partial, or data not
+// established).
+// ---------------------------------------------------------------------------
+const QUESTION_POLARITY: Record<string, 1 | -1 | 0> = {
+  "BOARD-1": 1, "BOARD-2": 1, "BOARD-3": 1, "BOARD-4": 1, "BOARD-5": 1,
+  "AUDIT-1": 1, "AUDIT-2": 1, "AUDIT-3": -1, "AUDIT-4": 0, "AUDIT-5": 0,
+  "STAKEHOLDERS-1": 1, "STAKEHOLDERS-2": 0,
+  "EMPLOYEE-1": -1, "EMPLOYEE-2": 0, "EMPLOYEE-3": 1,
+  "INDUSTRY_PROMOTER-1": 1, "INDUSTRY_PROMOTER-2": 0, "INDUSTRY_PROMOTER-3": -1,
+  "INDUSTRY_PROMOTER-4": 1, "INDUSTRY_PROMOTER-5": 0, "INDUSTRY_PROMOTER-6": 1,
+  "INDUSTRY_PROMOTER-7": 1, "INDUSTRY_PROMOTER-8": 1, "INDUSTRY_PROMOTER-9": -1,
+  "INDUSTRY_PROMOTER-10": 0, "INDUSTRY_PROMOTER-11": -1, "INDUSTRY_PROMOTER-12": -1,
+  "INDUSTRY_PROMOTER-13": 1, "INDUSTRY_PROMOTER-14": -1, "INDUSTRY_PROMOTER-15": -1,
+  "STOCK_EXCHANGE-1": 1, "STOCK_EXCHANGE-2": -1, "STOCK_EXCHANGE-3": 1, "STOCK_EXCHANGE-4": 1,
+  "OTHER_REGULATORY-1": -1,
+  "FINANCIALS-1": -1, "FINANCIALS-2": -1, "FINANCIALS-3": -1, "FINANCIALS-4": 1,
+  "FINANCIALS-5": 1, "FINANCIALS-6": 0, "FINANCIALS-7": 1, "FINANCIALS-8": 1,
+  "FINANCIALS-9": 0, "FINANCIALS-10": -1, "FINANCIALS-11": -1, "FINANCIALS-12": -1,
+  "FINANCIALS-13": 1, "FINANCIALS-14": -1, "FINANCIALS-15": -1, "FINANCIALS-16": -1,
+};
+
+// Phrases that mean the data could not be found — always the neutral score.
+const UNKNOWN_RE =
+  /\b(not (established|available|determinable|ascertainable|found|disclosed in the available)|could not be (established|determined|verified)|cannot be (established|determined|verified)|unable to (verify|determine|establish)|no (?:public |reliable )?(?:data|information|disclosure) (?:available|found))\b/i;
+
+// Tokens signalling an affirmative / favourable-magnitude finding.
+const POSITIVE_TOKENS = [
+  "yes", "high", "higher", "strong", "robust", "healthy", "solid", "good",
+  "adequate", "sufficient", "ample", "consistent", "consistently", "stable",
+  "transparent", "transparency", "disclosed", "compliant", "complies",
+  "complied", "present", "exists", "majority", "above", "exceeds", "exceeding",
+  "greater", "more than", "big 4", "big four", "top", "reputed", "reputable",
+  "well-regarded", "professional", "experienced", "seasoned", "long-tenured",
+  "long tenure", "increasing", "rising", "improving", "improved", "positive",
+  "clean", "favourable", "favorable", "low leverage", "no red flag",
+  "no material", "no pledge", "no cases", "no concern", "well established",
+];
+
+// Tokens signalling a negative / unfavourable finding or red flag.
+const NEGATIVE_TOKENS = [
+  "weak", "poor", "inadequate", "insufficient", "concern", "concerning",
+  "red flag", "red flags", "qualified", "qualification", "qualifications",
+  "pledge", "pledged", "litigation", "lawsuit", "investigation", "probe",
+  "penalty", "penalties", "fraud", "fight", "dispute", "feud", "conflict",
+  "material", "below", "less than", "fewer", "declining", "decreasing",
+  "falling", "deteriorating", "fluctuating", "volatile", "volatility",
+  "elevated", "elongated", "stretched", "absent", "lacking", "missing",
+  "undisclosed", "non-compliant", "noncompliant", "high attrition",
+  "high debt", "high leverage", "overdue", "delayed",
+];
+
+const countMatches = (text: string, tokens: string[]): number =>
+  tokens.reduce((n, t) => (text.includes(t) ? n + 1 : n), 0);
+
+// Direction of the finding: +1 affirmative/high, -1 negative/low, 0 unclear.
+function detectDirection(text: string): -1 | 0 | 1 {
+  const lower = text.toLowerCase();
+  const head = lower.slice(0, 180);
+
+  let score = 0;
+  // A leading Yes/No dominates (matches "Yes —", "No,", etc. near the start).
+  if (/^[\s\-—*•]*yes\b/.test(head)) score += 2;
+  if (/^[\s\-—*•]*no\b/.test(head)) score -= 2;
+  // "no <something>" / "not <something>" in the head is a negation signal.
+  if (/\bno\b/.test(head)) score -= 1;
+  if (/\bnot\b/.test(head)) score -= 1;
+
+  score += countMatches(lower, POSITIVE_TOKENS);
+  score -= countMatches(lower, NEGATIVE_TOKENS);
+  // "low" is a magnitude-down signal; polarity decides if that is good or bad.
+  if (/\blow\b|\blower\b/.test(lower)) score -= 1;
+
+  if (score > 0) return 1;
+  if (score < 0) return -1;
+  return 0;
+}
+
+// Infer a 0/1/2 score for a question from its answer text. Failed-fetch rows
+// ("Error: …") are handled by the caller and never reach here.
+function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
+  if (UNKNOWN_RE.test(text)) return 1;
+
+  const polarity = QUESTION_POLARITY[questionId] ?? 0;
+  const direction = detectDirection(text);
+
+  // Descriptive question: map the answer's sentiment straight to a score.
+  if (polarity === 0) {
+    return direction > 0 ? 2 : direction < 0 ? 0 : 1;
+  }
+
+  // Unclear direction → middle bucket.
+  if (direction === 0) return 1;
+
+  // Good when polarity and direction agree in sign.
+  return polarity * direction > 0 ? 2 : 0;
+}
+
+// ---------------------------------------------------------------------------
 // Assemble individual responses into a markdown document the existing parser
 // can read without modification.
 // ---------------------------------------------------------------------------
@@ -372,8 +499,24 @@ function assembleMarkdown(results: QuestionResult[]): string {
     parts.push("| --- | --- | --- | --- | --- |");
 
     for (const item of items) {
-      const { response, score, remarks } = parseResponseRow(item.rawResponse);
       const safeParticulars = item.particulars.replace(/\|/g, "/");
+      // A question that failed to fetch is recorded honestly as score 0 with
+      // the underlying error in remarks — never a fabricated answer/score.
+      if (item.rawResponse.startsWith("Error:")) {
+        const err = item.rawResponse
+          .slice(6)
+          .trim()
+          .replace(/\|/g, "/")
+          .replace(/\n/g, " ");
+        parts.push(
+          `| ${safeParticulars} | Not retrieved | 0 | 2 | Not retrieved — ${err} |`,
+        );
+        continue;
+      }
+      const { response, remarks } = parseResponseRow(item.rawResponse);
+      // Score is inferred from the answer text with per-question polarity, not
+      // the table fallback (which can't read prose bullet answers).
+      const score = scoreAnswer(item.questionId, item.rawResponse);
       const safeRemarks = remarks.replace(/\|/g, "/").replace(/\n/g, " ");
       parts.push(
         `| ${safeParticulars} | ${response} | ${score} | 2 | ${safeRemarks} |`,

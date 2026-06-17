@@ -398,6 +398,20 @@ export interface SessionResult {
   error?: string;
 }
 
+// A live progress event emitted as a lane works through its questions. This is
+// purely a notification side-channel for the UI — it does not change anything
+// sent to the MUNS chat API.
+export interface LaneProgress {
+  chain: "A" | "B";
+  phase: "mega" | "question";
+  section: string;
+  particulars: string;
+  ok: boolean;
+  error?: string;
+  completed: number;
+  total: number;
+}
+
 // Group the precomputed questions by section, preserving checklist order.
 function groupQuestionsBySection(): SectionGroup[] {
   const groups: SectionGroup[] = [];
@@ -450,8 +464,13 @@ async function runChatSession(
   fromDate: string,
   toDate: string,
   signal?: AbortSignal,
+  chain: "A" | "B" = "A",
+  onProgress?: (e: LaneProgress) => void,
 ): Promise<SessionResult> {
   if (sections.length === 0) return { ok: true, results: [] };
+
+  // Total questions this lane will answer — drives the live progress counter.
+  const laneTotal = sections.reduce((n, s) => n + s.questions.length, 0);
 
   // ── Seed this session with the mega prompt ──────────────────────────────
   let chatId: string | null = null;
@@ -482,8 +501,21 @@ async function runChatSession(
     `AI: ${megaResponse}`,
   ];
 
+  // Chat session is ready; surface this lane's real total now so the UI can
+  // switch from the simulated timer to the live counter.
+  onProgress?.({
+    chain,
+    phase: "mega",
+    section: "",
+    particulars: "",
+    ok: true,
+    completed: 0,
+    total: laneTotal,
+  });
+
   // ── Work through this lane's sections sequentially ──────────────────────
   const results: QuestionResult[] = [];
+  let completed = 0;
 
   for (const section of sections) {
     // Section-local history starts empty for every section (history reset).
@@ -519,6 +551,16 @@ async function runChatSession(
 
         // Append only this question's exchange to section history
         sectionHistory.push(`User: ${q.prompt}`, `AI: ${result.text}`);
+
+        onProgress?.({
+          chain,
+          phase: "question",
+          section: q.sectionTitle,
+          particulars: q.particulars,
+          ok: true,
+          completed: ++completed,
+          total: laneTotal,
+        });
       } catch (err) {
         if (signal?.aborted) {
           return { ok: false, results: [], error: "Cancelled." };
@@ -533,6 +575,17 @@ async function runChatSession(
           rawResponse: `Error: ${msg}`,
         });
         sectionHistory.push(`User: ${q.prompt}`, "AI: [Error]");
+
+        onProgress?.({
+          chain,
+          phase: "question",
+          section: q.sectionTitle,
+          particulars: q.particulars,
+          ok: false,
+          error: msg,
+          completed: ++completed,
+          total: laneTotal,
+        });
       }
     }
   }
@@ -556,6 +609,7 @@ export async function runMunsChatLane(
   companyName: string,
   token: string,
   signal?: AbortSignal,
+  onProgress?: (e: LaneProgress) => void,
 ): Promise<SessionResult> {
   // Calendar-accurate 2-year window, matching cool_script.sh's `date -d '2
   // years ago'` (not a flat 730-day subtraction).
@@ -570,6 +624,8 @@ export async function runMunsChatLane(
   const sections = groupQuestionsBySection();
   const lanes = splitSectionsIntoLanes(sections, PARALLEL_LANES);
   const lane = lanes[laneIndex] ?? [];
+  // Label lanes A/B for the live progress UI (PARALLEL_LANES is 2).
+  const chain: "A" | "B" = laneIndex === 0 ? "A" : "B";
 
   return runChatSession(
     lane,
@@ -579,6 +635,8 @@ export async function runMunsChatLane(
     fromDate,
     toDate,
     signal,
+    chain,
+    onProgress,
   );
 }
 

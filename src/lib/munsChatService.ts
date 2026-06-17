@@ -259,6 +259,14 @@ async function sendMessage(
   const text = await extractText(res);
 
   if (!res.ok) {
+    // 401/403 from MUNS means the bearer token was rejected — almost always an
+    // expired or invalid TEMPORARY_TOKEN. Surface an actionable message instead
+    // of the raw JSON error body so the UI tells the user how to fix it.
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(
+        `MUNS authentication failed (HTTP ${res.status}): the TEMPORARY_TOKEN is missing, expired, or invalid. Refresh it via "wrangler secret put TEMPORARY_TOKEN" (production) or .dev.vars (local dev).`,
+      );
+    }
     throw new Error(`Chat API ${res.status}: ${text.slice(0, 200)}`);
   }
 

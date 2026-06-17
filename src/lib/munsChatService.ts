@@ -697,14 +697,14 @@ export async function runMunsChatGovernance(
   const merged = sessions.flatMap((s) => s.results);
   const { raw, errorCount, total } = assembleMunsResults(merged);
 
-  // Any failed question produces an Error: row that the parser scores as 1/2
-  // and would be cached for 30 days.  Reject the run entirely so the UI
-  // surfaces the real failure rather than persisting incorrect data.
-  if (errorCount > 0) {
+  // Reject only a wholesale failure (everything errored). A few transient
+  // per-question failures still return the partial scorecard so the answers
+  // that succeeded aren't discarded.
+  if (total > 0 && errorCount === total) {
     return {
       ok: false,
       raw: "",
-      error: `${errorCount} of ${total} questions failed. Check subrequest limits or token validity and retry.`,
+      error: `All ${total} questions failed. Check subrequest limits or token validity and retry.`,
     };
   }
 

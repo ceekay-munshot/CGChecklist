@@ -12,6 +12,10 @@ export interface MunsGovernanceResponse {
   cachedAt?: string;
   /** True when the request was aborted by the caller. */
   cancelled?: boolean;
+  /** Questions that failed in a partial run (0/undefined when fully clean). */
+  errorCount?: number;
+  /** Total checklist questions attempted (paired with errorCount). */
+  total?: number;
 }
 
 /** A single live progress update streamed from the server during a run. */
@@ -65,6 +69,8 @@ interface AssembleRouteResponse {
   ok: boolean;
   raw?: string;
   error?: string;
+  errorCount?: number;
+  total?: number;
 }
 
 const isAbortError = (error: unknown): boolean =>
@@ -243,6 +249,8 @@ export const fetchGovernanceAnalysis = async (
       raw: assembled.raw,
       parsed: parseMunsResponse(assembled.raw),
       cached: false,
+      errorCount: assembled.errorCount,
+      total: assembled.total,
     };
   } catch (error) {
     if (isAbortError(error)) {

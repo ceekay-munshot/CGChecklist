@@ -198,7 +198,9 @@ export function CompanyProvider({
         status,
         lastRefreshedAt: result.ok ? dataAsOf : prev.lastRefreshedAt,
         message: result.ok
-          ? "Live MUNS analysis loaded."
+          ? result.errorCount && result.errorCount > 0
+            ? `Live MUNS analysis loaded — ${result.errorCount} of ${result.total} questions failed. Run again to retry them.`
+            : "Live MUNS analysis loaded."
           : result.error || "Failed to fetch MUNS analysis.",
         munsRaw: newRaw,
         munsError: result.ok ? null : result.error || "Failed to fetch.",

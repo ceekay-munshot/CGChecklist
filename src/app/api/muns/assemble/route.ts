@@ -56,20 +56,26 @@ export async function POST(request: Request) {
   const country = resolveCountry(body.country);
   const { raw, errorCount, total } = assembleMunsResults(body.results);
 
-  // Any failed question produces an Error: row that the parser scores as 1/2
-  // and would be cached for 30 days. Reject the run entirely so the UI surfaces
-  // the real failure rather than persisting incorrect data.
-  if (errorCount > 0) {
+  // A wholesale failure (every question errored — e.g. an invalid token or a
+  // dead lane) produces a useless scorecard, so reject it outright. A few
+  // transient per-question failures should NOT discard the run: we return the
+  // partial scorecard so the questions that did succeed are still shown.
+  if (total > 0 && errorCount === total) {
     return NextResponse.json(
       {
         ok: false,
-        error: `${errorCount} of ${total} questions failed. Check subrequest limits or token validity and retry.`,
+        error: `All ${total} questions failed. Check subrequest limits or token validity and retry.`,
       },
       { status: 502 },
     );
   }
 
-  await putCachedRun(runCacheKey({ ticker, country }), raw);
+  // Cache only a fully-successful run. A partial run is shown to the user but
+  // never persisted, so the failed question(s) aren't frozen for 30 days — the
+  // next run retries them.
+  if (errorCount === 0) {
+    await putCachedRun(runCacheKey({ ticker, country }), raw);
+  }
 
-  return NextResponse.json({ ok: true, raw, cached: false });
+  return NextResponse.json({ ok: true, raw, cached: false, errorCount, total });
 }

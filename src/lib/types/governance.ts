@@ -19,7 +19,13 @@ export type GovernanceResponse =
   | "Debt < Advances"
   | "Debt > Advances"
   | "Cash > Accounting"
-  | "Cash < Accounting";
+  | "Cash < Accounting"
+  // Sentiment verdicts derived from the polarity-aware score (munsChatService).
+  | "Positive"
+  | "Neutral"
+  | "Negative"
+  | "Unclear"
+  | "Not retrieved";
 
 export type GovernanceSectionId =
   | "BOARD"

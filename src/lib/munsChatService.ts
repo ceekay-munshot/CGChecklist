@@ -16,11 +16,13 @@ const ONE_LINE_ONLY = " Answer in THREE BULLET POINTS ONLY STRICTLY.";
 export const MEGA_PROMPT =
   "Make structured tables answering the below questions for the company . " +
   "If an answer is Not established or Not available in the annual report - " +
-  "Quickly Websearch and find it . keep answers for each question detailed " +
-  "and non generic , specifically suited for the company. keep remarks more " +
-  "numerical stating exact problems instead of being concise. use exact name " +
-  "of the ceo/company/elements in each answer only.  DOUBLE CHECK AND VERIFY " +
-  "EACH ANSWER BEFORE ANSWERING." +
+  "Quickly Websearch and find it . Keep each answer specific to the company " +
+  "with exact figures, names and dates - never generic . State the finding " +
+  "directly and crisply : give the fact itself with the key number(s) . Do " +
+  "NOT narrate the evidence, the sources or the search process, and do NOT " +
+  "say what a report 'does or does not disclose' - just answer . No hedging, " +
+  "no filler . Use the exact name of the ceo/company/elements in each answer " +
+  "only . DOUBLE CHECK AND VERIFY EACH ANSWER BEFORE ANSWERING." +
   ONE_LINE_ONLY;
 
 // ---------------------------------------------------------------------------
@@ -304,11 +306,11 @@ function splitCells(line: string): string[] {
 const isSeparatorLine = (line: string) =>
   /^[\s|\-:]+$/.test(line) && line.includes("-");
 
-function parseResponseRow(text: string): {
-  response: string;
-  score: number;
-  remarks: string;
-} {
+// Pull the remarks / detail text out of an answer. Most answers come back as
+// prose bullets (no table), in which case the whole cleaned answer IS the
+// remark — returned in full and NEVER truncated, so the dashboard and the Excel
+// export both show the complete finding rather than a half-sentence.
+function extractRemarks(text: string): string {
   const lines = text
     .split("\n")
     .map((l) => l.trim())
@@ -319,19 +321,10 @@ function parseResponseRow(text: string): {
     if (!isSeparatorLine(lines[i + 1])) continue;
 
     const headers = splitCells(lines[i]).map((h) => h.toLowerCase());
-    const dataLineIdx = i + 2;
-    if (dataLineIdx >= lines.length) continue;
-    const dataLine = lines[dataLineIdx];
+    const dataLine = lines[i + 2];
     if (!dataLine?.includes("|")) continue;
 
     const cells = splitCells(dataLine);
-
-    const respIdx = headers.findIndex(
-      (h) => h.includes("response") || h.includes("answer"),
-    );
-    const scoreIdx = headers.findIndex(
-      (h) => h === "score" || h.includes("score"),
-    );
     const remarksIdx = headers.findIndex(
       (h) =>
         h.includes("remark") ||
@@ -339,34 +332,10 @@ function parseResponseRow(text: string): {
         h.includes("detail") ||
         h.includes("note"),
     );
-
-    const rawScore = scoreIdx >= 0 ? parseInt(cells[scoreIdx] ?? "") : NaN;
-    return {
-      response: respIdx >= 0 ? (cells[respIdx] ?? "N/A") : inferResponse(text),
-      score: isNaN(rawScore) ? 1 : rawScore,
-      remarks:
-        remarksIdx >= 0
-          ? (cells[remarksIdx] ?? text.slice(0, 500))
-          : text.slice(0, 500),
-    };
+    if (remarksIdx >= 0 && cells[remarksIdx]) return cells[remarksIdx];
   }
 
-  // No table found — infer from prose
-  return { response: inferResponse(text), score: 1, remarks: text.slice(0, 500) };
-}
-
-function inferResponse(text: string): string {
-  const l = text.toLowerCase().slice(0, 300);
-  if (/\byes\b/.test(l)) return "Yes";
-  if (/\bno\b/.test(l)) return "No";
-  if (/\bhigh\b/.test(l)) return "High";
-  if (/\blow\b/.test(l)) return "Low";
-  if (/\bgood\b/.test(l)) return "Good";
-  if (/\bpoor\b|\bbad\b/.test(l)) return "Poor";
-  if (/\baverage\b|\bmoderate\b/.test(l)) return "Average";
-  if (/\bincreasing\b/.test(l)) return "Increasing";
-  if (/\bdecreasing\b/.test(l)) return "Decreasing";
-  return "N/A";
+  return text;
 }
 
 // ---------------------------------------------------------------------------
@@ -476,6 +445,18 @@ function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
   return polarity * direction > 0 ? 2 : 0;
 }
 
+// Plain-language verdict for the Response column. Derived from the polarity-
+// aware score so the word always agrees with the row's colour — magnitude and
+// descriptive questions (where a literal Yes/No is meaningless) get a useful
+// sentiment instead of a bare "N/A". Answers we couldn't establish read as
+// "Unclear" rather than implying a finding either way.
+function responseLabel(text: string, score: 0 | 1 | 2): string {
+  if (UNKNOWN_RE.test(text)) return "Unclear";
+  if (score === 2) return "Positive";
+  if (score === 0) return "Negative";
+  return "Neutral";
+}
+
 // ---------------------------------------------------------------------------
 // Assemble individual responses into a markdown document the existing parser
 // can read without modification.
@@ -513,11 +494,16 @@ function assembleMarkdown(results: QuestionResult[]): string {
         );
         continue;
       }
-      const { response, remarks } = parseResponseRow(item.rawResponse);
-      // Score is inferred from the answer text with per-question polarity, not
-      // the table fallback (which can't read prose bullet answers).
+      // Score is inferred from the answer text with per-question polarity; the
+      // Response verdict is derived from that same score so the two never
+      // disagree, and the remark is the full answer text (untruncated).
       const score = scoreAnswer(item.questionId, item.rawResponse);
-      const safeRemarks = remarks.replace(/\|/g, "/").replace(/\n/g, " ");
+      const response = responseLabel(item.rawResponse, score);
+      const remarks = extractRemarks(item.rawResponse);
+      const safeRemarks = remarks
+        .replace(/\|/g, "/")
+        .replace(/\s*\n\s*/g, " ")
+        .trim();
       parts.push(
         `| ${safeParticulars} | ${response} | ${score} | 2 | ${safeRemarks} |`,
       );

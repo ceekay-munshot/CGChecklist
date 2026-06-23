@@ -25,7 +25,7 @@ const SECTION_MAP: Record<string, GovernanceSectionId> = {
 };
 
 const mapSectionName = (title: string): GovernanceSectionId => {
-  let normalized = title
+  const normalized = title
     .toLowerCase()
     .trim()
     .replace(/^section\s+\d+:\s*/i, "");
@@ -41,15 +41,19 @@ const mapSectionName = (title: string): GovernanceSectionId => {
 
 const responseToConfidence = (response: string): GovernanceConfidence => {
   const v = response.toLowerCase().trim();
-  if (
-    ["yes", "good", "high", "above", "stable", "no"].includes(v) ||
-    v.includes("debt <") ||
-    v.includes("cash >")
-  ) {
-    return "High";
+
+  // Could-not-establish or failed-fetch answers carry the least certainty.
+  if (["unclear", "n/a", "not established", "not retrieved"].includes(v)) {
+    return "Low";
   }
-  if (["average", "moderate", "medium"].includes(v)) return "Medium";
-  return "Low";
+
+  // A mixed / partial finding sits in the middle.
+  if (["neutral", "average", "moderate", "medium"].includes(v)) {
+    return "Medium";
+  }
+
+  // Any clear directional verdict — positive or negative — is a confident read.
+  return "High";
 };
 
 const clampScore = (n: number): GovernanceScoreValue => {
@@ -74,7 +78,6 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
     const scoreCol = table.headers.find(
       (h) => h.toLowerCase().trim() === "score",
     );
-    const maxScoreCol = findColumn(table.headers, ["max"]);
     const remarksCol = findColumn(table.headers, ["remark"]);
 
     if (!particularsCol || !responseCol) continue;
@@ -83,7 +86,6 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
       const particulars = row[particularsCol] || "";
       const response = row[responseCol] || "";
       const scoreNum = scoreCol ? parseInt(row[scoreCol], 10) || 0 : 0;
-      const maxScoreNum = maxScoreCol ? parseInt(row[maxScoreCol], 10) || 2 : 2;
       const remarks = remarksCol ? row[remarksCol] || "" : "";
 
       if (!particulars.trim()) continue;

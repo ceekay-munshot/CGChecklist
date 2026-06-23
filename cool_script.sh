@@ -36,7 +36,7 @@ HDR=$'\033[1;36m'; QST=$'\033[0;33m'; ANS=$'\033[0;37m'
 OK=$'\033[0;32m'; ERR=$'\033[0;31m'; DIM=$'\033[2m'; NC=$'\033[0m'
 
 ONE_LINE_ONLY=" Answer in THREE BULLET POINTS ONLY STRICTLY."
-MEGA="Make structured tables answering the below questions for the company . If an answer is Not established or Not available in the annual report - Quickly Websearch and find it . keep answers for each question detailed and non generic , specifically suited for the company. keep remarks more numerical stating exact problems instead of being concise. use exact name of the ceo/company/elements in each answer only.  DOUBLE CHECK AND VERIFY EACH ANSWER BEFORE ANSWERING.${ONE_LINE_ONLY}"
+MEGA="Make structured tables answering the below questions for the company . If an answer is Not established or Not available in the annual report - Quickly Websearch and find it . Keep each answer specific to the company with exact figures, names and dates - never generic . State the finding directly and crisply : give the fact itself with the key number(s) . Do NOT narrate the evidence, the sources or the search process, and do NOT say what a report 'does or does not disclose' - just answer . No hedging, no filler . Use the exact name of the ceo/company/elements in each answer only . DOUBLE CHECK AND VERIFY EACH ANSWER BEFORE ANSWERING.${ONE_LINE_ONLY}"
 
 # ── Questions: parallel arrays (section | prompt), 51 items ────────────────
 SECT=(); PROMPT=()

@@ -374,6 +374,43 @@ export const QUESTION_POLARITY: Record<string, 1 | -1 | 0> = {
   "FINANCIALS-13": 1, "FINANCIALS-14": -1, "FINANCIALS-15": -1, "FINANCIALS-16": -1,
 };
 
+// ---------------------------------------------------------------------------
+// Answer type per question — drives ONLY the Response word (not the score):
+//   "boolean"   → a yes/no check; Response reads "Yes" / "No" (coloured by the
+//                 good/bad score, so a pledge shows "Yes" in red).
+//   "sentiment" → a quality/magnitude/descriptive read; Response reads
+//                 "Positive" / "Neutral" / "Negative".
+// The 0/1/2 score (and hence the colour and the governance total) is unchanged
+// for both types.
+// ---------------------------------------------------------------------------
+export type QuestionType = "boolean" | "sentiment";
+
+export const QUESTION_TYPE: Record<string, QuestionType> = {
+  "BOARD-1": "boolean", "BOARD-2": "boolean", "BOARD-3": "boolean",
+  "BOARD-4": "sentiment", "BOARD-5": "sentiment",
+  "AUDIT-1": "boolean", "AUDIT-2": "boolean", "AUDIT-3": "boolean",
+  "AUDIT-4": "sentiment", "AUDIT-5": "sentiment",
+  "STAKEHOLDERS-1": "sentiment", "STAKEHOLDERS-2": "sentiment",
+  "EMPLOYEE-1": "sentiment", "EMPLOYEE-2": "sentiment", "EMPLOYEE-3": "sentiment",
+  "INDUSTRY_PROMOTER-1": "sentiment", "INDUSTRY_PROMOTER-2": "sentiment",
+  "INDUSTRY_PROMOTER-3": "boolean", "INDUSTRY_PROMOTER-4": "boolean",
+  "INDUSTRY_PROMOTER-5": "sentiment", "INDUSTRY_PROMOTER-6": "sentiment",
+  "INDUSTRY_PROMOTER-7": "sentiment", "INDUSTRY_PROMOTER-8": "sentiment",
+  "INDUSTRY_PROMOTER-9": "boolean", "INDUSTRY_PROMOTER-10": "boolean",
+  "INDUSTRY_PROMOTER-11": "boolean", "INDUSTRY_PROMOTER-12": "boolean",
+  "INDUSTRY_PROMOTER-13": "sentiment", "INDUSTRY_PROMOTER-14": "boolean",
+  "INDUSTRY_PROMOTER-15": "sentiment",
+  "STOCK_EXCHANGE-1": "boolean", "STOCK_EXCHANGE-2": "sentiment",
+  "STOCK_EXCHANGE-3": "sentiment", "STOCK_EXCHANGE-4": "boolean",
+  "OTHER_REGULATORY-1": "boolean",
+  "FINANCIALS-1": "boolean", "FINANCIALS-2": "sentiment", "FINANCIALS-3": "sentiment",
+  "FINANCIALS-4": "boolean", "FINANCIALS-5": "boolean", "FINANCIALS-6": "sentiment",
+  "FINANCIALS-7": "boolean", "FINANCIALS-8": "sentiment", "FINANCIALS-9": "sentiment",
+  "FINANCIALS-10": "boolean", "FINANCIALS-11": "boolean", "FINANCIALS-12": "sentiment",
+  "FINANCIALS-13": "boolean", "FINANCIALS-14": "boolean", "FINANCIALS-15": "boolean",
+  "FINANCIALS-16": "boolean",
+};
+
 // Phrases that mean the data could not be found — always the neutral score.
 const UNKNOWN_RE =
   /\b(not (established|available|determinable|ascertainable|found|disclosed in the available)|could not be (established|determined|verified)|cannot be (established|determined|verified)|unable to (verify|determine|establish)|no (?:public |reliable )?(?:data|information|disclosure) (?:available|found))\b/i;
@@ -495,8 +532,52 @@ function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
 // descriptive questions (where a literal Yes/No is meaningless) get a useful
 // sentiment instead of a bare "N/A". Answers we couldn't establish read as
 // "Unclear" rather than implying a finding either way.
-function responseLabel(text: string, score: 0 | 1 | 2): string {
+// Best-effort Yes/No reading of a boolean answer. Prefers an explicit leading
+// Yes/No, then the affirmative/absent magnitude signal, and finally derives it
+// from the good/bad score plus the question polarity (e.g. a GOOD answer to a
+// "-1" question like "shareholding pledge?" must mean "No"). Returns null when
+// genuinely undeterminable.
+function detectYesNo(questionId: string, text: string): "Yes" | "No" | null {
+  const lower = text.toLowerCase();
+  const head = lower.slice(0, 120);
+  if (/^[\s\-—*•>]*yes\b/.test(head)) return "Yes";
+  if (/^[\s\-—*•>]*(no|none)\b/.test(head)) return "No";
+
+  const { magnitude } = analyzeAnswer(text);
+  if (magnitude > 0) return "Yes";
+  if (magnitude < 0) return "No";
+
+  // A negation in the opening clause ("… has no …", "does not …") reads as No.
+  const firstClause = lower.split(/[.;]/, 1)[0] ?? "";
+  if (/\b(no|not|none|without|nil|never)\b/.test(firstClause)) return "No";
+
+  // Fall back to score + polarity: for a boolean question the "good" answer is
+  // Yes when affirmative is good (+1) and No when affirmative is bad (-1).
+  const polarity = QUESTION_POLARITY[questionId] ?? 0;
+  const score = scoreAnswer(questionId, text);
+  if (polarity !== 0 && score !== 1) {
+    const good = score === 2;
+    if (polarity === 1) return good ? "Yes" : "No";
+    return good ? "No" : "Yes";
+  }
+  return null;
+}
+
+// Plain-language verdict for the Response column, chosen by question type.
+// Boolean questions read "Yes"/"No" (coloured by the good/bad score); sentiment
+// questions read "Positive"/"Neutral"/"Negative" derived from that same score
+// so the word always agrees with the row's colour. Answers we couldn't
+// establish read as "Unclear" rather than implying a finding either way.
+function responseLabel(
+  questionId: string,
+  text: string,
+  score: 0 | 1 | 2,
+): string {
   if (UNKNOWN_RE.test(text)) return "Unclear";
+  const type = QUESTION_TYPE[questionId] ?? "sentiment";
+  if (type === "boolean") {
+    return detectYesNo(questionId, text) ?? "Unclear";
+  }
   if (score === 2) return "Positive";
   if (score === 0) return "Negative";
   return "Neutral";
@@ -550,7 +631,7 @@ function assembleMarkdown(
       const score = llm ? llm.score : scoreAnswer(item.questionId, item.rawResponse);
       const response = llm
         ? llm.response
-        : responseLabel(item.rawResponse, score);
+        : responseLabel(item.questionId, item.rawResponse, score);
       const remarks = extractRemarks(item.rawResponse);
       const safeRemarks = remarks
         .replace(/\|/g, "/")
@@ -870,6 +951,7 @@ export async function assembleMunsResults(
         section: r.sectionTitle,
         question: r.particulars,
         polarity: QUESTION_POLARITY[r.questionId] ?? 0,
+        type: QUESTION_TYPE[r.questionId] ?? "sentiment",
         answer: r.rawResponse,
       }));
     try {

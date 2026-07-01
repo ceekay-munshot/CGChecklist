@@ -17,9 +17,18 @@
 
 export type ScoreValue = 0 | 1 | 2;
 
-// One-word verdict shown in the Response column. Kept in lockstep with the
-// score so the badge colour and the word never disagree.
-export type Verdict = "Positive" | "Neutral" | "Negative" | "Unclear";
+// One-word verdict shown in the Response column. Boolean questions read
+// "Yes"/"No"; sentiment questions read "Positive"/"Neutral"/"Negative". Either
+// way the badge COLOUR comes from the score, so a red-flag "Yes" shows red.
+export type Verdict =
+  | "Yes"
+  | "No"
+  | "Positive"
+  | "Neutral"
+  | "Negative"
+  | "Unclear";
+
+export type QuestionType = "boolean" | "sentiment";
 
 export interface ScoreResult {
   score: ScoreValue;
@@ -33,6 +42,7 @@ export interface ScoreItem {
   section: string; // human-readable section title
   question: string; // the checklist particulars
   polarity: 1 | -1 | 0; // +1 affirmative-good, -1 affirmative-bad, 0 descriptive
+  type: QuestionType; // "boolean" → Yes/No answer; "sentiment" → Positive/…
   answer: string; // the cleaned MUNS answer prose
 }
 
@@ -55,23 +65,26 @@ function polarityHint(polarity: 1 | -1 | 0): string {
 
 const SYSTEM_PROMPT = `You are a corporate-governance analyst grading answers to a fixed due-diligence checklist.
 
-For each question you receive: the question text, a polarity hint (which direction is GOOD for that question), and an analyst's answer. Assign a governance score and a matching one-word verdict.
+For each question you receive: the question text, its answer TYPE, a polarity hint (which direction is GOOD for that question), and an analyst's answer. Return a governance SCORE and a type-appropriate one-word VERDICT.
 
-Scoring rubric:
-- 2 = Positive: the finding is GOOD for governance quality / low risk.
-- 1 = Neutral: mixed, partial, borderline, or the answer could not establish the fact.
-- 0 = Negative: the finding is a RED FLAG / bad for governance / high risk.
+SCORE (drives the risk colour and the governance total) — always 0, 1 or 2:
+- 2 = GOOD for governance quality / low risk.
+- 1 = mixed, partial, borderline, or the fact could not be established.
+- 0 = RED FLAG / bad for governance / high risk.
 
-The verdict MUST agree with the score: 2 -> "Positive", 1 -> "Neutral", 0 -> "Negative". If the answer says the fact could not be established / is not available / not disclosed / unknown, use score 1 and verdict "Unclear".
+VERDICT — depends on the question's TYPE:
+- type "boolean": answer the yes/no question factually with "Yes", "No", or "Unclear". This is the literal answer, INDEPENDENT of good/bad — a genuine red flag can be verdict "Yes" with score 0 (e.g. a shareholding pledge: "Yes", score 0), and a reassuring finding can be "No" with score 2 (e.g. no SEBI cases: "No", score 2).
+- type "sentiment": use "Positive", "Neutral", or "Negative", agreeing with the score (2 -> Positive, 1 -> Neutral, 0 -> Negative), or "Unclear".
+If the answer says the fact could not be established / is not available / unknown, use score 1 and verdict "Unclear".
 
 Hard rules:
-1. Respect negation. "No red flags", "no litigation", "no pledge", "no SEBI cases", "not a material driver" are REASSURING (good), never negative.
+1. Respect negation. "No red flags", "no litigation", "no pledge", "no SEBI cases", "not a material driver" are REASSURING (good).
 2. Judge magnitude and nature, not just keywords. Example: for related-party transactions, LARGE or unusual related-party dealings are a concern even if "disclosed"; routine, fully-disclosed RPTs are fine.
-3. Follow the polarity hint to decide which direction is good for each question.
-4. Base the score ONLY on the answer text provided. Do not invent facts.
+3. Follow the polarity hint to decide which direction is good for the SCORE.
+4. Base everything ONLY on the answer text provided. Do not invent facts.
 
 Return STRICT JSON only, shaped exactly as:
-{"scores":[{"id":"<question id>","score":<0|1|2>,"verdict":"Positive|Neutral|Negative|Unclear","reason":"<= 15 words"}]}
+{"scores":[{"id":"<question id>","score":<0|1|2>,"verdict":"<Yes|No for boolean; Positive|Neutral|Negative for sentiment; Unclear if unknown>","reason":"<= 15 words"}]}
 Return one entry for every question id you are given, and nothing outside the JSON object.`;
 
 function verdictFromScore(score: ScoreValue): Verdict {
@@ -86,28 +99,68 @@ function clampScore(n: number): ScoreValue {
   return 1;
 }
 
+// Derive Yes/No from the good/bad score plus polarity, for a boolean question
+// where the model didn't give a clean Yes/No. On a "+1" question the good
+// answer is Yes; on a "-1" question the good answer is No.
+function boolAnswerFromScore(
+  polarity: number,
+  score: ScoreValue,
+): "Yes" | "No" | null {
+  if (polarity === 0 || score === 1) return null;
+  const good = score === 2;
+  if (polarity === 1) return good ? "Yes" : "No";
+  return good ? "No" : "Yes";
+}
+
 // Coerce one raw model entry into a validated ScoreResult, keeping the score
-// and the word consistent regardless of what the model returned. Returns null
-// if the entry is unusable (missing id) so the caller can fall back for it.
+// and the word consistent regardless of what the model returned. The verdict
+// vocabulary is chosen by the question's type: boolean → Yes/No, sentiment →
+// Positive/Neutral/Negative. Returns null if the entry is unusable (missing id)
+// so the caller can fall back for it.
 function normalizeEntry(
   raw: unknown,
+  itemsById: Map<string, ScoreItem>,
 ): { id: string; result: ScoreResult } | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
   const id = typeof obj.id === "string" ? obj.id.trim() : "";
   if (!id) return null;
 
+  const item = itemsById.get(id);
+  const type: QuestionType = item?.type ?? "sentiment";
+  const polarity = item?.polarity ?? 0;
+
   const score = clampScore(Number(obj.score));
-  const verdictRaw =
-    typeof obj.verdict === "string" ? obj.verdict.toLowerCase().trim() : "";
+  const verdictRaw = (
+    typeof obj.verdict === "string"
+      ? obj.verdict
+      : typeof obj.answer === "string"
+        ? obj.answer
+        : ""
+  )
+    .toLowerCase()
+    .trim();
   const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";
 
-  // "Unclear" is the only verdict allowed to override the score-derived word,
-  // and it always lands in the neutral bucket so the colour stays amber.
-  if (verdictRaw.startsWith("unclear") || verdictRaw.startsWith("not")) {
+  // Explicit "could not establish" always lands in the neutral bucket.
+  if (
+    verdictRaw.startsWith("unclear") ||
+    verdictRaw.startsWith("n/a") ||
+    verdictRaw.startsWith("not ") ||
+    verdictRaw.includes("unknown")
+  ) {
     return { id, result: { score: 1, response: "Unclear", reason } };
   }
 
+  if (type === "boolean") {
+    let answer: "Yes" | "No" | null = null;
+    if (verdictRaw.startsWith("yes")) answer = "Yes";
+    else if (verdictRaw.startsWith("no")) answer = "No";
+    else answer = boolAnswerFromScore(polarity, score);
+    return { id, result: { score, response: answer ?? "Unclear", reason } };
+  }
+
+  // sentiment: keep the word in lockstep with the score.
   return { id, result: { score, response: verdictFromScore(score), reason } };
 }
 
@@ -126,10 +179,14 @@ export async function scoreAnswersWithLLM(
   const map = new Map<string, ScoreResult>();
   if (items.length === 0) return map;
 
+  const itemsById = new Map<string, ScoreItem>();
+  for (const it of items) itemsById.set(it.id, it);
+
   const payloadQuestions = items.map((it) => ({
     id: it.id,
     section: it.section,
     question: it.question,
+    type: it.type,
     polarity: polarityHint(it.polarity),
     answer: it.answer,
   }));
@@ -173,7 +230,7 @@ export async function scoreAnswersWithLLM(
       : [];
 
   for (const row of rows) {
-    const norm = normalizeEntry(row);
+    const norm = normalizeEntry(row, itemsById);
     if (norm) map.set(norm.id, norm.result);
   }
 

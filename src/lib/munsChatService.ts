@@ -4,6 +4,11 @@ import {
   MUNS_CHAT_CONTEXT_EMAIL,
   PARALLEL_LANES,
 } from "@/lib/munsConfig";
+import {
+  scoreAnswersWithLLM,
+  type ScoreItem,
+  type ScoreResult,
+} from "@/lib/scoring/llmScore";
 
 // ---------------------------------------------------------------------------
 // Suffix appended to the mega prompt and every question, matching cool_script.sh
@@ -351,7 +356,7 @@ function extractRemarks(text: string): string {
 // Score 1 is the middle/uncertain bucket (mixed signal, partial, or data not
 // established).
 // ---------------------------------------------------------------------------
-const QUESTION_POLARITY: Record<string, 1 | -1 | 0> = {
+export const QUESTION_POLARITY: Record<string, 1 | -1 | 0> = {
   "BOARD-1": 1, "BOARD-2": 1, "BOARD-3": 1, "BOARD-4": 1, "BOARD-5": 1,
   "AUDIT-1": 1, "AUDIT-2": 1, "AUDIT-3": -1, "AUDIT-4": 0, "AUDIT-5": 0,
   "STAKEHOLDERS-1": 1, "STAKEHOLDERS-2": 0,
@@ -373,56 +378,98 @@ const QUESTION_POLARITY: Record<string, 1 | -1 | 0> = {
 const UNKNOWN_RE =
   /\b(not (established|available|determinable|ascertainable|found|disclosed in the available)|could not be (established|determined|verified)|cannot be (established|determined|verified)|unable to (verify|determine|establish)|no (?:public |reliable )?(?:data|information|disclosure) (?:available|found))\b/i;
 
-// Tokens signalling an affirmative / favourable-magnitude finding.
-const POSITIVE_TOKENS = [
-  "yes", "high", "higher", "strong", "robust", "healthy", "solid", "good",
-  "adequate", "sufficient", "ample", "consistent", "consistently", "stable",
-  "transparent", "transparency", "disclosed", "compliant", "complies",
-  "complied", "present", "exists", "majority", "above", "exceeds", "exceeding",
-  "greater", "more than", "big 4", "big four", "top", "reputed", "reputable",
-  "well-regarded", "professional", "experienced", "seasoned", "long-tenured",
-  "long tenure", "increasing", "rising", "improving", "improved", "positive",
-  "clean", "favourable", "favorable", "low leverage", "no red flag",
-  "no material", "no pledge", "no cases", "no concern", "well established",
+// ── Vocabulary ─────────────────────────────────────────────────────────────
+// The heuristic separates two axes the old single list conflated:
+//   • VALENCE — is the finding good or bad FOR THE COMPANY, regardless of the
+//     question? "reputable"/"clean" are always good; "fraud"/"red flag"/
+//     "pledge" are always bad. Valence keeps its natural sign for every
+//     question.
+//   • MAGNITUDE — is the thing being asked about high/present or low/absent?
+//     Whether that is good or bad is decided by the question polarity (a high
+//     independent-director ratio is good; high leverage is bad).
+// Splitting them is what stops a described red flag on an "affirmative-is-bad"
+// question (pledge, SEBI case, auditor qualification) from being scored green —
+// the core defect of the old `polarity * direction` scheme.
+
+// Unambiguously GOOD-for-the-company vocabulary.
+const GOOD_TOKENS = [
+  "strong", "robust", "healthy", "solid", "good", "adequate", "sufficient",
+  "ample", "consistent", "consistently", "stable", "transparent",
+  "transparency", "disclosed", "compliant", "complies", "complied", "reputed",
+  "reputable", "well-regarded", "professional", "experienced", "seasoned",
+  "long-tenured", "long tenure", "clean", "favourable", "favorable",
+  "improving", "improved", "well established", "big 4", "big four",
+  "low leverage", "no red flag", "no material", "no pledge", "no cases",
+  "no concern",
 ];
 
-// Tokens signalling a negative / unfavourable finding or red flag.
-const NEGATIVE_TOKENS = [
+// Unambiguously BAD-for-the-company vocabulary (red flags & weaknesses).
+const BAD_TOKENS = [
   "weak", "poor", "inadequate", "insufficient", "concern", "concerning",
   "red flag", "red flags", "qualified", "qualification", "qualifications",
   "pledge", "pledged", "litigation", "lawsuit", "investigation", "probe",
   "penalty", "penalties", "fraud", "fight", "dispute", "feud", "conflict",
-  "material", "below", "less than", "fewer", "declining", "decreasing",
-  "falling", "deteriorating", "fluctuating", "volatile", "volatility",
-  "elevated", "elongated", "stretched", "absent", "lacking", "missing",
-  "undisclosed", "non-compliant", "noncompliant", "high attrition",
-  "high debt", "high leverage", "overdue", "delayed",
+  "deteriorating", "fluctuating", "volatile", "volatility", "elongated",
+  "stretched", "absent", "lacking", "missing", "undisclosed", "non-compliant",
+  "noncompliant", "high attrition", "high debt", "high leverage", "overdue",
+  "delayed",
 ];
 
-const countMatches = (text: string, tokens: string[]): number =>
-  tokens.reduce((n, t) => (text.includes(t) ? n + 1 : n), 0);
+// Magnitude-UP: more/higher of whatever the question asks about.
+const MAGNITUDE_UP = [
+  "high", "higher", "above", "exceeds", "exceeding", "greater", "more than",
+  "majority", "increasing", "rising", "elevated", "large", "significant",
+];
 
-// Direction of the finding: +1 affirmative/high, -1 negative/low, 0 unclear.
-function detectDirection(text: string): -1 | 0 | 1 {
+// Magnitude-DOWN: less/lower.
+const MAGNITUDE_DOWN = [
+  "low", "lower", "below", "less than", "fewer", "declining", "decreasing",
+  "falling", "minimal", "negligible", "small",
+];
+
+// Negation cues. A token that follows one of these close by is inverted —
+// "no litigation", "not a material driver", "free of pledges" are REASSURING,
+// and "not transparent" is not a plus. Historically the counter ignored this
+// and marked such answers wrongly, the root of the "good finding, negative
+// remark" bug. (This heuristic is only the fallback; the LLM scorer handles
+// nuance properly when OPENAI_API_KEY is set.)
+const NEGATORS =
+  /\b(no|not|without|free of|free from|absence of|lack of|nil|never|none|rather than)\b/;
+
+// True when the token starting at `idx` sits a few words after a negation cue
+// within the same clause (bounded window, no sentence break in between).
+function negatedAt(lower: string, idx: number): boolean {
+  const before = lower.slice(Math.max(0, idx - 28), idx);
+  const clause = before.slice(before.search(/[.;:]\s*[^.;:]*$/) + 1);
+  return NEGATORS.test(clause);
+}
+
+// Net vote of a token list = plain hits minus negated hits (presence-based,
+// one vote per token, matching the original 0/1-per-token behaviour).
+function netTokens(lower: string, tokens: string[]): number {
+  let net = 0;
+  for (const t of tokens) {
+    const idx = lower.indexOf(t);
+    if (idx === -1) continue;
+    net += negatedAt(lower, idx) ? -1 : 1;
+  }
+  return net;
+}
+
+// Split an answer into a company-valence and a magnitude signal.
+function analyzeAnswer(text: string): { valence: number; magnitude: number } {
   const lower = text.toLowerCase();
   const head = lower.slice(0, 180);
 
-  let score = 0;
-  // A leading Yes/No dominates (matches "Yes —", "No,", etc. near the start).
-  if (/^[\s\-—*•]*yes\b/.test(head)) score += 2;
-  if (/^[\s\-—*•]*no\b/.test(head)) score -= 2;
-  // "no <something>" / "not <something>" in the head is a negation signal.
-  if (/\bno\b/.test(head)) score -= 1;
-  if (/\bnot\b/.test(head)) score -= 1;
+  // A leading Yes/No answer is an affirmative/absent signal → magnitude.
+  let magnitude = 0;
+  if (/^[\s\-—*•]*yes\b/.test(head)) magnitude += 2;
+  if (/^[\s\-—*•]*no\b/.test(head)) magnitude -= 2;
 
-  score += countMatches(lower, POSITIVE_TOKENS);
-  score -= countMatches(lower, NEGATIVE_TOKENS);
-  // "low" is a magnitude-down signal; polarity decides if that is good or bad.
-  if (/\blow\b|\blower\b/.test(lower)) score -= 1;
+  const valence = netTokens(lower, GOOD_TOKENS) - netTokens(lower, BAD_TOKENS);
+  magnitude += netTokens(lower, MAGNITUDE_UP) - netTokens(lower, MAGNITUDE_DOWN);
 
-  if (score > 0) return 1;
-  if (score < 0) return -1;
-  return 0;
+  return { valence, magnitude };
 }
 
 // Infer a 0/1/2 score for a question from its answer text. Failed-fetch rows
@@ -431,18 +478,16 @@ function scoreAnswer(questionId: string, text: string): 0 | 1 | 2 {
   if (UNKNOWN_RE.test(text)) return 1;
 
   const polarity = QUESTION_POLARITY[questionId] ?? 0;
-  const direction = detectDirection(text);
+  const { valence, magnitude } = analyzeAnswer(text);
 
-  // Descriptive question: map the answer's sentiment straight to a score.
-  if (polarity === 0) {
-    return direction > 0 ? 2 : direction < 0 ? 0 : 1;
-  }
+  // Valence always keeps its sign (bad news is bad on any question). Magnitude
+  // is interpreted by polarity: +1 → high is good (add); -1 → high is bad
+  // (subtract); 0 → descriptive, magnitude alone is not a verdict (ignore).
+  let signal = valence;
+  if (polarity === 1) signal += magnitude;
+  else if (polarity === -1) signal -= magnitude;
 
-  // Unclear direction → middle bucket.
-  if (direction === 0) return 1;
-
-  // Good when polarity and direction agree in sign.
-  return polarity * direction > 0 ? 2 : 0;
+  return signal > 0 ? 2 : signal < 0 ? 0 : 1;
 }
 
 // Plain-language verdict for the Response column. Derived from the polarity-
@@ -461,7 +506,10 @@ function responseLabel(text: string, score: 0 | 1 | 2): string {
 // Assemble individual responses into a markdown document the existing parser
 // can read without modification.
 // ---------------------------------------------------------------------------
-function assembleMarkdown(results: QuestionResult[]): string {
+function assembleMarkdown(
+  results: QuestionResult[],
+  scores?: Map<string, ScoreResult>,
+): string {
   const bySection: Map<string, QuestionResult[]> = new Map();
   for (const r of results) {
     const list = bySection.get(r.sectionId) ?? [];
@@ -494,11 +542,15 @@ function assembleMarkdown(results: QuestionResult[]): string {
         );
         continue;
       }
-      // Score is inferred from the answer text with per-question polarity; the
-      // Response verdict is derived from that same score so the two never
-      // disagree, and the remark is the full answer text (untruncated).
-      const score = scoreAnswer(item.questionId, item.rawResponse);
-      const response = responseLabel(item.rawResponse, score);
+      // Prefer the LLM verdict when one was produced for this row; otherwise
+      // fall back to the negation-aware heuristic. Either way the Response word
+      // is kept in lockstep with the score so the two never disagree, and the
+      // remark is the full answer text (untruncated).
+      const llm = scores?.get(item.questionId);
+      const score = llm ? llm.score : scoreAnswer(item.questionId, item.rawResponse);
+      const response = llm
+        ? llm.response
+        : responseLabel(item.rawResponse, score);
       const remarks = extractRemarks(item.rawResponse);
       const safeRemarks = remarks
         .replace(/\|/g, "/")
@@ -774,11 +826,23 @@ export async function runMunsChatLane(
 // reads, and report how many questions errored. Pure (no network) so it can
 // run in the lightweight assemble step after every lane has returned.
 // ---------------------------------------------------------------------------
-export function assembleMunsResults(results: QuestionResult[]): {
+export interface AssembleOptions {
+  /** OpenAI key — when set, answers are graded by the LLM scorer. */
+  openaiApiKey?: string;
+  /** Optional model override for the LLM scorer. */
+  openaiModel?: string;
+  signal?: AbortSignal;
+}
+
+export async function assembleMunsResults(
+  results: QuestionResult[],
+  opts: AssembleOptions = {},
+): Promise<{
   raw: string;
   errorCount: number;
   total: number;
-} {
+  scoredBy: "llm" | "heuristic";
+}> {
   // Canonicalise to checklist order regardless of the order lanes returned in.
   const byId = new Map<string, QuestionResult>();
   for (const r of results) byId.set(r.questionId, r);
@@ -792,10 +856,45 @@ export function assembleMunsResults(results: QuestionResult[]): {
     r.rawResponse.startsWith("Error:"),
   ).length;
 
+  // Grade the answers with the LLM when a key is configured. Failed-fetch rows
+  // ("Error: …") are excluded — they're already recorded as score 0. Any
+  // failure here (no key, transport, parse) degrades gracefully to the
+  // negation-aware heuristic so a run is never lost to a scoring hiccup.
+  let scores: Map<string, ScoreResult> | undefined;
+  let scoredBy: "llm" | "heuristic" = "heuristic";
+  if (opts.openaiApiKey) {
+    const items: ScoreItem[] = ordered
+      .filter((r) => !r.rawResponse.startsWith("Error:"))
+      .map((r) => ({
+        id: r.questionId,
+        section: r.sectionTitle,
+        question: r.particulars,
+        polarity: QUESTION_POLARITY[r.questionId] ?? 0,
+        answer: r.rawResponse,
+      }));
+    try {
+      scores = await scoreAnswersWithLLM(items, {
+        apiKey: opts.openaiApiKey,
+        model: opts.openaiModel,
+        signal: opts.signal,
+      });
+      if (scores.size > 0) scoredBy = "llm";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (typeof console !== "undefined") {
+        console.warn(
+          `[assembleMunsResults] LLM scoring failed, using heuristic fallback: ${msg}`,
+        );
+      }
+      scores = undefined;
+    }
+  }
+
   return {
-    raw: assembleMarkdown(ordered),
+    raw: assembleMarkdown(ordered, scores),
     errorCount,
     total: CHAT_QUESTIONS.length,
+    scoredBy,
   };
 }
 
@@ -824,7 +923,11 @@ export async function runMunsChatGovernance(
   }
 
   const merged = sessions.flatMap((s) => s.results);
-  const { raw, errorCount, total } = assembleMunsResults(merged);
+  const { raw, errorCount, total } = await assembleMunsResults(merged, {
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_SCORING_MODEL,
+    signal,
+  });
 
   // Reject only a wholesale failure (everything errored). A few transient
   // per-question failures still return the partial scorecard so the answers

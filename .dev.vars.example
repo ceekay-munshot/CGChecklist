@@ -13,5 +13,15 @@ MUNS_BEARER_TOKEN=
 #   npx wrangler secret put TEMPORARY_TOKEN
 TEMPORARY_TOKEN=
 
+# OpenAI API key — enables the LLM governance scorer that grades each MUNS
+# answer (Positive/Neutral/Negative + 0/1/2) with negation- and magnitude-
+# awareness. When unset, scoring falls back to the local heuristic, so this is
+# optional but strongly recommended for accurate remarks. Set in production via:
+#   npx wrangler secret put OPENAI_API_KEY
+OPENAI_API_KEY=
+
+# Optional override for the scoring model (defaults to gpt-4o-mini).
+# OPENAI_SCORING_MODEL=gpt-4o-mini
+
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=

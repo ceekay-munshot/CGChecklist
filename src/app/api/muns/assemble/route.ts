@@ -54,7 +54,14 @@ export async function POST(request: Request) {
   }
 
   const country = resolveCountry(body.country);
-  const { raw, errorCount, total } = assembleMunsResults(body.results);
+  // When OPENAI_API_KEY is configured, answers are graded by the LLM scorer
+  // (negation- and magnitude-aware); otherwise assembleMunsResults falls back
+  // to the local heuristic. Scoring failures degrade gracefully — never fatal.
+  const { raw, errorCount, total } = await assembleMunsResults(body.results, {
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_SCORING_MODEL,
+    signal: request.signal,
+  });
 
   // A wholesale failure (every question errored — e.g. an invalid token or a
   // dead lane) produces a useless scorecard, so reject it outright. A few

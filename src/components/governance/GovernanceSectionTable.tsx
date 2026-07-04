@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/Badge";
+import { splitRemarkBullets } from "@/lib/remarks";
 import type {
   GovernanceConfidence,
   GovernanceRow,
@@ -81,7 +82,7 @@ export function GovernanceSectionTable({
                   {row.maxScore}
                 </td>
                 <td className="px-3 py-3 text-[var(--color-fg-muted)] [overflow-wrap:anywhere]">
-                  {row.remarks}
+                  <RemarkBullets remarks={row.remarks} />
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 text-[var(--color-fg-muted)]">
                   {row.source}
@@ -125,4 +126,18 @@ function scoreTextClass(score: GovernanceScoreValue): string {
   if (score === 2) return "text-[var(--color-good-700)]";
   if (score === 1) return "text-[var(--color-warn-700)]";
   return "text-[var(--color-risk-700)]";
+}
+
+// Remarks arrive as a few short answer bullets joined with <br>. Render them as
+// a bulleted list; a single-line remark stays plain text (no lone bullet).
+function RemarkBullets({ remarks }: { remarks: string }) {
+  const bullets = splitRemarkBullets(remarks);
+  if (bullets.length <= 1) return <>{bullets[0] ?? remarks}</>;
+  return (
+    <ul className="list-disc space-y-1 pl-4 marker:text-[var(--color-fg-subtle)]">
+      {bullets.map((bullet, idx) => (
+        <li key={idx}>{bullet}</li>
+      ))}
+    </ul>
+  );
 }

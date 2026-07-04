@@ -660,10 +660,15 @@ function assembleMarkdown(
         ? llm.response
         : responseLabel(item.questionId, item.rawResponse, score);
       const remarks = extractRemarks(item.rawResponse);
+      // Keep each answer bullet on its own line. A markdown table cell can't
+      // hold a real newline, so bullets are joined with <br> and split back out
+      // for display (dashboard) / export via splitRemarkBullets().
       const safeRemarks = remarks
         .replace(/\|/g, "/")
-        .replace(/\s*\n\s*/g, " ")
-        .trim();
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .join("<br>");
       parts.push(
         `| ${safeParticulars} | ${response} | ${score} | 2 | ${safeRemarks} |`,
       );

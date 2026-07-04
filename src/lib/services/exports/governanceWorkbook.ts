@@ -1,5 +1,6 @@
 import type { Cell, Workbook } from "exceljs";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
+import { splitRemarkBullets } from "@/lib/remarks";
 import {
   calculateGovernanceScore,
   getGovernanceSectionSummaries,
@@ -694,19 +695,26 @@ function buildChecklistSheet(wb: Workbook, rows: GovernanceRow[]) {
 
       const isAlt = i % 2 === 1;
       const fill = isAlt ? COLOR.mist50 : COLOR.white;
+      // Remarks are stored as <br>-joined bullets; render one bullet per line so
+      // the exported cell (wrapText on) shows a bulleted list, not "a<br>b<br>c".
+      const remarkBullets = splitRemarkBullets(r.remarks);
+      const remarksText =
+        remarkBullets.length <= 1
+          ? remarkBullets[0] ?? ""
+          : remarkBullets.map((bullet) => `• ${bullet}`).join("\n");
       const row = ws.addRow([
         r.particulars,
         r.response,
         r.score,
         r.maxScore,
-        r.remarks,
+        remarksText,
         r.source,
         r.confidence,
       ]);
       row.height = wrappedRowHeight(
         [
           { text: r.particulars, width: 56 },
-          { text: r.remarks, width: 64 },
+          { text: remarksText, width: 64 },
         ],
         { minHeight: 30 },
       );

@@ -163,21 +163,48 @@ function makeQueryContext(
 // envelope. Pull out ONLY the <ans> content and drop the tool trace, the
 // <sources> JSON, the <doc_source> citation tags, and any other XML wrapper so
 // the table/score parser receives clean answer prose rather than raw XML.
+//
+// The tool trace is removed up front — before we even look for <ans> — so it
+// can NEVER leak into the answer. That matters because the newer planning agent
+// emits a long <tool>…</tool> trace (WriteTodos / TickerSearch / WebSearch …)
+// and occasionally the closing </ans> is lost (a truncated stream): the old
+// code then fell back to the entire raw body and dumped the whole trace
+// ("<1> WriteTodos: […]") into the remark. We now recover the answer even from
+// an unclosed <ans>, and if there is genuinely no answer we return empty rather
+// than the trace.
 function stripMunsTags(text: string): string {
-  const ansRegex = /<ans>([\s\S]*?)<\/ans>/gi;
+  // Strip the agent tool trace + envelope metadata (tools, sources, citations)
+  // first, so none of it can survive into the answer regardless of what follows.
+  const withoutTrace = text
+    .replace(/<tool\b[^>]*>[\s\S]*?<\/tool>/gi, "")
+    .replace(/<sources\b[^>]*>[\s\S]*?<\/sources>/gi, "")
+    .replace(/<doc_?source\b[^>]*>[\s\S]*?<\/doc_?source>/gi, "");
+
+  // Prefer complete <ans>…</ans> blocks. If none closed (truncated stream), take
+  // everything from the opening <ans> onward. Only when there is no <ans> at all
+  // do we fall back to the remaining (now trace-free) prose.
+  const ansRegex = /<ans\b[^>]*>([\s\S]*?)<\/ans>/gi;
   const blocks: string[] = [];
   let m: RegExpExecArray | null;
-  while ((m = ansRegex.exec(text)) !== null) {
+  while ((m = ansRegex.exec(withoutTrace)) !== null) {
     blocks.push(m[1].trim());
   }
 
-  // If we found <ans> blocks, keep only those; otherwise fall back to the raw
-  // text (already-clean prose, or a JSON field the caller extracted).
-  const content = blocks.length > 0 ? blocks.join("\n\n") : text;
+  let content: string;
+  if (blocks.length > 0) {
+    content = blocks.join("\n\n");
+  } else {
+    const open = withoutTrace.search(/<ans\b[^>]*>/i);
+    content =
+      open !== -1
+        ? withoutTrace.slice(open).replace(/<ans\b[^>]*>/i, "")
+        : withoutTrace;
+  }
 
   return content
-    .replace(/<doc_?source\b[^>]*>[\s\S]*?<\/doc_?source>/gi, "")
     .replace(/<\/?doc_?source\b[^>]*>/gi, "")
+    .replace(/<\/?\d+>/g, "") // numeric task-index tags (<1>…</1>) the general
+    // tag stripper below skips because it only matches letter-led tags.
     .replace(/<\/?[a-zA-Z][a-zA-Z0-9_:-]*(?:\s[^>]*)?\s*\/?>/g, "")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")

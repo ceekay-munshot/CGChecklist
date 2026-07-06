@@ -1,25 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCachedRun, runCacheKey } from "@/lib/munsCache";
 import { MUNS_LANE_COUNT, runMunsChatLane } from "@/lib/munsChatService";
+import { resolveCountry } from "@/lib/munsConfig";
 
 // This route streams live per-question progress as Server-Sent Events, so it
 // must never be statically optimized or buffered.
 export const dynamic = "force-dynamic";
-
-const COUNTRY_CODE_TO_NAME: Record<string, string> = {
-  IN: "INDIA",
-  US: "UNITED STATES",
-  GB: "UNITED KINGDOM",
-  HK: "HONG KONG",
-  JP: "JAPAN",
-  AU: "AUSTRALIA",
-  SG: "SINGAPORE",
-};
-
-const resolveCountry = (country?: string): string => {
-  if (!country) return "INDIA";
-  return COUNTRY_CODE_TO_NAME[country] || country.toUpperCase();
-};
 
 interface RunRequest {
   ticker?: string;

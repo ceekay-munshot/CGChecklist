@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
  * Minimal surface of the Cloudflare KV namespace we depend on. Declared locally
  * so we don't take a hard dependency on @cloudflare/workers-types here.
  */
-interface KVNamespaceLike {
+export interface KVNamespaceLike {
   get(key: string): Promise<string | null>;
   put(
     key: string,
@@ -32,11 +32,23 @@ const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
  */
 const KV_TTL_SECONDS = Math.ceil((ONE_MONTH_MS * 1.2) / 1000);
 
-const getKv = (): KVNamespaceLike | null => {
+/**
+ * Resolve the MUNS_RUNS KV namespace.
+ *
+ * Prefers an explicitly supplied binding: the durable coordinator captures
+ * `env` at request scope and passes it in, because the ambient Cloudflare
+ * context is not guaranteed to be available inside a detached `waitUntil` task.
+ * Falls back to the request-scoped context for ordinary route handlers, and
+ * resolves to `null` when no binding exists (e.g. plain `next dev`).
+ */
+export const getMunsKv = (
+  kv?: KVNamespaceLike | null,
+): KVNamespaceLike | null => {
+  if (kv) return kv;
   try {
     const { env } = getCloudflareContext();
-    const kv = (env as Record<string, unknown>).MUNS_RUNS;
-    return (kv as KVNamespaceLike | undefined) ?? null;
+    const ns = (env as Record<string, unknown>).MUNS_RUNS;
+    return (ns as KVNamespaceLike | undefined) ?? null;
   } catch {
     // No Cloudflare context (e.g. plain `next dev`) — caching is unavailable.
     return null;
@@ -53,12 +65,15 @@ export const runCacheKey = (input: {
  * Return a cached run only if one exists and was stored within the last month.
  * Best-effort: any error or missing binding resolves to `null` (a cache miss).
  */
-export const getCachedRun = async (key: string): Promise<CachedRun | null> => {
-  const kv = getKv();
-  if (!kv) return null;
+export const getCachedRun = async (
+  key: string,
+  kv?: KVNamespaceLike | null,
+): Promise<CachedRun | null> => {
+  const ns = getMunsKv(kv);
+  if (!ns) return null;
 
   try {
-    const stored = await kv.get(key);
+    const stored = await ns.get(key);
     if (!stored) return null;
 
     const parsed = JSON.parse(stored) as StoredRun;
@@ -78,13 +93,17 @@ export const getCachedRun = async (key: string): Promise<CachedRun | null> => {
  * Store a run keyed by ticker/country. Best-effort: failures (including a
  * missing KV binding) never propagate, so they can't break the request.
  */
-export const putCachedRun = async (key: string, raw: string): Promise<void> => {
-  const kv = getKv();
-  if (!kv) return;
+export const putCachedRun = async (
+  key: string,
+  raw: string,
+  kv?: KVNamespaceLike | null,
+): Promise<void> => {
+  const ns = getMunsKv(kv);
+  if (!ns) return;
 
   try {
     const value: StoredRun = { raw, storedAt: Date.now() };
-    await kv.put(key, JSON.stringify(value), { expirationTtl: KV_TTL_SECONDS });
+    await ns.put(key, JSON.stringify(value), { expirationTtl: KV_TTL_SECONDS });
   } catch {
     // Intentionally swallowed — caching is an optimization, not a requirement.
   }

@@ -1,5 +1,4 @@
 import { parseMunsResponse } from "./munsParse";
-import { PARALLEL_LANES } from "./munsConfig";
 
 export interface MunsGovernanceResponse {
   ok: boolean;
@@ -10,7 +9,7 @@ export interface MunsGovernanceResponse {
   cached?: boolean;
   /** ISO timestamp of when a cached result was originally stored. */
   cachedAt?: string;
-  /** True when the request was aborted by the caller. */
+  /** True when the caller stopped following the run (it may still finish). */
   cancelled?: boolean;
   /** Questions that failed in a partial run (0/undefined when fully clean). */
   errorCount?: number;
@@ -18,7 +17,7 @@ export interface MunsGovernanceResponse {
   total?: number;
 }
 
-/** A single live progress update streamed from the server during a run. */
+/** A single live progress update, reconstructed from a status poll. */
 export interface GovernanceProgress {
   chain: "A" | "B";
   phase: "mega" | "question";
@@ -31,11 +30,15 @@ export interface GovernanceProgress {
 }
 
 export interface FetchGovernanceOptions {
-  /** Abort signal used to cancel an in-flight run. */
+  /**
+   * Abort signal used to stop *following* an in-flight run. Aborting detaches
+   * this client from the run; the run itself keeps going on the server and its
+   * result is cached, so a later call returns it immediately.
+   */
   signal?: AbortSignal;
   /** When true, bypass the cached run and force a fresh model run. */
   force?: boolean;
-  /** Called for each live progress event streamed from the server. */
+  /** Called for each progress update observed while polling. */
   onProgress?: (event: GovernanceProgress) => void;
 }
 
@@ -45,98 +48,99 @@ export interface MunsAgentInput {
   country?: string;
 }
 
-/** A single question's result as returned by a lane (passed through opaquely). */
-interface LaneQuestionResult {
-  questionId: string;
-  sectionId: string;
-  sectionTitle: string;
-  particulars: string;
-  rawResponse: string;
+// Shape of the /api/muns/start response.
+interface StartResponse {
+  ok: boolean;
+  status?: "running" | "done" | "error";
+  jobId?: string;
+  raw?: string;
+  cached?: boolean;
+  cachedAt?: string;
+  error?: string;
 }
 
-interface LaneRouteResponse {
+// Shape of the /api/muns/status response.
+interface StatusProgress {
+  chain: "A" | "B";
+  phase: "mega" | "question";
+  section: string;
+  particulars: string;
   ok: boolean;
-  /** True when a cached full run was served — `raw` is the complete document. */
-  full?: boolean;
+  error?: string;
+  completed: number;
+  total: number;
+  failed: number;
+}
+
+interface StatusResponse {
+  ok: boolean;
+  status: "running" | "done" | "error" | "unknown";
+  progress?: StatusProgress;
   raw?: string;
-  results?: LaneQuestionResult[];
+  errorCount?: number;
+  total?: number;
   error?: string;
   cached?: boolean;
   cachedAt?: string;
 }
 
-interface AssembleRouteResponse {
-  ok: boolean;
-  raw?: string;
-  error?: string;
-  errorCount?: number;
-  total?: number;
-}
+// How often to poll the run's status while it's in flight.
+const POLL_INTERVAL_MS = 1500;
 
 const isAbortError = (error: unknown): boolean =>
   error instanceof Error && error.name === "AbortError";
 
-/**
- * Reads the SSE body of a fresh lane run, forwarding "progress" events to the
- * caller and resolving with the terminal "done" payload (the lane's results).
- */
-async function consumeRunStream(
-  response: Response,
-  onProgress: (event: GovernanceProgress) => void,
-): Promise<LaneRouteResponse> {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    return { ok: false, error: "Empty response stream." };
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let done: LaneRouteResponse | null = null;
-
-  const handleFrame = (frame: string) => {
-    let eventName = "message";
-    const dataLines: string[] = [];
-    for (const line of frame.split("\n")) {
-      if (line.startsWith("event:")) eventName = line.slice(6).trim();
-      else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
-    }
-    if (dataLines.length === 0) return;
-    let payload: unknown;
-    try {
-      payload = JSON.parse(dataLines.join("\n"));
-    } catch {
+/** A cancellable delay that rejects with an AbortError if the signal fires. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
       return;
     }
-    if (eventName === "progress") {
-      onProgress(payload as GovernanceProgress);
-    } else if (eventName === "done") {
-      done = payload as LaneRouteResponse;
-    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function doneResponse(
+  raw: string,
+  extra: {
+    cached?: boolean;
+    cachedAt?: string;
+    errorCount?: number;
+    total?: number;
+  },
+): MunsGovernanceResponse {
+  return {
+    ok: true,
+    raw,
+    parsed: parseMunsResponse(raw),
+    cached: extra.cached,
+    cachedAt: extra.cachedAt,
+    errorCount: extra.errorCount,
+    total: extra.total,
   };
-
-  while (true) {
-    const { done: streamDone, value } = await reader.read();
-    if (streamDone) break;
-    buffer += decoder.decode(value, { stream: true });
-    // SSE frames are separated by a blank line.
-    let sep: number;
-    while ((sep = buffer.indexOf("\n\n")) !== -1) {
-      const frame = buffer.slice(0, sep);
-      buffer = buffer.slice(sep + 2);
-      if (frame.trim()) handleFrame(frame);
-    }
-  }
-  if (buffer.trim()) handleFrame(buffer);
-
-  return done ?? { ok: false, error: "Run ended without a result." };
 }
 
 /**
- * Runs the governance checklist by fanning out one /api/muns/run call per lane.
- * Each lane is a separate Worker invocation with its own Cloudflare subrequest
- * budget, so the full checklist stays under the per-invocation cap. The lanes
- * run concurrently; their partial results are merged and posted to
- * /api/muns/assemble, which orders, scores, and caches the final document.
+ * Run the governance checklist as a durable, server-side job.
+ *
+ * This no longer orchestrates the run from the browser. Instead it asks the
+ * server to start (or re-attach to) a run and then polls for progress and the
+ * result. The consequence is the whole point of the change: once the run has
+ * started, it completes on the server even if this browser navigates away,
+ * loses its connection, or is closed — the result is written to the run cache,
+ * so the next call (this session or a later one) returns it instantly.
+ *
+ * The signature and return type are unchanged from the old client-orchestrated
+ * version, so callers need no changes.
  */
 export const fetchGovernanceAnalysis = async (
   input: MunsAgentInput,
@@ -153,105 +157,96 @@ export const fetchGovernanceAnalysis = async (
 
   const ticker = input.ticker.trim();
   const companyName = input.companyName.trim();
+  const country = input.country ?? "";
 
   try {
-    // Aggregate progress from every lane into a single combined counter before
-    // it reaches the UI — each lane reports its own completed/total.
-    const tally: Record<string, { completed: number; total: number }> = {};
-    const handleProgress = (event: GovernanceProgress) => {
-      tally[event.chain] = { completed: event.completed, total: event.total };
-      let completed = 0;
-      let total = 0;
-      for (const key in tally) {
-        completed += tally[key].completed;
-        total += tally[key].total;
-      }
-      options.onProgress?.({ ...event, completed, total });
-    };
+    // ── Start (or re-attach to) the server-side run ────────────────────────
+    const startRes = await fetch("/api/muns/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker, companyName, country, force: options.force }),
+      signal: options.signal,
+    });
+    const start = (await startRes.json()) as StartResponse;
 
-    // ── Fan out: one invocation per lane, all in parallel ─────────────────
-    const laneResponses = await Promise.all(
-      Array.from({ length: PARALLEL_LANES }, async (_, lane) => {
-        const response = await fetch("/api/muns/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ticker,
-            companyName,
-            country: input.country,
-            force: options.force,
-            lane,
-          }),
-          signal: options.signal,
-        });
-        // Fresh runs stream SSE; a cached full run comes back as plain JSON.
-        const contentType = response.headers.get("content-type") ?? "";
-        if (contentType.includes("text/event-stream")) {
-          return consumeRunStream(response, handleProgress);
-        }
-        return (await response.json()) as LaneRouteResponse;
-      }),
-    );
-
-    // If any lane failed, surface the first error.
-    const failed = laneResponses.find((r) => !r.ok);
-    if (failed) {
+    if (!start.ok) {
       return {
         ok: false,
         raw: "",
         parsed: null,
-        error: failed.error || "MUNS request failed.",
+        error: start.error || `Failed to start run (HTTP ${startRes.status}).`,
       };
     }
 
-    // Cache hit: a lane returned the full assembled run — use it directly and
-    // skip merging/assembly entirely.
-    const cachedHit = laneResponses.find(
-      (r) => r.full && typeof r.raw === "string",
-    );
-    if (cachedHit && typeof cachedHit.raw === "string") {
-      return {
-        ok: true,
-        raw: cachedHit.raw,
-        parsed: parseMunsResponse(cachedHit.raw),
-        cached: cachedHit.cached,
-        cachedAt: cachedHit.cachedAt,
-      };
+    // A cached run comes straight back from start — nothing to poll.
+    if (start.status === "done" && typeof start.raw === "string") {
+      return doneResponse(start.raw, {
+        cached: start.cached,
+        cachedAt: start.cachedAt,
+      });
     }
 
-    // ── Merge every lane's partial results, then assemble + cache ─────────
-    const merged = laneResponses.flatMap((r) => r.results ?? []);
-    const assembleResponse = await fetch("/api/muns/assemble", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ticker,
-        country: input.country,
-        results: merged,
-      }),
-      signal: options.signal,
-    });
-    const assembled = (await assembleResponse.json()) as AssembleRouteResponse;
+    // ── Poll the durable job until it terminates ───────────────────────────
+    const statusUrl = `/api/muns/status?ticker=${encodeURIComponent(
+      ticker,
+    )}&country=${encodeURIComponent(country)}`;
+    let lastCompleted = -1;
 
-    if (!assembled.ok || typeof assembled.raw !== "string") {
+    while (true) {
+      await sleep(POLL_INTERVAL_MS, options.signal);
+
+      const statusRes = await fetch(statusUrl, { signal: options.signal });
+      const status = (await statusRes.json()) as StatusResponse;
+
+      if (status.status === "running") {
+        const p = status.progress;
+        // Emit one progress event per advance so the live log doesn't fill with
+        // duplicate polls of the same snapshot.
+        if (p && p.completed !== lastCompleted) {
+          lastCompleted = p.completed;
+          options.onProgress?.({
+            chain: p.chain,
+            phase: p.phase,
+            section: p.section,
+            particulars: p.particulars,
+            ok: p.ok,
+            error: p.error,
+            completed: p.completed,
+            total: p.total,
+          });
+        }
+        continue;
+      }
+
+      if (status.status === "done" && typeof status.raw === "string") {
+        return doneResponse(status.raw, {
+          cached: status.cached,
+          cachedAt: status.cachedAt,
+          errorCount: status.errorCount,
+          total: status.total,
+        });
+      }
+
+      if (status.status === "error") {
+        return {
+          ok: false,
+          raw: "",
+          parsed: null,
+          error: status.error || "MUNS run failed.",
+        };
+      }
+
+      // "unknown": the job record expired and no run was cached — the run was
+      // lost before it finished. The caller can retry.
       return {
         ok: false,
         raw: "",
         parsed: null,
         error:
-          assembled.error ||
-          `MUNS assembly failed with status ${assembleResponse.status}.`,
+          status.error ||
+          "Run was lost before it completed. Please run again.",
       };
     }
-
-    return {
-      ok: true,
-      raw: assembled.raw,
-      parsed: parseMunsResponse(assembled.raw),
-      cached: false,
-      errorCount: assembled.errorCount,
-      total: assembled.total,
-    };
   } catch (error) {
     if (isAbortError(error)) {
       return {

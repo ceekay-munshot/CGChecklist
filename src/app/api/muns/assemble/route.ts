@@ -1,21 +1,7 @@
 import { NextResponse } from "next/server";
 import { putCachedRun, runCacheKey } from "@/lib/munsCache";
 import { assembleMunsResults, type QuestionResult } from "@/lib/munsChatService";
-
-const COUNTRY_CODE_TO_NAME: Record<string, string> = {
-  IN: "INDIA",
-  US: "UNITED STATES",
-  GB: "UNITED KINGDOM",
-  HK: "HONG KONG",
-  JP: "JAPAN",
-  AU: "AUSTRALIA",
-  SG: "SINGAPORE",
-};
-
-const resolveCountry = (country?: string): string => {
-  if (!country) return "INDIA";
-  return COUNTRY_CODE_TO_NAME[country] || country.toUpperCase();
-};
+import { resolveCountry } from "@/lib/munsConfig";
 
 interface AssembleRequest {
   ticker?: string;

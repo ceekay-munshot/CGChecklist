@@ -18,6 +18,17 @@
       "id": "9044ac1b534e49ebb1d36ccfd40895bd"
     }
   ],
+  // Self-reference binding: lets a request fan its checklist lanes out into
+  // separate Worker invocations (each with its own subrequest budget) from the
+  // server side, so a run no longer depends on the browser to orchestrate it.
+  // The coordinator (src/lib/munsCoordinator.ts) calls env.WORKER_SELF_REFERENCE
+  // for each lane; without it, lanes fall back to running in-process (dev only).
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "cgchecklist"
+    }
+  ],
   "build": {
     "command": "npx opennextjs-cloudflare build"
   },

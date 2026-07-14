@@ -84,8 +84,26 @@ interface StatusResponse {
   cachedAt?: string;
 }
 
-// How often to poll the run's status while it's in flight.
-const POLL_INTERVAL_MS = 1500;
+// Poll pacing. A governance run takes minutes, so polling on a fixed 1.5s tick
+// the whole time floods the status endpoint with hundreds of near-identical
+// requests. Start responsive (a cached/short run resolves within a couple of
+// seconds) then back off to a steady cadence — live progress still lands within
+// a few seconds, but a full run makes tens of polls instead of hundreds.
+const POLL_INTERVAL_START_MS = 1500;
+const POLL_INTERVAL_MAX_MS = 8000;
+const POLL_BACKOFF_FACTOR = 1.5;
+
+// The run is started before its job record is guaranteed visible: /start writes
+// it to an eventually-consistent store, so the first poll(s) can momentarily
+// read no record ("unknown") before it propagates. Tolerate a few consecutive
+// unknowns rather than declaring the freshly-started run lost on the first blip.
+const MAX_CONSECUTIVE_UNKNOWN = 5;
+
+// Absolute ceiling on how long a single client follows one run. The run is
+// durable — it keeps going and caches its result server-side — so if it outlives
+// this window we stop polling and let the user pick the result up on a later
+// run, rather than poll a possibly-evicted job indefinitely.
+const MAX_POLL_DURATION_MS = 15 * 60 * 1000;
 
 const isAbortError = (error: unknown): boolean =>
   error instanceof Error && error.name === "AbortError";
@@ -191,19 +209,34 @@ export const fetchGovernanceAnalysis = async (
       ticker,
     )}&country=${encodeURIComponent(country)}`;
     let lastCompleted = -1;
+    let lastTotal = -1;
+    let pollInterval = POLL_INTERVAL_START_MS;
+    let consecutiveUnknown = 0;
+    const pollDeadline = Date.now() + MAX_POLL_DURATION_MS;
 
     while (true) {
-      await sleep(POLL_INTERVAL_MS, options.signal);
+      await sleep(pollInterval, options.signal);
+      // Ramp toward a steady cadence so a multi-minute run doesn't fire hundreds
+      // of status polls; the run advances on the order of seconds per question,
+      // so an ~8s poll still keeps the live counter current.
+      pollInterval = Math.min(
+        Math.round(pollInterval * POLL_BACKOFF_FACTOR),
+        POLL_INTERVAL_MAX_MS,
+      );
 
       const statusRes = await fetch(statusUrl, { signal: options.signal });
       const status = (await statusRes.json()) as StatusResponse;
 
       if (status.status === "running") {
+        consecutiveUnknown = 0;
         const p = status.progress;
-        // Emit one progress event per advance so the live log doesn't fill with
-        // duplicate polls of the same snapshot.
-        if (p && p.completed !== lastCompleted) {
+        // Emit a progress event whenever the snapshot advances — including the
+        // moment the mega prompt returns and `total` first becomes non-zero,
+        // which is what flips the UI from the simulated timer to the live
+        // question counter — while still collapsing duplicate polls.
+        if (p && (p.completed !== lastCompleted || p.total !== lastTotal)) {
           lastCompleted = p.completed;
+          lastTotal = p.total;
           options.onProgress?.({
             chain: p.chain,
             phase: p.phase,
@@ -214,6 +247,18 @@ export const fetchGovernanceAnalysis = async (
             completed: p.completed,
             total: p.total,
           });
+        }
+        // Stop following a run that outlives the expected window rather than
+        // poll a possibly-evicted job indefinitely. It keeps running and caches
+        // its result server-side, so a later run picks it up instantly.
+        if (Date.now() > pollDeadline) {
+          return {
+            ok: false,
+            raw: "",
+            parsed: null,
+            error:
+              "Analysis is taking longer than expected and is still running in the background. Run again in a few minutes to pick up the completed result.",
+          };
         }
         continue;
       }
@@ -236,8 +281,17 @@ export const fetchGovernanceAnalysis = async (
         };
       }
 
-      // "unknown": the job record expired and no run was cached — the run was
-      // lost before it finished. The caller can retry.
+      // "unknown": no job record and no cached run. Right after /start this is
+      // almost always the just-written record not having propagated yet, so
+      // retry a few times before concluding the run was genuinely lost — a
+      // single transient blip must not fail a run that is actually starting.
+      consecutiveUnknown += 1;
+      if (
+        consecutiveUnknown < MAX_CONSECUTIVE_UNKNOWN &&
+        Date.now() < pollDeadline
+      ) {
+        continue;
+      }
       return {
         ok: false,
         raw: "",

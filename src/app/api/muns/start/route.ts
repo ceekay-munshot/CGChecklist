@@ -82,6 +82,20 @@ export async function POST(request: Request) {
       openaiModel:
         (bindings.OPENAI_SCORING_MODEL as string | undefined) ??
         process.env.OPENAI_SCORING_MODEL,
+      llmProvider:
+        ((bindings.LLM_PROVIDER as string | undefined) ??
+          process.env.LLM_PROVIDER) === "claude"
+          ? "claude"
+          : "openai",
+      claudeApiKey:
+        (bindings.temp_claude_token as string | undefined) ??
+        process.env.temp_claude_token,
+      claudeModel:
+        (bindings.BEDROCK_MODEL_ID as string | undefined) ??
+        process.env.BEDROCK_MODEL_ID,
+      claudeRegion:
+        (bindings.BEDROCK_REGION as string | undefined) ??
+        process.env.BEDROCK_REGION,
     };
     ctx = (cf.ctx as ExecutionContextLike | undefined) ?? null;
   } catch {
@@ -93,6 +107,10 @@ export async function POST(request: Request) {
       token: process.env.TEMPORARY_TOKEN,
       openaiApiKey: process.env.OPENAI_API_KEY,
       openaiModel: process.env.OPENAI_SCORING_MODEL,
+      llmProvider: process.env.LLM_PROVIDER === "claude" ? "claude" : "openai",
+      claudeApiKey: process.env.temp_claude_token,
+      claudeModel: process.env.BEDROCK_MODEL_ID,
+      claudeRegion: process.env.BEDROCK_REGION,
     };
   }
 

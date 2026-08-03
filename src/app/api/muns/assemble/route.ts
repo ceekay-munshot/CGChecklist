@@ -46,6 +46,10 @@ export async function POST(request: Request) {
   const { raw, errorCount, total } = await assembleMunsResults(body.results, {
     openaiApiKey: process.env.OPENAI_API_KEY,
     openaiModel: process.env.OPENAI_SCORING_MODEL,
+    llmProvider: process.env.LLM_PROVIDER === "claude" ? "claude" : "openai",
+    claudeApiKey: process.env.temp_claude_token,
+    claudeModel: process.env.BEDROCK_MODEL_ID,
+    claudeRegion: process.env.BEDROCK_REGION,
     signal: request.signal,
   });
 

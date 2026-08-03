@@ -23,5 +23,23 @@ OPENAI_API_KEY=
 # Optional override for the scoring model (defaults to gpt-4o-mini).
 # OPENAI_SCORING_MODEL=gpt-4o-mini
 
+# Provider toggle for the LLM governance scorer. Defaults to "openai" (the
+# behavior above) when unset. Set to "claude" to route scoring through AWS
+# Bedrock (src/lib/scoring/claudeScore.ts) instead — requires
+# temp_claude_token below. This toggle and the Claude path can be deleted
+# without touching the OpenAI path.
+# LLM_PROVIDER=openai
+
+# AWS Bedrock bearer key for the Claude scorer. Only used when
+# LLM_PROVIDER=claude. Set in production via:
+#   npx wrangler secret put temp_claude_token
+# temp_claude_token=
+
+# Optional overrides for the Bedrock call (defaults: us-east-1 /
+# us.anthropic.claude-sonnet-4-5-20250929-v1:0). Verify these against the
+# target AWS account before relying on them.
+# BEDROCK_REGION=us-east-1
+# BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-5-20250929-v1:0
+
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=

@@ -9,6 +9,9 @@ import {
   type ScoreItem,
   type ScoreResult,
 } from "@/lib/scoring/llmScore";
+// Claude/Bedrock scorer — selected only via the LLM_PROVIDER="claude" toggle,
+// see `assembleMunsResults` below. Self-contained; see claudeScore.ts header.
+import { scoreAnswersWithClaude } from "@/lib/scoring/claudeScore";
 
 // ---------------------------------------------------------------------------
 // Suffix appended to the mega prompt and every question, matching cool_script.sh
@@ -944,6 +947,18 @@ export interface AssembleOptions {
   openaiApiKey?: string;
   /** Optional model override for the LLM scorer. */
   openaiModel?: string;
+  /**
+   * Provider toggle for the LLM scorer. Defaults to "openai" — existing
+   * deployments that don't set LLM_PROVIDER are unaffected. Set to "claude"
+   * (with `claudeApiKey` configured) to route scoring through Bedrock instead.
+   */
+  llmProvider?: "openai" | "claude";
+  /** Claude/Bedrock bearer key — only used when llmProvider is "claude". */
+  claudeApiKey?: string;
+  /** Optional Bedrock model id override. */
+  claudeModel?: string;
+  /** Optional Bedrock region override. */
+  claudeRegion?: string;
   signal?: AbortSignal;
 }
 
@@ -975,7 +990,38 @@ export async function assembleMunsResults(
   // negation-aware heuristic so a run is never lost to a scoring hiccup.
   let scores: Map<string, ScoreResult> | undefined;
   let scoredBy: "llm" | "heuristic" = "heuristic";
-  if (opts.openaiApiKey) {
+  // Claude/Bedrock path — parallel to the OpenAI path below, selected only via
+  // the LLM_PROVIDER="claude" toggle. Everything OpenAI-specific below this
+  // branch is unchanged from before this toggle existed.
+  if (opts.llmProvider === "claude" && opts.claudeApiKey) {
+    const items: ScoreItem[] = ordered
+      .filter((r) => !r.rawResponse.startsWith("Error:"))
+      .map((r) => ({
+        id: r.questionId,
+        section: r.sectionTitle,
+        question: r.particulars,
+        polarity: QUESTION_POLARITY[r.questionId] ?? 0,
+        type: QUESTION_TYPE[r.questionId] ?? "sentiment",
+        answer: r.rawResponse,
+      }));
+    try {
+      scores = await scoreAnswersWithClaude(items, {
+        apiKey: opts.claudeApiKey,
+        model: opts.claudeModel,
+        region: opts.claudeRegion,
+        signal: opts.signal,
+      });
+      if (scores.size > 0) scoredBy = "llm";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (typeof console !== "undefined") {
+        console.warn(
+          `[assembleMunsResults] Claude scoring failed, using heuristic fallback: ${msg}`,
+        );
+      }
+      scores = undefined;
+    }
+  } else if (opts.openaiApiKey) {
     const items: ScoreItem[] = ordered
       .filter((r) => !r.rawResponse.startsWith("Error:"))
       .map((r) => ({
@@ -1040,6 +1086,11 @@ export async function runMunsChatGovernance(
   const { raw, errorCount, total } = await assembleMunsResults(merged, {
     openaiApiKey: process.env.OPENAI_API_KEY,
     openaiModel: process.env.OPENAI_SCORING_MODEL,
+    llmProvider:
+      process.env.LLM_PROVIDER === "claude" ? "claude" : "openai",
+    claudeApiKey: process.env.temp_claude_token,
+    claudeModel: process.env.BEDROCK_MODEL_ID,
+    claudeRegion: process.env.BEDROCK_REGION,
     signal,
   });
 

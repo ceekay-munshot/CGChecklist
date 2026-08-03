@@ -32,6 +32,11 @@ export interface CoordinatorEnv {
   token?: string;
   openaiApiKey?: string;
   openaiModel?: string;
+  /** LLM_PROVIDER toggle — "claude" routes scoring through Bedrock instead. */
+  llmProvider?: "openai" | "claude";
+  claudeApiKey?: string;
+  claudeModel?: string;
+  claudeRegion?: string;
 }
 
 export interface CoordinatorInput {
@@ -242,6 +247,10 @@ export async function runCoordinator(
     const { raw, errorCount, total } = await assembleMunsResults(merged, {
       openaiApiKey: env.openaiApiKey,
       openaiModel: env.openaiModel,
+      llmProvider: env.llmProvider,
+      claudeApiKey: env.claudeApiKey,
+      claudeModel: env.claudeModel,
+      claudeRegion: env.claudeRegion,
     });
 
     // A wholesale failure (every question errored) yields a useless scorecard.

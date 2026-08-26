@@ -75,6 +75,16 @@ export interface RefreshProgress {
   live: LiveProgress | null;
 }
 
+/** Metadata for a loaded source-first engine report (from KV). */
+export interface EngineReportMeta {
+  ticker: string;
+  company: string;
+  total: number;
+  max: number;
+  storedAt: string | null;
+  harvestNote: string | null;
+}
+
 export interface CompanyState {
   identity: CompanyIdentity;
   status: DataStatus;
@@ -83,4 +93,10 @@ export interface CompanyState {
   munsRaw: string;
   munsError: string | null;
   progress: RefreshProgress;
+  /**
+   * Rows from the source-first engine (GitHub Actions → KV), if a report exists
+   * for the selected company. Preferred over the MUNS render path when present.
+   */
+  engineRows: import("@/lib/types/governance").GovernanceRow[] | null;
+  engineMeta: EngineReportMeta | null;
 }

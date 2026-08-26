@@ -23,8 +23,9 @@ import type {
 const SUCCESS_HOLD_MS = 2200;
 
 export function SelectionPanel() {
-  const { state, setIdentity, refresh, cancel, unlockDashboard } = useCompany();
-  const { entries } = useRefreshHistory();
+  const { state, setIdentity, runEngineAnalysis, cancel, unlockDashboard } =
+    useCompany();
+  const { entries, clear: clearHistory } = useRefreshHistory();
   const { push } = useToast();
   const { identity, status, progress } = state;
 
@@ -74,7 +75,7 @@ export function SelectionPanel() {
       });
       return;
     }
-    void refresh();
+    void runEngineAnalysis();
   };
 
   const handleHistoryClick = (entry: RefreshHistoryEntry) => {
@@ -85,7 +86,31 @@ export function SelectionPanel() {
       exchange: entry.exchange,
       country: entry.country,
     });
-    setTimeout(() => void refresh(), 0);
+    setTimeout(() => void runEngineAnalysis(), 0);
+  };
+
+  const handleClearRuns = async () => {
+    clearHistory();
+    try {
+      const res = await fetch("/api/report/clear", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        cleared?: { runs: number; jobs: number };
+      };
+      push({
+        tone: data.ok ? "success" : "warning",
+        title: data.ok ? "Previous runs cleared" : "Cleared local history",
+        description: data.ok
+          ? `Removed ${data.cleared?.runs ?? 0} cached MUNS run(s). Engine reports are kept.`
+          : "Local history cleared; the server cache could not be reached.",
+      });
+    } catch {
+      push({
+        tone: "warning",
+        title: "Cleared local history",
+        description: "Local history cleared; the server cache could not be reached.",
+      });
+    }
   };
 
   const handleViewDashboard = () => {
@@ -150,6 +175,7 @@ export function SelectionPanel() {
               now={now}
               disabled={isLoading || showSuccess}
               onPick={handleHistoryClick}
+              onClear={handleClearRuns}
             />
           </div>
         </article>
@@ -227,8 +253,8 @@ function FormBody({
           Choose a company to analyse
         </h2>
         <p className="mt-0.5 text-xs text-[var(--color-fg-muted)]">
-          Search by name or ticker. We&apos;ll spin up the MUNS agent and
-          stream progress here.
+          Search by name or ticker. We&apos;ll read the company&apos;s filings
+          (Screener + annual report) and score every question with a citation.
         </p>
       </div>
 
@@ -278,7 +304,7 @@ function FormBody({
         <div className="flex items-center gap-2 text-[11.5px] text-[var(--color-fg-muted)]">
           <ClockIcon />
           <span>
-            Typical run time <strong>7–9 minutes</strong>
+            Typical run time <strong>10–15 minutes</strong>
           </span>
         </div>
         <button
@@ -522,11 +548,13 @@ function RecentSection({
   now,
   disabled,
   onPick,
+  onClear,
 }: {
   entries: RefreshHistoryEntry[];
   now: number;
   disabled: boolean;
   onPick: (e: RefreshHistoryEntry) => void;
+  onClear: () => void;
 }) {
   return (
     <div>
@@ -535,9 +563,14 @@ function RecentSection({
           Recent refreshes
         </h3>
         {entries.length > 0 ? (
-          <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
-            {entries.length} stored locally
-          </span>
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={disabled}
+            className="focus-ring text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--color-fg-subtle)] transition hover:text-[var(--color-risk-600)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear previous runs
+          </button>
         ) : null}
       </header>
 

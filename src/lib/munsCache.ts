@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import type { GovernanceRow } from "@/lib/types/governance";
 
 /**
  * Minimal surface of the Cloudflare KV namespace we depend on. Declared locally
@@ -11,6 +12,15 @@ export interface KVNamespaceLike {
     value: string,
     options?: { expirationTtl?: number },
   ): Promise<void>;
+  list(options?: {
+    prefix?: string;
+    cursor?: string;
+  }): Promise<{
+    keys: { name: string }[];
+    list_complete: boolean;
+    cursor?: string;
+  }>;
+  delete(key: string): Promise<void>;
 }
 
 interface StoredRun {
@@ -107,4 +117,105 @@ export const putCachedRun = async (
   } catch {
     // Intentionally swallowed — caching is an optimization, not a requirement.
   }
+};
+
+// ---------------------------------------------------------------------------
+// Source-first engine reports
+//
+// The GitHub Actions engine (scripts/analyze.ts) produces GovernanceRow[]
+// directly, with source+page citations. Those are stored under a SEPARATE key
+// family — `report:<COUNTRY>:<TICKER>` — so engine runs and the legacy MUNS
+// cache (`run:*`, `job:*`) never collide, and clearing one leaves the other
+// intact. Values are the engine results.json verbatim plus a storedAt stamp.
+// ---------------------------------------------------------------------------
+
+export interface StoredReport {
+  ticker: string;
+  company: string;
+  total: number;
+  max: number;
+  rows: GovernanceRow[];
+  harvestNote?: string;
+  storedAt: number; // epoch milliseconds
+}
+
+/** Engine reports don't expire the way MUNS runs do — keep them ~a year. */
+const REPORT_TTL_SECONDS = 365 * 24 * 60 * 60;
+
+/** Build the KV key identifying an engine report for a ticker/country. */
+export const reportCacheKey = (input: {
+  ticker: string;
+  country: string;
+}): string =>
+  `report:${input.country.toUpperCase()}:${input.ticker.toUpperCase()}`;
+
+/** Read a stored engine report. Best-effort: any error resolves to `null`. */
+export const getReport = async (
+  key: string,
+  kv?: KVNamespaceLike | null,
+): Promise<StoredReport | null> => {
+  const ns = getMunsKv(kv);
+  if (!ns) return null;
+  try {
+    const stored = await ns.get(key);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as Partial<StoredReport>;
+    if (!Array.isArray(parsed?.rows)) return null;
+    return {
+      ticker: parsed.ticker ?? "",
+      company: parsed.company ?? "",
+      total: typeof parsed.total === "number" ? parsed.total : 0,
+      max: typeof parsed.max === "number" ? parsed.max : 0,
+      rows: parsed.rows as GovernanceRow[],
+      harvestNote: parsed.harvestNote,
+      storedAt: typeof parsed.storedAt === "number" ? parsed.storedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+};
+
+/** Store an engine report. Best-effort — failures never propagate. */
+export const putReport = async (
+  key: string,
+  report: Omit<StoredReport, "storedAt">,
+  kv?: KVNamespaceLike | null,
+): Promise<boolean> => {
+  const ns = getMunsKv(kv);
+  if (!ns) return false;
+  try {
+    const value: StoredReport = { ...report, storedAt: Date.now() };
+    await ns.put(key, JSON.stringify(value), { expirationTtl: REPORT_TTL_SECONDS });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Delete every key under a prefix (paginating through KV's list cursor). Used
+ * to clear the legacy MUNS runs (`run:`/`job:`) while leaving engine reports
+ * (`report:`) in place. Returns how many keys were removed.
+ */
+export const deleteByPrefix = async (
+  prefix: string,
+  kv?: KVNamespaceLike | null,
+): Promise<number> => {
+  const ns = getMunsKv(kv);
+  if (!ns) return 0;
+  let removed = 0;
+  let cursor: string | undefined;
+  try {
+    do {
+      const page = await ns.list({ prefix, cursor });
+      for (const k of page.keys) {
+        await ns.delete(k.name);
+        removed++;
+      }
+      cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor);
+  } catch {
+    // Return whatever we managed to delete before the error.
+  }
+  return removed;
 };

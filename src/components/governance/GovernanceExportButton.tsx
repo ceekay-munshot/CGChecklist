@@ -17,23 +17,17 @@ export function GovernanceExportButton({ rows, fileBaseName }: Props) {
     if (busy) return;
     setBusy(true);
     try {
-      const { buildGovernanceWorkbook } = await import(
-        "@/lib/services/exports/governanceWorkbook"
+      const { buildBeasChecklistWorkbook } = await import(
+        "@/lib/services/exports/beasChecklistWorkbook"
       );
 
-      const isLive = Boolean(state.munsRaw && !state.munsError);
       const reportDate = state.lastRefreshedAt
         ? new Date(state.lastRefreshedAt)
         : new Date();
 
-      const buffer = await buildGovernanceWorkbook({
+      const buffer = await buildBeasChecklistWorkbook({
         rows,
         company: state.identity.name || "Sample Company",
-        ticker: state.identity.ticker || "—",
-        exchange: state.identity.exchange || "—",
-        country: state.identity.country || "—",
-        reportDate,
-        dataSource: isLive ? "Live MUNS analysis" : "Sample data",
       });
 
       const blob = new Blob([buffer], {

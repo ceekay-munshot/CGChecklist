@@ -7,8 +7,8 @@ import type {
 } from "@/lib/types/governance";
 
 const SCORE_TONE: Record<GovernanceScoreValue, "good" | "warn" | "risk"> = {
-  2: "good",
-  1: "warn",
+  0.5: "good",
+  0.25: "warn",
   0: "risk",
 };
 
@@ -123,8 +123,8 @@ export function GovernanceSectionTable({
 }
 
 function scoreTextClass(score: GovernanceScoreValue): string {
-  if (score === 2) return "text-[var(--color-good-700)]";
-  if (score === 1) return "text-[var(--color-warn-700)]";
+  if (score === 0.5) return "text-[var(--color-good-700)]";
+  if (score === 0.25) return "text-[var(--color-warn-700)]";
   return "text-[var(--color-risk-700)]";
 }
 

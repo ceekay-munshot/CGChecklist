@@ -1,4 +1,7 @@
-export type GovernanceScoreValue = 0 | 1 | 2;
+// Beas Capital scores each item out of 0.5, awarding partial credit: 0 (fails /
+// red flag), 0.25 (partial / mixed), 0.5 (clean). This matches their manual
+// checklist exactly (Total /25 across 50 scored items, Overall = total / max).
+export type GovernanceScoreValue = 0 | 0.25 | 0.5;
 
 export type GovernanceConfidence = "High" | "Medium" | "Low";
 
@@ -37,9 +40,31 @@ export type GovernanceSectionId =
   | "OTHER_REGULATORY"
   | "FINANCIALS";
 
+/**
+ * Where the PRIMARY answer for an item should come from. Drives engine routing
+ * (ported from cgchecklist2.0's evidence strategy): `financials` items are
+ * computed deterministically from the financial statements / Screener data,
+ * `annual_report` items are extracted from harvested filings/concalls with a
+ * citation, `exchange` items come from shareholding/exchange disclosures, and
+ * `web` items are the ones MUNS backfill / web research answers.
+ */
+export type GovernanceSourceHint =
+  | "financials"
+  | "annual_report"
+  | "exchange"
+  | "web";
+
 export interface GovernanceChecklistItem {
   questionId: string;
   particulars: string;
+  /** Expected answer shape, e.g. "% independent", "Yes/No", "D/E ratio". */
+  outputFormat: string;
+  /** Natural-language condition that earns full marks (green band). */
+  greenFlag: string;
+  /** Natural-language condition that is a governance concern (red band). */
+  redFlag: string;
+  /** Primary source class the engine should answer this item from. */
+  sourceHint: GovernanceSourceHint;
 }
 
 export interface GovernanceChecklistSection {
@@ -54,7 +79,7 @@ export interface GovernanceRow {
   particulars: string;
   response: GovernanceResponse;
   score: GovernanceScoreValue;
-  maxScore: 2;
+  maxScore: 0.5;
   remarks: string;
   source: string;
   confidence: GovernanceConfidence;

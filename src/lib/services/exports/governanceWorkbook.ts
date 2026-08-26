@@ -41,8 +41,8 @@ const SCORE_COLORS: Record<
   GovernanceScoreValue,
   { bg: string; fg: string }
 > = {
-  2: { bg: COLOR.good50, fg: COLOR.good700 },
-  1: { bg: COLOR.warn50, fg: COLOR.warn700 },
+  0.5: { bg: COLOR.good50, fg: COLOR.good700 },
+  0.25: { bg: COLOR.warn50, fg: COLOR.warn700 },
   0: { bg: COLOR.risk50, fg: COLOR.risk700 },
 };
 
@@ -566,7 +566,7 @@ function buildCoverSheet(wb: Workbook, ctx: CoverContext) {
   ws.mergeCells(r, 2, r, 9);
   const note = ws.getCell(r, 2);
   note.value =
-    "Score scale: 2 = strong, 1 = partial, 0 = absent / red flag. Rating bands: Strong ≥ 80%, Good 65–79.9%, Moderate 50–64.9%, Weak < 50%.";
+    "Score scale (out of 0.5): 0.5 = strong, 0.25 = partial, 0 = absent / red flag. Rating bands: Strong ≥ 80%, Good 65–79.9%, Moderate 50–64.9%, Weak < 50%.";
   note.font = {
     name: "Calibri",
     size: 9,
@@ -822,13 +822,13 @@ function buildMethodologySheet(wb: Workbook) {
   const sections: Array<{ heading: string; entries: Array<[string, string]> }> =
     [
       {
-        heading: "Score scale",
+        heading: "Score scale (out of 0.5)",
         entries: [
           [
-            "2",
+            "0.5",
             "Strong evidence — disclosure or control fully meets the criterion.",
           ],
-          ["1", "Partial evidence — meets some but not all aspects."],
+          ["0.25", "Partial evidence — meets some but not all aspects."],
           [
             "0",
             "Absent / red flag — disclosure missing or fails the criterion.",

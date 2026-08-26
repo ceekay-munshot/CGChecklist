@@ -55,6 +55,9 @@ const NOTE_HINTS: Record<string, string[]> = {
   "INDUSTRY_PROMOTER-3": ["related party", "subsidiaries", "group entities"],
   "EMPLOYEE-3": ["employee stock option", "esop", "stock incentive", "options granted", "sweat equity"],
   "EMPLOYEE-1": ["attrition", "employee turnover", "headcount", "workforce"],
+  // Transparency on analyst calls IS the concall transcript — route it there so
+  // the answer is judged on the actual management commentary and Q&A, not the AR.
+  "INDUSTRY_PROMOTER-13": ["conference call", "earnings call", "analyst", "question-and-answer", "moderator", "management discussion", "q&a"],
   "BOARD-4": ["remuneration", "managerial remuneration", "sitting fees", "director"],
   "AUDIT-1": ["statutory auditor", "auditor", "chartered accountants"],
   "AUDIT-2": ["subsidiary", "component auditor", "other auditors"],
@@ -116,21 +119,33 @@ export function relevantPassages(
     if (c.kind === "annual_report") score += 0.5;
     return { ...c, order: i, score };
   });
-  const top = scored
-    .filter((p) => p.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, maxPages)
-    // restore reading order: group by document, ascending page
-    .sort((a, b) => (a.docName === b.docName ? a.page - b.page : a.order - b.order));
+  const ranked = scored.filter((p) => p.score > 0).sort((a, b) => b.score - a.score);
+  // Reserve a couple of seats for the best on-topic concall passages. The annual
+  // report is far larger, so on raw score it crowds the concall out of the top-N
+  // every time and every answer defaults to the AR — even when management said it
+  // plainly on the call. Only genuinely on-topic concall passages qualify (a
+  // couple of keyword hits), so irrelevant transcript text is never forced in.
+  const CONCALL_RESERVE = 2;
+  const MIN_CONCALL_SCORE = 2;
+  const reserved = ranked
+    .filter((p) => p.kind === "concall" && p.score >= MIN_CONCALL_SCORE)
+    .slice(0, CONCALL_RESERVE);
+  const reservedSet = new Set(reserved);
+  // Selection in PRIORITY order (reserved concalls first, then best-scoring),
+  // so the character budget is spent on the passages that matter — a reserved
+  // concall isn't starved by a large annual-report block sitting ahead of it.
+  const selected = [...reserved, ...ranked.filter((p) => !reservedSet.has(p))].slice(0, maxPages);
 
   let budget = maxChars;
-  const kept: typeof top = [];
-  for (const p of top) {
+  const kept: typeof selected = [];
+  for (const p of selected) {
     if (budget <= 0) break;
     const body = p.text.slice(0, budget);
     budget -= body.length;
     kept.push({ ...p, text: body });
   }
+  // Now restore reading order for display: group by document, ascending page.
+  kept.sort((a, b) => (a.docName === b.docName ? a.page - b.page : a.order - b.order));
 
   const text = kept
     .map((p) => (p.page ? `[${p.docName}, p.${p.page}]\n${p.text}` : `[${p.docName}]\n${p.text}`))
@@ -212,7 +227,11 @@ function sanitizeDoc(cd?: string): string {
     return p ? `Concall ${p[1].replace(/\s+/g, " ")}` : "Concall";
   }
   if (/investor|presentation|\bppt\b/i.test(s)) return "Investor presentation";
-  return s.slice(0, 40);
+  // Unrecognised — the model sometimes echoes the fact-sheet header or the
+  // company name ("VERIFIED FACT SHEET", "CAPILLARY TECHNOLOGIES") as the cited
+  // document. Don't pass that through as a source label; return empty so
+  // buildSourceLabel falls back to page-based inference (Annual report / Screener).
+  return "";
 }
 
 // Build the source citation from the model's cited document + pages, validated

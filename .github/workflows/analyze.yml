@@ -1,0 +1,54 @@
+name: analyze
+
+# Source-first CG-checklist run for one company. Harvests Screener + the annual
+# report, answers all 51 questions from those filings (MUNS backfill for gaps),
+# and uploads the Beas-format Excel + a results JSON as an artifact.
+#
+# Actions → analyze → Run workflow → enter a ticker (e.g. CAPILLARY).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "NSE/BSE ticker (Screener symbol), e.g. CAPILLARY"
+        required: true
+      company:
+        description: "Company name (optional — helps MUNS resolve the right entity)"
+        required: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Claude via Bedrock (primary). TEMP_CLAUDE_TOKEN is a Bedrock API key.
+      CLAUDE_BEDROCK_API_KEY: ${{ secrets.TEMP_CLAUDE_TOKEN }}
+      CLAUDE_BEDROCK_REGION: ${{ vars.CLAUDE_BEDROCK_REGION }}
+      CLAUDE_BEDROCK_MODEL_ID: ${{ vars.CLAUDE_BEDROCK_MODEL_ID }}
+      # Acquisition
+      SCREENER_EMAIL: ${{ secrets.SCREENER_EMAIL }}
+      SCREENER_PASSWORD: ${{ secrets.SCREENER_PASSWORD }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      # Backfill
+      MUNS_TOKEN: ${{ secrets.MUNS_TOKEN }}
+      # Don't run the OpenNext/Cloudflare build on install for this job.
+      SKIP_POSTINSTALL_BUILD: "1"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx -y playwright@1.62.1 install --with-deps chromium
+      - name: Analyze
+        run: npx tsx --tsconfig tsconfig.json scripts/analyze.ts "${{ inputs.ticker }}" "${{ inputs.company }}"
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cg-report-${{ inputs.ticker }}
+          path: report-output/
+          if-no-files-found: warn

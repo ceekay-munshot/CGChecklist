@@ -31,15 +31,46 @@ const keywords = (text: string): string[] =>
     .split(" ")
     .filter((w) => w.length > 2 && !STOP.has(w));
 
-// Pick the annual-report pages most relevant to this question (keyword overlap),
-// so we never feed a 300-page report to the model.
-function relevantArPages(arText: string, terms: string[], maxPages = 8, maxChars = 14_000): string {
+// Note/section heading phrases where an item's answer actually lives. A page
+// containing one of these is the relevant note (contingent liabilities,
+// receivables ageing, auditor remuneration, …), so it gets a big retrieval
+// boost — plain keyword overlap alone was missing these notes.
+const NOTE_HINTS: Record<string, string[]> = {
+  "FINANCIALS-1": ["contingent liabilit", "commitments", "claims not acknowledged", "notes to"],
+  "FINANCIALS-3": ["trade receivables", "receivables outstanding", "ageing", "unbilled", "credit period"],
+  "FINANCIALS-8": ["cash flow from operating", "cash generated from operations", "cash flow statement"],
+  "FINANCIALS-9": ["provision", "expected credit loss", "allowance for", "impairment", "doubtful"],
+  "FINANCIALS-15": ["contingent liabilit", "net worth", "commitments", "guarantee"],
+  "OTHER_REGULATORY-1": ["contingent liabilit", "commitments", "claims not acknowledged", "disputed", "guarantee"],
+  "AUDIT-3": ["basis for opinion", "qualified opinion", "emphasis of matter", "auditor's report", "adverse"],
+  "AUDIT-4": ["payment to auditor", "auditor's remuneration", "remuneration to auditor", "audit fee"],
+  "AUDIT-5": ["auditor", "appointed", "reappoint", "resignation", "rotation"],
+  "FINANCIALS-7": ["related party", "related-party", "aoc-2"],
+  "INDUSTRY_PROMOTER-3": ["related party", "subsidiaries", "group entities"],
+  "EMPLOYEE-3": ["employee stock option", "esop", "stock incentive", "options granted", "sweat equity"],
+  "EMPLOYEE-1": ["attrition", "employee turnover", "headcount", "workforce"],
+  "BOARD-4": ["remuneration", "managerial remuneration", "sitting fees", "director"],
+  "AUDIT-1": ["statutory auditor", "auditor", "chartered accountants"],
+  "AUDIT-2": ["subsidiary", "component auditor", "other auditors"],
+};
+
+// Pick the annual-report pages most relevant to a question: pages that contain
+// the item's note heading first (big boost), then keyword overlap. We never feed
+// a 300-page report to the model.
+function relevantArPages(
+  arText: string,
+  terms: string[],
+  noteHints: string[],
+  maxPages = 10,
+  maxChars = 18_000,
+): string {
   if (!arText) return "";
   const pages = arText.split(/===== PAGE \d+ =====/).filter((p) => p.trim());
   const scored = pages.map((page, i) => {
     const lower = page.toLowerCase();
     let score = 0;
     for (const t of terms) if (lower.includes(t)) score += 1;
+    for (const h of noteHints) if (lower.includes(h)) score += 10;
     return { i, page, score };
   });
   const top = scored
@@ -69,7 +100,7 @@ export async function answerFromFilings(
   harvest: HarvestResult,
 ): Promise<EngineAnswer> {
   const terms = keywords(`${particulars} ${questionId}`);
-  const arPages = relevantArPages(harvest.annualReportText, terms);
+  const arPages = relevantArPages(harvest.annualReportText, terms, NOTE_HINTS[questionId] ?? []);
 
   const evidence = [
     harvest.screenerText ? `SCREENER FINANCIALS (${harvest.name ?? company}):\n${harvest.screenerText}` : "",
@@ -105,7 +136,7 @@ export async function judgeEvidence(
     `EVIDENCE (use ONLY this):\n${evidence}\n\n` +
     `Return STRICT JSON only, no prose outside it, shaped exactly:\n` +
     `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, verdict first, exact INR mn figures>",` +
-    `"score":<0|0.25|0.5 — 0.5 good/low-risk, 0.25 partial/borderline, 0 red flag>,` +
+    `"score":<0|0.25|0.5 — 0.5 = good / low-risk / compliant; 0.25 = partial, borderline, or acceptable-but-not-ideal (e.g. a credible top-tier non-Big-4 auditor, an elevated-but-not-alarming metric, a mostly-good finding with one caveat); 0 = clear red flag / genuinely bad>,` +
     `"verdict":"<Yes|No|High|Low|Adequate|Unclear>",` +
     `"available":<true if the evidence answered it, false if it did not>}`;
 

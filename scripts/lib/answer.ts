@@ -207,11 +207,11 @@ export async function judgeEvidence(
     `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the ANNUAL REPORT EXCERPTS for the specifics of THIS question.\n` +
     `- Every monetary figure in the evidence is already in INR mn. Report money in INR mn to one decimal and NEVER rescale a figure (no ×10, no ÷10): if the fact sheet shows a net loss of -74.0, write -74.0, never -740.\n` +
     `- excel_answer MUST begin with exactly ONE verdict word (Yes / No / High / Low / Adequate / Unclear) followed by a period, then the explanation — never two verdict words, never a verdict that contradicts the rest of the sentence.\n` +
-    `- Scoring — calibrate like a discerning buy-side analyst, NOT a lenient one. Do not default to 0.5.\n` +
-    `  • 0.5 — genuinely good / low-risk AND positively evidenced: a clear positive backed by disclosure (a majority-independent board, a clean audit opinion with figures, low leverage shown with numbers, a confirmed non-executive chair).\n` +
-    `  • 0.25 — acceptable-but-not-ideal, borderline or mixed, OR a favourable read that rests only on the ABSENCE of adverse disclosure ("no litigation found", "no cases disclosed", a reputation with no adverse record on the web, an item that merely meets the bare minimum) — treat these as "adequate, corroborate", not a clean bill.\n` +
+    `- Scoring — calibrate like a discerning buy-side analyst, NOT a lenient one. Do not reflexively default to 0.5.\n` +
+    `  • 0.5 — a genuinely good, POSITIVELY-EVIDENCED finding: a clear positive backed by the disclosure you actually read (a majority-independent board, a clean audit opinion, low leverage shown with numbers, a confirmed non-executive chair, a contingent-liabilities/RPT note you checked that is genuinely clean). Award 0.5 whenever you verified the real disclosure and it is sound.\n` +
+    `  • 0.25 — acceptable-but-not-ideal, borderline, mixed, or bare-minimum compliance; OR — for REPUTATION / INTEGRITY / LITIGATION / REGULATORY-HISTORY items (director or promoter reputation, ED/SEBI/other cases, political links, analyst-call transparency, second-tier team quality) — a favourable read that rests only on NOT FINDING adverse information, which silence cannot fully confirm ("no cases disclosed", "no adverse record found"). Corroborate, not a clean bill.\n` +
     `  • 0 — a clear red flag / genuinely bad finding, or an item that cannot be assessed either way (then also set available=false).\n` +
-    `  Most "nothing adverse found" answers are 0.25, not 0.5. Reserve 0.5 for a well-evidenced positive.\n\n` +
+    `  Rule of thumb: a checked, genuinely-clean financial or structural disclosure earns 0.5; an "I couldn't find anything bad" on a reputation/regulatory item earns 0.25.\n\n` +
     `Return STRICT JSON only, no prose outside it, shaped exactly:\n` +
     `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, single verdict first, exact INR mn figures>",` +
     `"score":<0|0.25|0.5 per the scoring rule above>,` +

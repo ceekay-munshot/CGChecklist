@@ -82,6 +82,9 @@ export interface GovernanceRow {
   maxScore: 0.5;
   remarks: string;
   source: string;
+  /** Link the source citation opens (annual-report PDF, Screener page, or the
+   *  web result URL), when the engine could resolve one. */
+  sourceUrl?: string;
   confidence: GovernanceConfidence;
 }
 

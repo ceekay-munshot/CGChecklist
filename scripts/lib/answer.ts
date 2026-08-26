@@ -213,7 +213,7 @@ export async function judgeEvidence(
     `  • 0 — a clear red flag / genuinely bad finding, or an item that cannot be assessed either way (then also set available=false).\n` +
     `  Rule of thumb: a checked, genuinely-clean financial or structural disclosure earns 0.5; an "I couldn't find anything bad" on a reputation/regulatory item earns 0.25.\n\n` +
     `Return STRICT JSON only, no prose outside it, shaped exactly:\n` +
-    `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, single verdict first, exact INR mn figures>",` +
+    `{"excel_answer":"<2-3 tight sentences, ~40-70 words MAX. Lead with the single verdict word, then the decisive INR-mn figure(s) and the ONE key driver. Be crisp, not exhaustive: do NOT list every director / subsidiary / item by name — summarise and cite the note or page instead>",` +
     `"score":<0|0.25|0.5 per the scoring rule above>,` +
     `"verdict":"<Yes|No|High|Low|Adequate|Unclear>",` +
     `"available":<true if the evidence answered it, false if it did not>,` +

@@ -40,6 +40,16 @@ function confidenceFor(a: EngineAnswer): GovernanceConfidence {
   return "High";
 }
 
+// The link a source citation should open: the web result's own URL, the
+// annual-report PDF, or the Screener company page.
+function sourceUrlFor(source: string, harvest: { annualReportUrl?: string; url: string }): string | undefined {
+  const web = source.match(/https?:\/\/\S+/);
+  if (web) return web[0];
+  if (/^annual report/i.test(source)) return harvest.annualReportUrl;
+  if (/^screener/i.test(source)) return harvest.url;
+  return undefined;
+}
+
 async function main() {
   const ticker = (process.argv[2] || "").trim().toUpperCase();
   const companyArg = (process.argv[3] || "").trim();
@@ -119,6 +129,7 @@ async function main() {
       maxScore: 0.5,
       remarks: ans.excelAnswer,
       source: citation,
+      sourceUrl: ans.available ? sourceUrlFor(citation, harvest) : undefined,
       confidence: confidenceFor(ans),
     };
     return row;

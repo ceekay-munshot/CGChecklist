@@ -42,6 +42,8 @@ export interface HarvestResult {
   /** Newest annual report, page-marked text (empty if none could be fetched). */
   annualReportText: string;
   annualReportName?: string;
+  /** Direct URL of the annual-report PDF, so citations can link to it. */
+  annualReportUrl?: string;
 }
 
 interface CompanySearchResult {
@@ -288,6 +290,7 @@ export async function harvestCompany(ticker: string): Promise<HarvestResult> {
     const ar = annualReportLink($);
     if (ar) {
       result.annualReportName = ar.name;
+      result.annualReportUrl = ar.url;
       try {
         const dl = await session.download(ar.url);
         if (dl.ok && dl.buffer && dl.buffer.length > 0) {

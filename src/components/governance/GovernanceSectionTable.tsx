@@ -80,7 +80,7 @@ export function GovernanceSectionTable({
 
             {/* Col 3 — clickable source */}
             <div className="min-w-0 sm:pt-0.5 sm:text-right">
-              <SourceRef source={row.source} />
+              <SourceRef source={row.source} url={row.sourceUrl} />
             </div>
           </li>
         ))}
@@ -117,8 +117,9 @@ function RemarkBody({ remarks }: { remarks: string }) {
 
 // Clean citation. Clickable (opens the source) when the engine supplied a URL;
 // otherwise plain text with the full string on hover.
-function SourceRef({ source }: { source: string }) {
-  const { doc, pages, url } = formatSource(source);
+function SourceRef({ source, url: rowUrl }: { source: string; url?: string }) {
+  const { doc, pages, url: parsedUrl } = formatSource(source);
+  const url = rowUrl || parsedUrl;
   if (!doc && pages.length === 0 && !url) return null;
 
   const label = (

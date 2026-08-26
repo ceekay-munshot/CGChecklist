@@ -55,3 +55,11 @@ OPENAI_API_KEY=
 # Non-secret; the default lives in wrangler.jsonc (vars.GITHUB_REPO). Override
 # here only for local testing against a fork.
 # GITHUB_REPO=ceekay-munshot/CGChecklist
+
+# Shared password that lets the analyze.yml GitHub Actions run publish its
+# results into the dashboard (POST /api/report/ingest → KV). Set the SAME value
+# in two places: (1) here / as a worker secret
+#   npx wrangler secret put REPORT_INGEST_TOKEN
+# and (2) as a GitHub Actions repo secret named REPORT_INGEST_TOKEN. Any strong
+# random string works. Until it's set, engine runs won't appear on the dashboard.
+# REPORT_INGEST_TOKEN=

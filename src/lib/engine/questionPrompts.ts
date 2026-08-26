@@ -13,15 +13,24 @@
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 
 // Shared output contract — the answer format every question must obey. Mirrors
-// the Beas remark house-style and Dheep's "paste into one Excel cell" rule.
+// the client's own workflow (see the "receivables >6 months" ChatGPT session):
+// the model does the full working, then collapses it into a single Excel cell,
+// and marks anything it cannot source as NA rather than estimating it.
 export const OUTPUT_CONTRACT =
-  "Answer in 2-3 concise sentences that fit a single Excel cell. Lead with the " +
-  "verdict the item asks for (Yes/No/High/Low/Adequate/etc.), then the key " +
-  "supporting facts with exact figures, names and dates. Use consolidated and, " +
-  "where it matters, standalone figures. Compare with 2-5 closest listed peers " +
-  "where relevant. Ground every claim in the company's own annual report / " +
-  "filings; if a needed detail is not disclosed, say so plainly. Do not narrate " +
-  "the sources or the search process. No hedging, no filler.";
+  "Produce TWO parts. " +
+  "(1) FULL WORKING: the year-by-year figures and ratios for the latest three " +
+  "financial years — consolidated and standalone where the item is financial — " +
+  "the trend, and, where relevant, the same computation for 2-5 named closest " +
+  "listed peers, ending in a short final assessment. " +
+  "(2) EXCEL-CELL VERSION: the answer as it goes into the checklist — 2-3 dense " +
+  "sentences that fit one Excel cell, leading with the verdict the item asks " +
+  "for (Yes/No/High/Low/Adequate/etc.), then the key figures with exact " +
+  "numbers, names and dates, the peer read, and a one-line trend/risk note. " +
+  "Never mix bases (standalone vs consolidated) and always state the basis and " +
+  "units. Ground every figure in the company's own annual report / filings; if " +
+  "a figure or a peer's data cannot be reliably extracted from the primary " +
+  "source, mark it NA — never estimate, infer, or fabricate a number. Do not " +
+  "narrate the search process. No hedging, no filler.";
 
 // Bespoke, per-question methodology — VERBATIM from the client's prompts. These
 // already embed their own output instruction, so they are used as-is (only the

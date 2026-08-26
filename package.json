@@ -25,10 +25,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "playwright-core": "^1.62.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
+    "unpdf": "^1.8.1",
     "wrangler": "^4.85.0"
   }
 }

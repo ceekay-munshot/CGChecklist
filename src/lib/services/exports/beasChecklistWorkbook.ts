@@ -1,6 +1,11 @@
 import type { Border } from "exceljs";
 import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
+import { splitRemarkBullets } from "@/lib/remarks";
 import type { GovernanceRow } from "@/lib/types/governance";
+
+// Show 0 / 0.25 / 0.5 (and totals like 19.25) exactly. A plain "0.0" format
+// rounds 0.25 → "0.3", visibly breaking the quarter-point scale in the sheet.
+const SCORE_FMT = "0.##";
 
 /**
  * Excel export in Beas Capital's exact CG-checklist layout, so the output can be
@@ -106,14 +111,14 @@ export async function buildBeasChecklistWorkbook(
       score.value = row ? row.score : 0;
       score.font = { name: BODY_FONT, size: 9, bold: true };
       score.alignment = { horizontal: "center", vertical: "top" };
-      score.numFmt = "0.0";
+      score.numFmt = SCORE_FMT;
       score.border = boxBorder;
 
       const maxScore = ws.getCell(r, 3);
       maxScore.value = row ? row.maxScore : 0.5;
       maxScore.font = { name: BODY_FONT, size: 9 };
       maxScore.alignment = { horizontal: "center", vertical: "top" };
-      maxScore.numFmt = "0.0";
+      maxScore.numFmt = SCORE_FMT;
       maxScore.border = boxBorder;
 
       const remarks = ws.getCell(r, 4);
@@ -122,7 +127,8 @@ export async function buildBeasChecklistWorkbook(
       remarks.alignment = { vertical: "top", wrapText: true };
       remarks.border = boxBorder;
 
-      ws.getRow(r).height = 24;
+      // No fixed row height: leave the wrapped Particulars/Remarks cells eligible
+      // for Excel's auto-fit so long evidence isn't clipped to one line.
       itemRowNumbers.push(r);
       r += 1;
     }
@@ -139,12 +145,12 @@ export async function buildBeasChecklistWorkbook(
   totalScore.value = { formula: `SUM(B${firstItem}:B${lastItem})` };
   totalScore.font = { name: BODY_FONT, size: 9, bold: true };
   totalScore.alignment = { horizontal: "center" };
-  totalScore.numFmt = "0.0";
+  totalScore.numFmt = SCORE_FMT;
   const totalMax = ws.getCell(r, 3);
   totalMax.value = { formula: `SUM(C${firstItem}:C${lastItem})` };
   totalMax.font = { name: BODY_FONT, size: 9, bold: true };
   totalMax.alignment = { horizontal: "center" };
-  totalMax.numFmt = "0.0";
+  totalMax.numFmt = SCORE_FMT;
   const totalRow = r;
   r += 1;
 
@@ -167,13 +173,15 @@ function remarkText(row?: GovernanceRow): string {
   if (!row) return "";
   const remarks = (row.remarks || "").trim();
   const response = (row.response || "").trim();
-  if (
+  const composed =
     remarks &&
     response &&
     response !== "Unclear" &&
     !remarks.toLowerCase().startsWith(response.toLowerCase())
-  ) {
-    return `${response}. ${remarks}`;
-  }
-  return remarks || response;
+      ? `${response}. ${remarks}`
+      : remarks || response;
+
+  // MUNS joins its three answer bullets with literal <br>; Excel shows those as
+  // text, so split them back out and rejoin with real newlines (the cell wraps).
+  return splitRemarkBullets(composed).join("\n");
 }

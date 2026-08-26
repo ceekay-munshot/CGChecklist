@@ -1,4 +1,7 @@
-export type GovernanceScoreValue = 0 | 1 | 2;
+// Beas Capital scores each item out of 0.5, awarding partial credit: 0 (fails /
+// red flag), 0.25 (partial / mixed), 0.5 (clean). This matches their manual
+// checklist exactly (Total /25 across 50 scored items, Overall = total / max).
+export type GovernanceScoreValue = 0 | 0.25 | 0.5;
 
 export type GovernanceConfidence = "High" | "Medium" | "Low";
 
@@ -76,7 +79,7 @@ export interface GovernanceRow {
   particulars: string;
   response: GovernanceResponse;
   score: GovernanceScoreValue;
-  maxScore: 2;
+  maxScore: 0.5;
   remarks: string;
   source: string;
   confidence: GovernanceConfidence;

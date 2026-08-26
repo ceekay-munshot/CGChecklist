@@ -26,10 +26,13 @@ const responseToConfidence = (response: string): GovernanceConfidence => {
   return "High";
 };
 
-const clampScore = (n: number): GovernanceScoreValue => {
-  if (n >= 2) return 2;
-  if (n <= 0) return 0;
-  return 1;
+// The scorers reason on a 0/1/2 scale (0 = red, 1 = partial, 2 = clean); the
+// report is presented on Beas Capital's 0/0.25/0.5 scale. Convert here, at the
+// single row-building boundary, snapping anything in between to the nearest step.
+const toHalfScale = (n: number): GovernanceScoreValue => {
+  if (n >= 1.5) return 0.5;
+  if (n >= 0.5) return 0.25;
+  return 0;
 };
 
 const findColumn = (headers: string[], needles: string[]): string | undefined =>
@@ -144,8 +147,8 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
           questionId: item.questionId,
           particulars: item.particulars,
           response: (match.response || "Unclear") as GovernanceResponse,
-          score: clampScore(match.score),
-          maxScore: 2,
+          score: toHalfScale(match.score),
+          maxScore: 0.5,
           remarks: match.remarks || match.response || "",
           source: "MUNS Analysis",
           confidence: responseToConfidence(match.response),
@@ -157,7 +160,7 @@ export const munsHtmlToGovernanceRows = (raw: string): GovernanceRow[] => {
           particulars: item.particulars,
           response: "Not retrieved" as GovernanceResponse,
           score: 0,
-          maxScore: 2,
+          maxScore: 0.5,
           remarks: "",
           source: "MUNS Analysis",
           confidence: "Low",

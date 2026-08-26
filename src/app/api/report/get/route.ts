@@ -51,6 +51,42 @@ export async function GET(request: Request) {
   const token = readEnv("GITHUB_DISPATCH_TOKEN");
   const repo = readEnv("GITHUB_REPO") ?? "ceekay-munshot/CGChecklist";
 
+  // Diagnostic (no secret leaked): ?debug=1 reports whether the token is live
+  // and reachable, so a misconfigured key can be spotted without guesswork.
+  if (url.searchParams.get("debug") === "1") {
+    let apiStatus: number | null = null;
+    if (token) {
+      try {
+        const probe = await fetch(
+          `https://api.github.com/repos/${repo}/actions/artifacts?per_page=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "cgchecklist-dashboard",
+            },
+          },
+        );
+        apiStatus = probe.status;
+      } catch {
+        apiStatus = -1;
+      }
+    }
+    const artifact = token ? await listLatestArtifact(ticker, token, repo) : null;
+    return NextResponse.json({
+      ok: true,
+      debug: true,
+      ticker: ticker.toUpperCase(),
+      tokenConfigured: !!token,
+      repo,
+      githubApiStatus: apiStatus, // 200 = token+scope OK; 401/403 = token/scope; 404 = repo
+      artifactFound: !!artifact,
+      artifactCreatedAt: artifact?.createdAt ?? null,
+      cached: !!cached,
+    });
+  }
+
   if (token) {
     const latest = await listLatestArtifact(ticker, token, repo);
     if (latest && (!cached || cached.sourceStamp !== latest.createdAt)) {

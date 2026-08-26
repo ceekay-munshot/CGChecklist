@@ -154,6 +154,33 @@ const DETAILED_PROMPTS: Record<string, string> = {
     "numbers and trend over the three-year period.",
 };
 
+// Worked "Excel-cell version" answers from the client's own ChatGPT sessions
+// (company: PG Electroplast). Used as a STYLE exemplar in the prompt — they
+// calibrate density, verdict-first phrasing and how figures are cited. The
+// prompt makes clear these numbers belong to a different company and must never
+// be imported into the answer.
+const EXAMPLE_OUTPUTS: Record<string, string> = {
+  "FINANCIALS-3":
+    "Low — PG Electroplast's receivables older than 6 months have increased " +
+    "over FY23–FY25, but remain low in absolute terms at 0.25% of standalone " +
+    "revenue and 0.29% of consolidated revenue in FY25; as a share of total " +
+    "trade receivables, the ratio is also modest at ~1.4% on both bases. The " +
+    "trend should be monitored, but PG is not structurally high versus peers, " +
+    "especially compared with EPack Durables, so this does not appear to be a " +
+    "material receivables-ageing red flag.",
+  "AUDIT-4":
+    "Low — PG Electroplast's FY25 auditor remuneration was ₹66.12 lakh, up " +
+    "37.6% YoY versus +51.6% in FY24, implying a FY23–FY25 CAGR of 44.4%; this " +
+    "does not appear disproportionate because revenue from operations grew " +
+    "faster at +77.3% YoY in FY25 and 50.2% CAGR, while EBIT excluding other " +
+    "income grew +94.5% YoY and 72.2% CAGR. Auditor remuneration as % of PAT " +
+    "also fell from 0.41% in FY23 to 0.36% in FY24 and 0.23% in FY25; in peer " +
+    "checks, PG's absolute FY25 fee is below EPACK's ₹98.21 lakh and its " +
+    "relative fee burden is far below EPACK's 1.78% of PAT and Virtuoso's 1.20% " +
+    "of PAT, while Amber's much larger FY25 consolidated revenue/PAT means PG " +
+    "does not appear high on either absolute fee or relative burden.",
+};
+
 // Per-section forensic lens used when a question has no bespoke prompt, so the
 // default still points the model at the right part of the filings.
 const SECTION_LENS: Record<string, string> = {
@@ -186,18 +213,23 @@ export function buildQuestionPrompt(
 ): string {
   const name = company.trim() || "the company";
   const detailed = DETAILED_PROMPTS[questionId];
-  if (detailed) {
-    return `Company under review: ${name}. Answer only about ${name}.\n\n${detailed}`;
-  }
+  const core = detailed
+    ? `Company under review: ${name}. Answer only about ${name}.\n\n${detailed}`
+    : `You are a buy-side forensic governance analyst evaluating ${name} for an ` +
+      `investment committee. Question: "${particulars}". Dig into ${name}'s ` +
+      `latest annual report, quarterly results and exchange filings — reading ` +
+      `${SECTION_LENS[sectionIdOf(questionId)] ?? "the company's filings"}, ` +
+      `consolidated and standalone where relevant, and comparing with close ` +
+      `listed peers where relevant. Answer only about ${name}; never ` +
+      `substitute data from a similarly-named entity. ${OUTPUT_CONTRACT}`;
 
-  const lens = SECTION_LENS[sectionIdOf(questionId)] ?? "the company's filings";
+  const example = EXAMPLE_OUTPUTS[questionId];
+  if (!example) return core;
   return (
-    `You are a buy-side forensic governance analyst evaluating ${name} for an ` +
-    `investment committee. Question: "${particulars}". Dig into ${name}'s ` +
-    `latest annual report, quarterly results and exchange filings — reading ` +
-    `${lens}, consolidated and standalone where relevant, and comparing with ` +
-    `close listed peers where relevant. Answer only about ${name}; never ` +
-    `substitute data from a similarly-named entity. ${OUTPUT_CONTRACT}`
+    `${core}\n\nWorked example of the expected Excel-cell answer — this is for a ` +
+    `DIFFERENT company (PG Electroplast). Match its style, density and structure, ` +
+    `but answer only about ${name} and NEVER import any figure from this ` +
+    `example:\n"${example}"`
   );
 }
 

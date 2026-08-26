@@ -62,7 +62,9 @@ async function munsResearch(task: string, ticker: string, company: string): Prom
       },
       autoAddUpcoming: false,
     }),
-    signal: AbortSignal.timeout(120_000),
+    // MUNS does live web research + AR reading per question, which can run
+    // well past two minutes; the first Capillary run timed out at 120s.
+    signal: AbortSignal.timeout(240_000),
   });
 
   const body = await res.text();

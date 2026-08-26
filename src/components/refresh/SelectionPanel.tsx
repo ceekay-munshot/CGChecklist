@@ -405,6 +405,8 @@ function ProgressBody({
         </div>
       </div>
 
+      <SourcesReading />
+
       {hasLive && live!.log.length > 0 ? (
         <ol className="max-h-40 overflow-y-auto rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-mist-50)]/60 p-2 text-[11.5px]">
           {live!.log.map((item, i) => (
@@ -484,6 +486,42 @@ function CancelIcon() {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+// What the source-first engine reads for every company — shown during the run so
+// it's clear the analysis isn't limited to one document.
+const READ_SOURCES: { name: string; detail: string }[] = [
+  { name: "Screener.in", detail: "P&L, balance sheet, cash flow, ratios, shareholding" },
+  { name: "Annual report (PDF)", detail: "board, audit, contingent liabilities, RPT, notes" },
+  { name: "Web research", detail: "reputation, litigation, ED/SEBI history, peer data" },
+];
+
+function SourcesReading() {
+  return (
+    <div className="rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-mist-50)]/60 p-3">
+      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[var(--color-fg-muted)]">
+        Reading sources
+      </p>
+      <ul className="grid gap-1.5">
+        {READ_SOURCES.map((s) => (
+          <li key={s.name} className="flex items-start gap-2">
+            <span
+              aria-hidden
+              className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--color-teal-50)] text-[var(--color-teal-700)]"
+            >
+              <svg viewBox="0 0 16 16" className="h-2.5 w-2.5 animate-pulse" fill="currentColor" aria-hidden>
+                <circle cx="8" cy="8" r="8" />
+              </svg>
+            </span>
+            <span className="min-w-0 text-[11.5px] leading-relaxed">
+              <span className="font-semibold text-[var(--color-fg)]">{s.name}</span>
+              <span className="text-[var(--color-fg-muted)]"> — {s.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

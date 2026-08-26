@@ -26,8 +26,10 @@ export const OUTPUT_CONTRACT =
   "sentences that fit one Excel cell, leading with the verdict the item asks " +
   "for (Yes/No/High/Low/Adequate/etc.), then the key figures with exact " +
   "numbers, names and dates, the peer read, and a one-line trend/risk note. " +
-  "Never mix bases (standalone vs consolidated) and always state the basis and " +
-  "units. Ground every figure in the company's own annual report / filings; if " +
+  "Never mix bases (standalone vs consolidated) and always state the basis. " +
+  "Report every financial figure in INR mn to one decimal place (e.g. INR " +
+  "905.0 mn) and each ratio/percentage to one decimal place. " +
+  "Ground every figure in the company's own annual report / filings; if " +
   "a figure or a peer's data cannot be reliably extracted from the primary " +
   "source, mark it NA — never estimate, infer, or fabricate a number. Do not " +
   "narrate the search process. No hedging, no filler.";
@@ -169,16 +171,50 @@ const EXAMPLE_OUTPUTS: Record<string, string> = {
     "especially compared with EPack Durables, so this does not appear to be a " +
     "material receivables-ageing red flag.",
   "AUDIT-4":
-    "Low — PG Electroplast's FY25 auditor remuneration was ₹66.12 lakh, up " +
+    "Low — PG Electroplast's FY25 auditor remuneration was INR 6.6 mn, up " +
     "37.6% YoY versus +51.6% in FY24, implying a FY23–FY25 CAGR of 44.4%; this " +
     "does not appear disproportionate because revenue from operations grew " +
     "faster at +77.3% YoY in FY25 and 50.2% CAGR, while EBIT excluding other " +
     "income grew +94.5% YoY and 72.2% CAGR. Auditor remuneration as % of PAT " +
     "also fell from 0.41% in FY23 to 0.36% in FY24 and 0.23% in FY25; in peer " +
-    "checks, PG's absolute FY25 fee is below EPACK's ₹98.21 lakh and its " +
+    "checks, PG's absolute FY25 fee is below EPACK's INR 9.8 mn and its " +
     "relative fee burden is far below EPACK's 1.78% of PAT and Virtuoso's 1.20% " +
     "of PAT, while Amber's much larger FY25 consolidated revenue/PAT means PG " +
     "does not appear high on either absolute fee or relative burden.",
+  "OTHER_REGULATORY-1":
+    "PG Electroplast – Moderate: As per the latest FY25 consolidated annual " +
+    "report, PGEL has 4 categories of contingent liabilities aggregating INR " +
+    "905.0 mn, equal to ~1.8% of total assets and ~3.2% of total equity; these " +
+    "comprise Central Excise dispute of INR 76.6 mn, anti-dumping duty dispute " +
+    "of INR 73.9 mn, third-party claims of INR 4.6 mn, and a new INR 750.0 mn " +
+    "Yes Bank guarantee for borrowings of its 50:50 JV, Goodworth Electronics. " +
+    "The underlying tax/legal claims are old and largely unchanged from " +
+    "FY23/FY24 at INR 155.0 mn, with favourable/partly favourable historical " +
+    "appellate positions and no clear evidence of material crystallisation into " +
+    "shareholder loss, but the FY25 guarantee materially increases " +
+    "off-balance-sheet exposure and should be monitored. Relative to peers, " +
+    "PGEL's exposure is broadly similar in absolute size to Amber Enterprises " +
+    "but much higher than EPACK Durable and Virtuoso Optoelectronics in rupee " +
+    "terms, so this is not a High red flag on current balance-sheet " +
+    "materiality, but it is also not Low because of the new JV guarantee and " +
+    "long-running tax/duty matters.",
+  "FINANCIALS-5":
+    "No — regular 3-year dividend consistency is not established. PG " +
+    "Electroplast did not declare/pay any dividend in FY23, then recommended " +
+    "₹0.20/share for FY24 and ₹0.25/share for FY25, with FY24 dividend actually " +
+    "paid in FY25 amounting to INR 52.3 mn and FY25 proposed dividend implying " +
+    "~INR 70.8 mn on the expanded share base. The payout is not structurally " +
+    "aggressive given strong reported profits and sharp deleveraging — " +
+    "consolidated PAT rose from INR 775.0 mn in FY23 to INR 1,349.0 mn in FY24 " +
+    "and INR 2,878.0–2,910.0 mn in FY25, while consolidated debt/equity " +
+    "improved from 1.37x to 0.35x to 0.01x and interest coverage improved from " +
+    "3.04x to 4.41x to 5.10x — but from a capital-allocation lens, the dividend " +
+    "should not be treated as an unqualified positive because it resumed " +
+    "alongside large QIPs in FY24/FY25 and FY25 consolidated operating cash " +
+    "flow turned negative due to working-capital absorption and capex/expansion " +
+    "needs. Verdict: No — dividend payout is not consistently established over " +
+    "the latest three years; low payout, but capital-allocation optics are " +
+    "mixed rather than clearly shareholder-friendly.",
 };
 
 // Per-section forensic lens used when a question has no bespoke prompt, so the

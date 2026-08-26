@@ -56,6 +56,47 @@ interface FactsShape {
 const num = (n: unknown): string =>
   n === null || n === undefined || Number.isNaN(Number(n)) ? "n/a" : Number(n).toFixed(1);
 
+const safeDiv = (a?: number | null, b?: number | null): number | null =>
+  a === null || a === undefined || b === null || b === undefined || b === 0 ? null : a / b;
+
+// Compute the financial ratios the checklist tests, deterministically, from the
+// fact-sheet figures — so the leverage / margin / cash-conversion / growth
+// questions read a correct number instead of the model doing (and mis-scaling)
+// the arithmetic. Mirrors cgchecklist2.0's computeNumeric, kept to what our
+// extracted fields support.
+function computeRatios(fin: FinancialYear[]): string[] {
+  const series = (
+    label: string,
+    valueOf: (y: FinancialYear, i: number) => number | null,
+    dp = 2,
+  ): string => {
+    const parts = fin
+      .map((y, i) => ({ p: y.period, v: valueOf(y, i) }))
+      .filter((x) => x.p && x.v !== null && !Number.isNaN(x.v as number))
+      .map((x) => `${x.p} ${(x.v as number).toFixed(dp)}`);
+    return parts.length ? `${label}: ${parts.join(" → ")}` : "";
+  };
+
+  const out = [
+    // D/E only where net worth is positive (a negative denominator is meaningless).
+    series("Debt/Equity", (y) => (y.net_worth && y.net_worth > 0 ? safeDiv(y.borrowings, y.net_worth) : null)),
+    // Cash conversion — not reported by Screener; a core cash-quality signal.
+    series("CFO / net profit", (y) => safeDiv(y.operating_cash_flow, y.net_profit)),
+    series(
+      "Revenue YoY %",
+      (y, i) => {
+        if (i === 0) return null;
+        const prev = fin[i - 1].revenue;
+        const v = prev && prev !== 0 ? safeDiv((y.revenue ?? 0) - prev, Math.abs(prev)) : null;
+        return v === null ? null : v * 100;
+      },
+      1,
+    ),
+  ].filter(Boolean);
+
+  return out.map((s) => `  ${s}`);
+}
+
 function formatFacts(company: string, f: FactsShape): string {
   const lines: string[] = [
     `=== ${company.toUpperCase()} — VERIFIED FACT SHEET ===`,
@@ -80,13 +121,19 @@ function formatFacts(company: string, f: FactsShape): string {
   if (f.market_cap_inr_mn != null) lines.push(`Market cap: INR ${num(f.market_cap_inr_mn)} mn.`);
 
   if (Array.isArray(f.financials) && f.financials.length) {
+    const fin = f.financials.filter((x) => x && x.period);
     lines.push(`Financials (INR mn):`);
-    for (const y of f.financials.filter((x) => x && x.period)) {
+    for (const y of fin) {
       lines.push(
         `  ${y.period}: revenue ${num(y.revenue)}, net profit ${num(y.net_profit)}, ` +
           `operating profit ${num(y.operating_profit)}, borrowings ${num(y.borrowings)}, ` +
           `net worth ${num(y.net_worth)}, operating cash flow ${num(y.operating_cash_flow)}`,
       );
+    }
+    const ratios = computeRatios(fin);
+    if (ratios.length) {
+      lines.push(`Computed ratios (deterministic — use these exact values, do not recompute):`);
+      lines.push(...ratios);
     }
   }
   if (Array.isArray(f.promoter_holding) && f.promoter_holding.length) {

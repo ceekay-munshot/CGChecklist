@@ -7,7 +7,7 @@
 
 import { completeJSON } from "@/lib/engine/llm";
 import { buildQuestionPrompt } from "@/lib/engine/questionPrompts";
-import type { HarvestResult } from "./harvest";
+import type { HarvestResult, HarvestedDoc } from "./harvest";
 
 export type HalfScore = 0 | 0.25 | 0.5;
 
@@ -60,68 +60,105 @@ const NOTE_HINTS: Record<string, string[]> = {
   "AUDIT-2": ["subsidiary", "component auditor", "other auditors"],
 };
 
-export interface RetrievedAr {
-  /** Page-labeled passages, each prefixed with "[Annual report, p.NN]". */
+export interface RetrievedEvidence {
+  /** Passages, each prefixed with "[<Document>, p.NN]". */
   text: string;
-  /** Page numbers actually fed to the model, in document order. */
-  pages: number[];
+  /** Annual-report page numbers fed (kept separate for the AR-note flow). */
+  arPages: number[];
+  /** Every page number fed, across all documents — for citation validation. */
+  allPages: number[];
+  /** Distinct document names fed. */
+  docNames: string[];
+  /** Whether a concall passage made the cut. */
+  hasConcall: boolean;
 }
 
-// Pick the annual-report pages most relevant to a question: pages that contain
-// the item's note heading first (big boost), then keyword overlap. We never feed
-// a 300-page report to the model. Each kept passage is tagged with its page
-// number so the model can cite it back (mirrors cgchecklist2.0's page markers).
+// Split page-marked text ("===== PAGE n =====") into page chunks.
+function splitPages(text: string): { page: number; text: string }[] {
+  if (!text) return [];
+  const re = /=====\s*PAGE\s+(\d+)\s*=====/g;
+  const matches = [...text.matchAll(re)];
+  if (!matches.length) return text.trim() ? [{ page: 0, text: text.trim() }] : [];
+  const out: { page: number; text: string }[] = [];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const start = (m.index ?? 0) + m[0].length;
+    const end = i + 1 < matches.length ? (matches[i + 1].index ?? text.length) : text.length;
+    const body = text.slice(start, end).trim();
+    if (body) out.push({ page: Number(m[1]), text: body });
+  }
+  return out;
+}
+
+// Pick the passages most relevant to a question across the WHOLE document pool
+// (annual report + concall transcripts + …): passages containing the item's note
+// heading first (big boost), then keyword overlap. Each kept passage is tagged
+// "[<Document>, p.NN]" so the model can answer from — and cite — whichever
+// document actually holds the answer, not just the annual report.
+export function relevantPassages(
+  docs: HarvestedDoc[],
+  terms: string[],
+  noteHints: string[],
+  maxPages = 12,
+  maxChars = 20_000,
+): RetrievedEvidence {
+  const chunks = docs.flatMap((d) =>
+    splitPages(d.text).map((c) => ({ docName: d.name, kind: d.kind, page: c.page, text: c.text })),
+  );
+  if (!chunks.length) return { text: "", arPages: [], allPages: [], docNames: [], hasConcall: false };
+
+  const scored = chunks.map((c, i) => {
+    const lower = c.text.toLowerCase();
+    let score = 0;
+    for (const t of terms) if (lower.includes(t)) score += 1;
+    for (const h of noteHints) if (lower.includes(h)) score += 10;
+    // The annual report is the primary filing — a hair of preference on ties.
+    if (c.kind === "annual_report") score += 0.5;
+    return { ...c, order: i, score };
+  });
+  const top = scored
+    .filter((p) => p.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxPages)
+    // restore reading order: group by document, ascending page
+    .sort((a, b) => (a.docName === b.docName ? a.page - b.page : a.order - b.order));
+
+  let budget = maxChars;
+  const kept: typeof top = [];
+  for (const p of top) {
+    if (budget <= 0) break;
+    const body = p.text.slice(0, budget);
+    budget -= body.length;
+    kept.push({ ...p, text: body });
+  }
+
+  const text = kept
+    .map((p) => (p.page ? `[${p.docName}, p.${p.page}]\n${p.text}` : `[${p.docName}]\n${p.text}`))
+    .join("\n\n");
+  return {
+    text,
+    arPages: kept.filter((p) => p.kind === "annual_report").map((p) => p.page).filter((n) => n > 0),
+    allPages: kept.map((p) => p.page).filter((n) => n > 0),
+    docNames: [...new Set(kept.map((p) => p.docName))],
+    hasConcall: kept.some((p) => p.kind === "concall"),
+  };
+}
+
+// Backward-compatible single-document helper (used by the fact-sheet builder).
 export function relevantArPages(
   arText: string,
   terms: string[],
   noteHints: string[],
   maxPages = 10,
   maxChars = 18_000,
-): RetrievedAr {
-  if (!arText) return { text: "", pages: [] };
-
-  // Split into page-tagged chunks, preserving the page number from each marker.
-  const re = /=====\s*PAGE\s+(\d+)\s*=====/g;
-  const matches = [...arText.matchAll(re)];
-  const chunks: { page: number; text: string }[] = [];
-  if (matches.length) {
-    for (let i = 0; i < matches.length; i++) {
-      const m = matches[i];
-      const start = (m.index ?? 0) + m[0].length;
-      const end = i + 1 < matches.length ? (matches[i + 1].index ?? arText.length) : arText.length;
-      const text = arText.slice(start, end).trim();
-      if (text) chunks.push({ page: Number(m[1]), text });
-    }
-  } else {
-    chunks.push({ page: 0, text: arText });
-  }
-
-  const scored = chunks.map((c) => {
-    const lower = c.text.toLowerCase();
-    let score = 0;
-    for (const t of terms) if (lower.includes(t)) score += 1;
-    for (const h of noteHints) if (lower.includes(h)) score += 10;
-    return { ...c, score };
-  });
-  const top = scored
-    .filter((p) => p.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, maxPages)
-    .sort((a, b) => a.page - b.page);
-
-  let budget = maxChars;
-  const kept: { page: number; text: string }[] = [];
-  for (const p of top) {
-    if (budget <= 0) break;
-    const body = p.text.slice(0, budget);
-    budget -= body.length;
-    kept.push({ page: p.page, text: body });
-  }
-
-  const text = kept
-    .map((p) => (p.page ? `[Annual report, p.${p.page}]\n${p.text}` : p.text))
-    .join("\n\n");
-  return { text, pages: kept.map((p) => p.page).filter((n) => n > 0) };
+): RetrievedEvidence {
+  return relevantPassages(
+    [{ name: "Annual report", kind: "annual_report", text: arText }],
+    terms,
+    noteHints,
+    maxPages,
+    maxChars,
+  );
 }
 
 const SYSTEM =
@@ -144,12 +181,12 @@ export async function answerFromFilings(
   facts = "",
 ): Promise<EngineAnswer> {
   const terms = keywords(`${particulars} ${questionId}`);
-  const ar = relevantArPages(harvest.annualReportText, terms, NOTE_HINTS[questionId] ?? []);
+  const ev = relevantPassages(harvest.documents, terms, NOTE_HINTS[questionId] ?? []);
 
   const evidence = [
     facts,
     harvest.screenerText ? `SCREENER FINANCIALS (${harvest.name ?? company}):\n${harvest.screenerText}` : "",
-    ar.text ? `ANNUAL REPORT EXCERPTS (each passage is tagged with its page number):\n${ar.text}` : "",
+    ev.text ? `SOURCE DOCUMENTS (each passage is tagged with its document and page):\n${ev.text}` : "",
   ]
     .filter(Boolean)
     .join("\n\n---\n\n");
@@ -159,16 +196,30 @@ export async function answerFromFilings(
   }
 
   return judgeEvidence(questionId, particulars, company, evidence, {
-    candidatePages: ar.pages,
+    candidatePages: ev.allPages,
     hasScreener: !!harvest.screenerText,
   });
 }
 
-// Build the source citation from the model's cited pages, validated against the
-// pages we actually fed it (so a hallucinated page number can't leak through).
+// Normalise the model's cited document name to a clean, consistent label.
+function sanitizeDoc(cd?: string): string {
+  const s = (cd ?? "").trim();
+  if (!s) return "";
+  if (/screener/i.test(s)) return "Screener financials";
+  if (/annual\s*report|^ar\b/i.test(s)) return "Annual report";
+  if (/con[\s-]?call|earnings\s*call|analyst\s*call|transcript/i.test(s)) {
+    const p = s.match(/(Q[1-4]\s*FY\s*\d{2,4}|FY\s*\d{2,4}|[A-Z][a-z]{2,8}[\s-]*\d{4}|Q[1-4][\s-]*\d{4})/);
+    return p ? `Concall ${p[1].replace(/\s+/g, " ")}` : "Concall";
+  }
+  if (/investor|presentation|\bppt\b/i.test(s)) return "Investor presentation";
+  return s.slice(0, 40);
+}
+
+// Build the source citation from the model's cited document + pages, validated
+// against the pages we actually fed it (so a hallucinated page can't leak).
 function buildSourceLabel(
   citedPages: unknown,
-  opts: { candidatePages?: number[]; hasScreener?: boolean; web?: boolean; sourceNote?: string },
+  opts: { candidatePages?: number[]; hasScreener?: boolean; web?: boolean; sourceNote?: string; citedDoc?: string },
 ): string {
   if (opts.web) {
     const url = opts.sourceNote?.match(/https?:\/\/[^\s)]+/)?.[0];
@@ -179,9 +230,12 @@ function buildSourceLabel(
     .map((p) => Number(p))
     .filter((p) => Number.isInteger(p) && candidates.has(p));
   const uniq = [...new Set(valid)].sort((a, b) => a - b);
-  if (uniq.length) return `Annual report, ${uniq.map((p) => `p.${p}`).join(", ")}`;
-  if (opts.hasScreener) return "Screener financials";
-  return "Annual report";
+
+  let doc = sanitizeDoc(opts.citedDoc);
+  if (doc === "Screener financials") return "Screener financials";
+  if (!doc) doc = uniq.length ? "Annual report" : opts.hasScreener ? "Screener financials" : "Annual report";
+  if (doc === "Screener financials") return "Screener financials";
+  return uniq.length ? `${doc}, ${uniq.map((p) => `p.${p}`).join(", ")}` : doc;
 }
 
 /**
@@ -204,7 +258,7 @@ export async function judgeEvidence(
     `${buildQuestionPrompt(questionId, particulars, company)}\n\n` +
     `EVIDENCE (use ONLY this):\n${evidence}\n\n` +
     `RULES:\n` +
-    `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the ANNUAL REPORT EXCERPTS for the specifics of THIS question.\n` +
+    `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the SOURCE DOCUMENTS for the specifics of THIS question. Answer from whichever document actually holds it — the annual report OR a concall transcript — not only the annual report.\n` +
     `- Every monetary figure in the evidence is already in INR mn. Report money in INR mn to one decimal and NEVER rescale a figure (no ×10, no ÷10): if the fact sheet shows a net loss of -74.0, write -74.0, never -740.\n` +
     `- excel_answer MUST begin with exactly ONE verdict word (Yes / No / High / Low / Adequate / Unclear) followed by a period, then the explanation — never two verdict words, never a verdict that contradicts the rest of the sentence.\n` +
     `- Scoring — calibrate like a discerning buy-side analyst, NOT a lenient one. Do not reflexively default to 0.5.\n` +
@@ -217,21 +271,23 @@ export async function judgeEvidence(
     `"score":<0|0.25|0.5 per the scoring rule above>,` +
     `"verdict":"<Yes|No|High|Low|Adequate|Unclear>",` +
     `"available":<true if the evidence answered it, false if it did not>,` +
-    `"cited_pages":<array of the ANNUAL REPORT page numbers (from the "[Annual report, p.NN]" tags) you actually used, e.g. [147,148]; [] if you answered from Screener financials or web results only>,` +
-    `"source_note":"<the single most specific source you used: for web, the URL; for the annual report, the note/section name>"}`;
+    `"cited_doc":"<the document you actually used, copied from the passage tag: e.g. "Annual report", "Concall Aug 2025", or "Screener financials"; empty if web only>",` +
+    `"cited_pages":<array of the page numbers (from the "[<Document>, p.NN]" tags) you actually used, e.g. [147,148]; [] if you answered from Screener financials or web results only>,` +
+    `"source_note":"<the single most specific source you used: for web, the URL; for a document, the note/section name>"}`;
 
   const out = await completeJSON<{
     excel_answer?: string;
     score?: number;
     verdict?: string;
     available?: boolean;
+    cited_doc?: string;
     cited_pages?: unknown;
     source_note?: string;
   }>({ prompt, system: SYSTEM, maxTokens: 900 });
 
   const available = out.available !== false && !!out.excel_answer;
   const source = available
-    ? buildSourceLabel(out.cited_pages, { ...opts, sourceNote: out.source_note })
+    ? buildSourceLabel(out.cited_pages, { ...opts, sourceNote: out.source_note, citedDoc: out.cited_doc })
     : "Not retrieved";
   return {
     excelAnswer: (out.excel_answer ?? "").trim() || "Not retrieved",

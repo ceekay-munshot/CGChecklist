@@ -9,7 +9,7 @@ import { GOVERNANCE_CHECKLIST } from "@/lib/governance/checklist";
 import type { GovernanceConfidence, GovernanceResponse, GovernanceRow } from "@/lib/types/governance";
 import { buildBeasChecklistWorkbook } from "@/lib/services/exports/beasChecklistWorkbook";
 import { preflight, activeModelId, activeRegion } from "@/lib/engine/llm";
-import { harvestCompany } from "./lib/harvest";
+import { harvestCompany, type HarvestResult } from "./lib/harvest";
 import { answerFromFilings, type EngineAnswer } from "./lib/answer";
 import { backfillQuestion } from "./lib/backfill";
 import { buildCompanyFacts } from "./lib/facts";
@@ -41,12 +41,24 @@ function confidenceFor(a: EngineAnswer): GovernanceConfidence {
 }
 
 // The link a source citation should open: the web result's own URL, the
-// annual-report PDF, or the Screener company page.
-function sourceUrlFor(source: string, harvest: { annualReportUrl?: string; url: string }): string | undefined {
+// annual-report PDF, a concall transcript, or the Screener company page.
+function sourceUrlFor(source: string, harvest: HarvestResult): string | undefined {
   const web = source.match(/https?:\/\/\S+/);
   if (web) return web[0];
-  if (/^annual report/i.test(source)) return harvest.annualReportUrl;
   if (/^screener/i.test(source)) return harvest.url;
+  if (/^annual report/i.test(source)) {
+    return harvest.annualReportUrl ?? harvest.documents.find((d) => d.kind === "annual_report")?.url;
+  }
+  if (/^concall/i.test(source)) {
+    const label = source.split(/[,·]/)[0].replace(/^concall\s*/i, "").trim().toLowerCase();
+    const doc =
+      harvest.documents.find((d) => d.kind === "concall" && label && d.name.toLowerCase().includes(label)) ??
+      harvest.documents.find((d) => d.kind === "concall");
+    return doc?.url;
+  }
+  if (/^investor presentation/i.test(source)) {
+    return harvest.documents.find((d) => d.kind === "presentation")?.url;
+  }
   return undefined;
 }
 
@@ -71,6 +83,7 @@ async function main() {
   const harvest = await harvestCompany(ticker);
   const company = companyArg || harvest.name || ticker;
   console.log(`  company: ${company} | loggedIn: ${harvest.loggedIn} | screener: ${harvest.screenerText.length} chars | AR: ${harvest.annualReportText.length} chars`);
+  console.log(`  documents (${harvest.documents.length}): ${harvest.documents.map((d) => `${d.name} [${(d.text.length / 1000).toFixed(0)}k]`).join(", ") || "none"}`);
   if (harvest.note) console.log(`  note: ${harvest.note}`);
 
   // Extract one verified fact sheet (board, 3-yr P&L, promoter holding — all in

@@ -27,6 +27,8 @@ const NAV_TIMEOUT_MS = 45_000;
 // remuneration, contingent liabilities) sit in the back of a 200-400pp report,
 // and a 600k cap truncated them before retrieval could reach them.
 const MAX_AR_CHARS = 2_500_000;
+const MAX_CONCALL_CHARS = 500_000;
+const CONCALL_COUNT = 2;
 const MAX_SCREENER_TEXT = 40_000;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -44,6 +46,21 @@ export interface HarvestResult {
   annualReportName?: string;
   /** Direct URL of the annual-report PDF, so citations can link to it. */
   annualReportUrl?: string;
+  /**
+   * The full harvested document pool — the annual report PLUS concall
+   * transcripts (and any other filings) — so an answer can come from wherever it
+   * actually lives, not just the AR. Each doc is page-marked and carries its own
+   * name/URL for citation.
+   */
+  documents: HarvestedDoc[];
+}
+
+export interface HarvestedDoc {
+  name: string;
+  kind: "annual_report" | "concall" | "presentation";
+  url?: string;
+  /** Page-marked text ("===== PAGE n ====="). */
+  text: string;
 }
 
 interface CompanySearchResult {
@@ -234,7 +251,33 @@ function annualReportLink($: cheerio.CheerioAPI): { name: string; url: string } 
   return first ? { name: first.name || "Annual report", url: absolutize(first.href) } : undefined;
 }
 
-async function pdfToText(buffer: Buffer): Promise<string> {
+// Newest concall transcript links from the page's Documents → Concalls section.
+// Each concall row carries a period label (e.g. "Aug 2025") and Transcript / Notes
+// / PPT links; we take the Transcript (management commentary + analyst Q&A, where
+// governance and forensic signals often surface).
+function concallTranscriptLinks($: cheerio.CheerioAPI, limit: number): { name: string; url: string }[] {
+  const container = $(".documents.concalls, .concalls").first();
+  if (!container.length) return [];
+  const out: { name: string; url: string }[] = [];
+  container
+    .find("li")
+    .toArray()
+    .forEach((li) => {
+      const $li = $(li);
+      const period =
+        clean($li.find(".ink-600, .font-weight-500, .concall-title").first().text()) ||
+        clean($li.contents().first().text());
+      const transcript = $li
+        .find("a[href]")
+        .toArray()
+        .find((a) => /transcript/i.test(clean($(a).text())));
+      const href = transcript ? $(transcript).attr("href") : undefined;
+      if (href) out.push({ name: `Concall ${period}`.trim(), url: absolutize(href) });
+    });
+  return out.slice(0, limit);
+}
+
+async function pdfToText(buffer: Buffer, maxChars = MAX_AR_CHARS): Promise<string> {
   const pdf = await getDocumentProxy(new Uint8Array(buffer));
   const result = await extractText(pdf, { mergePages: false });
   const perPage: string[] = ([] as string[]).concat(result.text as string | string[]);
@@ -242,7 +285,7 @@ async function pdfToText(buffer: Buffer): Promise<string> {
     .map((t, i) => `===== PAGE ${i + 1} =====\n${(t ?? "").trim()}`)
     .join("\n\n")
     .trim()
-    .slice(0, MAX_AR_CHARS);
+    .slice(0, maxChars);
 }
 
 /**
@@ -260,6 +303,7 @@ export async function harvestCompany(ticker: string): Promise<HarvestResult> {
     loggedIn: session.loggedIn,
     screenerText: "",
     annualReportText: "",
+    documents: [],
   };
 
   try {
@@ -307,6 +351,36 @@ export async function harvestCompany(ticker: string): Promise<HarvestResult> {
       }
     } else {
       notes.push("no annual-report link found on the Screener page");
+    }
+
+    // Seed the document pool with the annual report…
+    if (result.annualReportText) {
+      result.documents.push({
+        name: result.annualReportName ?? "Annual report",
+        kind: "annual_report",
+        url: result.annualReportUrl,
+        text: result.annualReportText,
+      });
+    }
+
+    // …then broaden it with the newest concall transcripts, so an answer that
+    // lives in management commentary or the analyst Q&A can be sourced directly.
+    const concalls = concallTranscriptLinks($, CONCALL_COUNT);
+    for (const c of concalls) {
+      try {
+        const dl = await session.download(c.url);
+        if (dl.ok && dl.buffer && dl.buffer.length > 0) {
+          const isPdf =
+            dl.contentType?.toLowerCase().includes("pdf") ||
+            dl.buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+          if (isPdf) {
+            const text = await pdfToText(dl.buffer, MAX_CONCALL_CHARS);
+            if (text) result.documents.push({ name: c.name, kind: "concall", url: c.url, text });
+          }
+        }
+      } catch (e) {
+        notes.push(`concall fetch error (${c.name}): ${(e as Error).message}`);
+      }
     }
   } catch (e) {
     notes.push(`harvest error: ${(e as Error).message}`);

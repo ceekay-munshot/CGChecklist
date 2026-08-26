@@ -75,7 +75,7 @@ async function main() {
     try {
       ans = await answerFromFilings(q.questionId, q.particulars, company, harvest);
     } catch (e) {
-      ans = { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false };
+      ans = { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false, source: "Not retrieved" };
       console.warn(`  [${q.questionId}] filings error: ${(e as Error).message}`);
     }
     if (!ans.available) {
@@ -93,7 +93,10 @@ async function main() {
     if (ans.available && source === "Web research") backfilled++;
     else if (ans.available) filled++;
     else missing++;
-    console.log(`  [${q.questionId}] ${ans.available ? source : "NOT RETRIEVED"} → ${ans.verdict} (${ans.score})`);
+    // ans.source carries the specific citation (e.g. "Annual report, p.147");
+    // fall back to the coarse routing label if the answer path didn't set one.
+    const citation = ans.available ? (ans.source || source) : "Not retrieved";
+    console.log(`  [${q.questionId}] ${ans.available ? citation : "NOT RETRIEVED"} → ${ans.verdict} (${ans.score})`);
 
     const row: GovernanceRow = {
       sectionId: q.sectionId,
@@ -103,7 +106,7 @@ async function main() {
       score: ans.score,
       maxScore: 0.5,
       remarks: ans.excelAnswer,
-      source: ans.available ? source : "Not retrieved",
+      source: citation,
       confidence: confidenceFor(ans),
     };
     return row;

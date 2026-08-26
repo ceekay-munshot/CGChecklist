@@ -43,3 +43,15 @@ OPENAI_API_KEY=
 
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=
+
+# GitHub PAT with Actions: write on this repo — lets the dashboard trigger the
+# source-first engine (analyze.yml) for any company via POST /api/report/run.
+# Without it, "Run analysis" returns a clear "not configured" message. Set in
+# production via:
+#   npx wrangler secret put GITHUB_DISPATCH_TOKEN
+# GITHUB_DISPATCH_TOKEN=
+
+# The "owner/repo" the dashboard dispatches the analyze.yml workflow against.
+# Non-secret; the default lives in wrangler.jsonc (vars.GITHUB_REPO). Override
+# here only for local testing against a fork.
+# GITHUB_REPO=ceekay-munshot/CGChecklist

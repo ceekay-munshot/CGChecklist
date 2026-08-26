@@ -18,13 +18,18 @@ import { useCompany } from "@/lib/state/CompanyContext";
 
 export default function GovernancePage() {
   const { state } = useCompany();
-  const { munsRaw, munsError } = state;
+  const { munsRaw, munsError, engineRows } = state;
 
+  // The source-first engine emits GovernanceRow[] directly (with source+page
+  // citations), so when a report exists we render it verbatim and skip the lossy
+  // MUNS markdown→rows fuzzy matcher. MUNS remains the fallback.
   const rows = useMemo(() => {
+    if (engineRows && engineRows.length > 0) return engineRows;
     if (!munsRaw) return [];
     return munsHtmlToGovernanceRows(munsRaw);
-  }, [munsRaw]);
+  }, [engineRows, munsRaw]);
 
+  const fromEngine = Boolean(engineRows && engineRows.length > 0);
   const hasData = rows.length > 0;
 
   const totals = calculateGovernanceScore(rows);
@@ -42,7 +47,9 @@ export default function GovernancePage() {
           description="Weighted checklist across board, audit, stakeholders, employee, promoter, exchange compliance, regulatory exposure, and financial-statement quality."
           action={
             <div className="flex items-center gap-3">
-              <Badge tone="good">Live MUNS data</Badge>
+              <Badge tone="good">
+                {fromEngine ? "Source-first engine · cited" : "Live MUNS data"}
+              </Badge>
               <GovernanceExportButton rows={rows} />
             </div>
           }

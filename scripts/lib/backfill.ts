@@ -78,6 +78,7 @@ const NOT_RETRIEVED: EngineAnswer = {
   score: 0,
   verdict: "Unclear",
   available: false,
+  source: "Not retrieved",
 };
 
 function webQuery(company: string, particulars: string): string {
@@ -106,6 +107,7 @@ export async function backfillQuestion(
         particulars,
         company,
         `WEB SEARCH RESULTS for ${company} (${ticker}):\n${web}`,
+        { web: true },
       );
       if (ans.available) return ans;
     }
@@ -116,7 +118,7 @@ export async function backfillQuestion(
     try {
       const answer = await munsResearch(buildQuestionPrompt(questionId, particulars, company), ticker, company);
       if (answer.trim() && !answer.startsWith("[Error]")) {
-        const ans = await judgeEvidence(questionId, particulars, company, `MUNS RESEARCH on ${company} (${ticker}):\n${answer}`);
+        const ans = await judgeEvidence(questionId, particulars, company, `MUNS RESEARCH on ${company} (${ticker}):\n${answer}`, { web: true });
         if (ans.available) return ans;
       }
     } catch {

@@ -5,7 +5,7 @@ import { useCompany } from "@/lib/state/CompanyContext";
 import { useToast } from "@/lib/state/ToastContext";
 
 export function RefreshButton() {
-  const { state, refresh } = useCompany();
+  const { state, runEngineAnalysis } = useCompany();
   const { push } = useToast();
   const isLoading = state.status === "loading";
   const [pending, setPending] = useState<null | "refresh" | "update">(null);
@@ -24,19 +24,18 @@ export function RefreshButton() {
     return true;
   };
 
-  // Cache-respecting refresh: serves the stored run if one exists from the
-  // last month, otherwise runs the model.
+  // Serves the stored engine report if one exists, otherwise dispatches a run.
   const handleRefresh = () => {
     if (!ensureIdentity()) return;
     setPending("refresh");
-    void refresh();
+    void runEngineAnalysis();
   };
 
-  // Forces a fresh run as of today, bypassing the cached run.
+  // Forces a fresh engine run as of today, bypassing the stored report.
   const handleUpdate = () => {
     if (!ensureIdentity()) return;
     setPending("update");
-    void refresh({ force: true });
+    void runEngineAnalysis({ force: true });
   };
 
   return (

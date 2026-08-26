@@ -16,6 +16,12 @@ export interface EngineAnswer {
   score: HalfScore;
   verdict: string;
   available: boolean;
+  /**
+   * Human-readable citation for where the answer came from, e.g.
+   * "Annual report, p.147, p.148", "Screener financials", or
+   * "Web research — https://…". Mirrors cgchecklist2.0's source+page citation.
+   */
+  source: string;
 }
 
 const STOP = new Set([
@@ -54,31 +60,68 @@ const NOTE_HINTS: Record<string, string[]> = {
   "AUDIT-2": ["subsidiary", "component auditor", "other auditors"],
 };
 
+export interface RetrievedAr {
+  /** Page-labeled passages, each prefixed with "[Annual report, p.NN]". */
+  text: string;
+  /** Page numbers actually fed to the model, in document order. */
+  pages: number[];
+}
+
 // Pick the annual-report pages most relevant to a question: pages that contain
 // the item's note heading first (big boost), then keyword overlap. We never feed
-// a 300-page report to the model.
+// a 300-page report to the model. Each kept passage is tagged with its page
+// number so the model can cite it back (mirrors cgchecklist2.0's page markers).
 function relevantArPages(
   arText: string,
   terms: string[],
   noteHints: string[],
   maxPages = 10,
   maxChars = 18_000,
-): string {
-  if (!arText) return "";
-  const pages = arText.split(/===== PAGE \d+ =====/).filter((p) => p.trim());
-  const scored = pages.map((page, i) => {
-    const lower = page.toLowerCase();
+): RetrievedAr {
+  if (!arText) return { text: "", pages: [] };
+
+  // Split into page-tagged chunks, preserving the page number from each marker.
+  const re = /=====\s*PAGE\s+(\d+)\s*=====/g;
+  const matches = [...arText.matchAll(re)];
+  const chunks: { page: number; text: string }[] = [];
+  if (matches.length) {
+    for (let i = 0; i < matches.length; i++) {
+      const m = matches[i];
+      const start = (m.index ?? 0) + m[0].length;
+      const end = i + 1 < matches.length ? (matches[i + 1].index ?? arText.length) : arText.length;
+      const text = arText.slice(start, end).trim();
+      if (text) chunks.push({ page: Number(m[1]), text });
+    }
+  } else {
+    chunks.push({ page: 0, text: arText });
+  }
+
+  const scored = chunks.map((c) => {
+    const lower = c.text.toLowerCase();
     let score = 0;
     for (const t of terms) if (lower.includes(t)) score += 1;
     for (const h of noteHints) if (lower.includes(h)) score += 10;
-    return { i, page, score };
+    return { ...c, score };
   });
   const top = scored
     .filter((p) => p.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, maxPages)
-    .sort((a, b) => a.i - b.i);
-  return top.map((p) => p.page.trim()).join("\n\n").slice(0, maxChars);
+    .sort((a, b) => a.page - b.page);
+
+  let budget = maxChars;
+  const kept: { page: number; text: string }[] = [];
+  for (const p of top) {
+    if (budget <= 0) break;
+    const body = p.text.slice(0, budget);
+    budget -= body.length;
+    kept.push({ page: p.page, text: body });
+  }
+
+  const text = kept
+    .map((p) => (p.page ? `[Annual report, p.${p.page}]\n${p.text}` : p.text))
+    .join("\n\n");
+  return { text, pages: kept.map((p) => p.page).filter((n) => n > 0) };
 }
 
 const SYSTEM =
@@ -100,20 +143,43 @@ export async function answerFromFilings(
   harvest: HarvestResult,
 ): Promise<EngineAnswer> {
   const terms = keywords(`${particulars} ${questionId}`);
-  const arPages = relevantArPages(harvest.annualReportText, terms, NOTE_HINTS[questionId] ?? []);
+  const ar = relevantArPages(harvest.annualReportText, terms, NOTE_HINTS[questionId] ?? []);
 
   const evidence = [
     harvest.screenerText ? `SCREENER FINANCIALS (${harvest.name ?? company}):\n${harvest.screenerText}` : "",
-    arPages ? `ANNUAL REPORT EXCERPTS:\n${arPages}` : "",
+    ar.text ? `ANNUAL REPORT EXCERPTS (each passage is tagged with its page number):\n${ar.text}` : "",
   ]
     .filter(Boolean)
     .join("\n\n---\n\n");
 
   if (!evidence.trim()) {
-    return { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false };
+    return { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false, source: "Not retrieved" };
   }
 
-  return judgeEvidence(questionId, particulars, company, evidence);
+  return judgeEvidence(questionId, particulars, company, evidence, {
+    candidatePages: ar.pages,
+    hasScreener: !!harvest.screenerText,
+  });
+}
+
+// Build the source citation from the model's cited pages, validated against the
+// pages we actually fed it (so a hallucinated page number can't leak through).
+function buildSourceLabel(
+  citedPages: unknown,
+  opts: { candidatePages?: number[]; hasScreener?: boolean; web?: boolean; sourceNote?: string },
+): string {
+  if (opts.web) {
+    const url = opts.sourceNote?.match(/https?:\/\/[^\s)]+/)?.[0];
+    return url ? `Web research — ${url}` : "Web research";
+  }
+  const candidates = new Set(opts.candidatePages ?? []);
+  const valid = (Array.isArray(citedPages) ? citedPages : [])
+    .map((p) => Number(p))
+    .filter((p) => Number.isInteger(p) && candidates.has(p));
+  const uniq = [...new Set(valid)].sort((a, b) => a - b);
+  if (uniq.length) return `Annual report, ${uniq.map((p) => `p.${p}`).join(", ")}`;
+  if (opts.hasScreener) return "Screener financials";
+  return "Annual report";
 }
 
 /**
@@ -126,9 +192,10 @@ export async function judgeEvidence(
   particulars: string,
   company: string,
   evidence: string,
+  opts: { candidatePages?: number[]; hasScreener?: boolean; web?: boolean } = {},
 ): Promise<EngineAnswer> {
   if (!evidence.trim()) {
-    return { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false };
+    return { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false, source: "Not retrieved" };
   }
 
   const prompt =
@@ -138,20 +205,28 @@ export async function judgeEvidence(
     `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, verdict first, exact INR mn figures>",` +
     `"score":<0|0.25|0.5 — 0.5 = good / low-risk / compliant; 0.25 = partial, borderline, or acceptable-but-not-ideal (e.g. a credible top-tier non-Big-4 auditor, an elevated-but-not-alarming metric, a mostly-good finding with one caveat); 0 = clear red flag / genuinely bad>,` +
     `"verdict":"<Yes|No|High|Low|Adequate|Unclear>",` +
-    `"available":<true if the evidence answered it, false if it did not>}`;
+    `"available":<true if the evidence answered it, false if it did not>,` +
+    `"cited_pages":<array of the ANNUAL REPORT page numbers (from the "[Annual report, p.NN]" tags) you actually used, e.g. [147,148]; [] if you answered from Screener financials or web results only>,` +
+    `"source_note":"<the single most specific source you used: for web, the URL; for the annual report, the note/section name>"}`;
 
   const out = await completeJSON<{
     excel_answer?: string;
     score?: number;
     verdict?: string;
     available?: boolean;
+    cited_pages?: unknown;
+    source_note?: string;
   }>({ prompt, system: SYSTEM, maxTokens: 900 });
 
   const available = out.available !== false && !!out.excel_answer;
+  const source = available
+    ? buildSourceLabel(out.cited_pages, { ...opts, sourceNote: out.source_note })
+    : "Not retrieved";
   return {
     excelAnswer: (out.excel_answer ?? "").trim() || "Not retrieved",
     score: available ? snapScore(out.score) : 0,
     verdict: (out.verdict ?? "Unclear").trim() || "Unclear",
     available,
+    source,
   };
 }

@@ -4,6 +4,13 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-04-26",
   "compatibility_flags": ["nodejs_compat"],
+  // Non-secret vars. GITHUB_REPO is the "owner/repo" the dashboard dispatches
+  // the analyze.yml workflow against (see src/app/api/report/run/route.ts).
+  // The matching secret GITHUB_DISPATCH_TOKEN (a PAT with Actions: write) is set
+  // out of band: `npx wrangler secret put GITHUB_DISPATCH_TOKEN`.
+  "vars": {
+    "GITHUB_REPO": "ceekay-munshot/CGChecklist"
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"

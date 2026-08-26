@@ -17,6 +17,12 @@ import type {
 } from "@/lib/types/company";
 import { EMPTY_COMPANY } from "@/lib/mock/sampleCompany";
 import { fetchGovernanceAnalysis } from "@/lib/munsClient";
+import {
+  dispatchEngineRun,
+  fetchEngineReport,
+  pollEngineReport,
+  type EngineReport,
+} from "@/lib/reportClient";
 import { diffMuns } from "@/lib/refresh/diffMuns";
 import { recordRefreshHistory } from "@/lib/refresh/history";
 
@@ -25,6 +31,10 @@ interface CompanyContextValue {
   dashboardUnlocked: boolean;
   setIdentity: (patch: Partial<CompanyIdentity>) => void;
   refresh: (options?: { force?: boolean }) => Promise<void>;
+  /** Trigger the source-first engine (GitHub Actions → KV) and load its report. */
+  runEngineAnalysis: (options?: { force?: boolean }) => Promise<void>;
+  /** Load an existing engine report for the current company without re-running. */
+  loadEngineReport: () => Promise<boolean>;
   cancel: () => void;
   dismissProgress: () => void;
   unlockDashboard: () => void;
@@ -49,7 +59,25 @@ const INITIAL_STATE: CompanyState = {
     cancelled: false,
     live: null,
   },
+  engineRows: null,
+  engineMeta: null,
 };
+
+// Turn a loaded engine report into the state patch that surfaces it. Shared by
+// the "just view it" and "run then view" paths so both render identically.
+function engineReportPatch(report: EngineReport) {
+  return {
+    engineRows: report.rows,
+    engineMeta: {
+      ticker: report.ticker,
+      company: report.company,
+      total: report.total,
+      max: report.max,
+      storedAt: report.storedAt,
+      harvestNote: report.harvestNote,
+    },
+  };
+}
 
 const LIVE_LOG_CAP = 8;
 
@@ -219,6 +247,133 @@ export function CompanyProvider({
     recordRefreshHistory(identity, outcome, refreshedAtIso);
   }, []);
 
+  // Load an existing engine report (no run). Used when a company is selected so
+  // a previously-produced report shows up instantly.
+  const loadEngineReport = useCallback(async () => {
+    const identity = stateRef.current.identity;
+    if (!identity.ticker.trim()) return false;
+    const report = await fetchEngineReport(
+      identity.ticker,
+      identity.country || undefined,
+    );
+    if (!report) return false;
+    setState((prev) => ({ ...prev, ...engineReportPatch(report) }));
+    return true;
+  }, []);
+
+  // Run the source-first engine: dispatch the GitHub Actions workflow, then poll
+  // KV until the report lands. Drives the same loading/success/error UI as the
+  // MUNS refresh, so the SelectionPanel flow is unchanged for the user.
+  const runEngineAnalysis = useCallback(
+    async (options?: { force?: boolean }) => {
+      const identity = stateRef.current.identity;
+      if (!isComplete(identity)) {
+        setState((prev) => ({
+          ...prev,
+          status: "error",
+          message: "Enter company name and ticker first.",
+          munsError: "Missing company details.",
+        }));
+        return;
+      }
+      const country = identity.country || undefined;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const superseded = () => abortRef.current !== controller;
+
+      setState((prev) => ({
+        ...prev,
+        status: "loading",
+        message: null,
+        munsError: null,
+        progress: {
+          startedAt: Date.now(),
+          finishedAt: null,
+          outcome: null,
+          diff: null,
+          error: null,
+          cancelled: false,
+          live: null,
+        },
+      }));
+
+      const rollbackCancel = () => {
+        if (abortRef.current === controller) abortRef.current = null;
+        const hadData = Boolean(stateRef.current.engineRows || stateRef.current.munsRaw.trim());
+        setState((prev) => ({
+          ...prev,
+          status: hadData ? "ready" : "idle",
+          message: "Run cancelled.",
+          progress: {
+            startedAt: null,
+            finishedAt: Date.now(),
+            outcome: null,
+            diff: null,
+            error: null,
+            cancelled: true,
+            live: null,
+          },
+        }));
+      };
+
+      const finishError = (msg: string) => {
+        if (abortRef.current === controller) abortRef.current = null;
+        setState((prev) => ({
+          ...prev,
+          status: "error",
+          message: msg,
+          munsError: msg,
+          progress: { ...prev.progress, finishedAt: Date.now(), outcome: "error", error: msg },
+        }));
+      };
+
+      const finishSuccess = (report: EngineReport) => {
+        if (abortRef.current === controller) abortRef.current = null;
+        const iso = report.storedAt ?? new Date().toISOString();
+        setState((prev) => ({
+          ...prev,
+          status: "ready",
+          lastRefreshedAt: iso,
+          message: "Source-first engine report loaded.",
+          munsError: null,
+          ...engineReportPatch(report),
+          progress: { ...prev.progress, finishedAt: Date.now(), outcome: "success", error: null },
+        }));
+        recordRefreshHistory(identity, "success", new Date().toISOString());
+      };
+
+      // Fast path: an existing report satisfies a non-forced request instantly.
+      let watermark: string | null = null;
+      const existing = await fetchEngineReport(identity.ticker, country, controller.signal);
+      if (superseded()) return;
+      if (controller.signal.aborted) return rollbackCancel();
+      if (existing && !options?.force) return finishSuccess(existing);
+      watermark = existing?.storedAt ?? null;
+
+      // Dispatch the workflow, then wait for a report newer than the watermark.
+      const dispatch = await dispatchEngineRun(identity.ticker, identity.name, controller.signal);
+      if (superseded()) return;
+      if (controller.signal.aborted) return rollbackCancel();
+      if (!dispatch.ok) {
+        return finishError(dispatch.error || "Couldn't start the analysis run.");
+      }
+
+      const report = await pollEngineReport(identity.ticker, country, {
+        signal: controller.signal,
+        after: watermark,
+      });
+      if (superseded()) return;
+      if (controller.signal.aborted) return rollbackCancel();
+      if (report) return finishSuccess(report);
+      finishError(
+        "Run dispatched, but it hasn't finished yet — the engine can take several minutes. Use “Run analysis” again shortly to load the finished report.",
+      );
+    },
+    [],
+  );
+
   const cancel = useCallback(() => {
     abortRef.current?.abort();
   }, []);
@@ -247,6 +402,8 @@ export function CompanyProvider({
       dashboardUnlocked,
       setIdentity,
       refresh,
+      runEngineAnalysis,
+      loadEngineReport,
       cancel,
       dismissProgress,
       unlockDashboard,
@@ -257,6 +414,8 @@ export function CompanyProvider({
       dashboardUnlocked,
       setIdentity,
       refresh,
+      runEngineAnalysis,
+      loadEngineReport,
       cancel,
       dismissProgress,
       unlockDashboard,

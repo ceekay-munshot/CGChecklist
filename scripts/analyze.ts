@@ -12,6 +12,7 @@ import { preflight, activeModelId, activeRegion } from "@/lib/engine/llm";
 import { harvestCompany } from "./lib/harvest";
 import { answerFromFilings, type EngineAnswer } from "./lib/answer";
 import { backfillQuestion } from "./lib/backfill";
+import { buildCompanyFacts } from "./lib/facts";
 
 const CONCURRENCY = Number(process.env.ANALYZE_CONCURRENCY) || 4;
 const OUT_DIR = "report-output";
@@ -61,6 +62,16 @@ async function main() {
   console.log(`  company: ${company} | loggedIn: ${harvest.loggedIn} | screener: ${harvest.screenerText.length} chars | AR: ${harvest.annualReportText.length} chars`);
   if (harvest.note) console.log(`  note: ${harvest.note}`);
 
+  // Extract one verified fact sheet (board, 3-yr P&L, promoter holding — all in
+  // INR mn) and inject it into every question so figures stay consistent and
+  // never get re-scaled per answer.
+  console.log("Building company fact sheet…");
+  const facts = await buildCompanyFacts(company, harvest).catch((e) => {
+    console.warn(`  fact sheet failed: ${(e as Error).message}`);
+    return "";
+  });
+  console.log(facts ? `  fact sheet: ${facts.split("\n").length} lines` : "  fact sheet: (none)");
+
   const questions = GOVERNANCE_CHECKLIST.flatMap((s) =>
     s.items.map((item) => ({ sectionId: s.sectionId, questionId: item.questionId, particulars: item.particulars })),
   );
@@ -73,14 +84,14 @@ async function main() {
     let ans: EngineAnswer;
     let source = "Annual report / Screener";
     try {
-      ans = await answerFromFilings(q.questionId, q.particulars, company, harvest);
+      ans = await answerFromFilings(q.questionId, q.particulars, company, harvest, facts);
     } catch (e) {
       ans = { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false, source: "Not retrieved" };
       console.warn(`  [${q.questionId}] filings error: ${(e as Error).message}`);
     }
     if (!ans.available) {
       try {
-        const bf = await backfillQuestion(q.questionId, q.particulars, company, ticker);
+        const bf = await backfillQuestion(q.questionId, q.particulars, company, ticker, facts);
         if (bf.available) {
           ans = bf;
           source = "Web research";

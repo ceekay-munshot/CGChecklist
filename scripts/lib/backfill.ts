@@ -97,7 +97,12 @@ export async function backfillQuestion(
   particulars: string,
   company: string,
   ticker: string,
+  facts = "",
 ): Promise<EngineAnswer> {
+  // Prepend the verified fact sheet so a web-sourced answer stays numerically
+  // consistent with the filing-sourced ones (same INR-mn figures, same board).
+  const withFacts = (block: string) => (facts ? `${facts}\n\n---\n\n${block}` : block);
+
   // 1) Firecrawl web search.
   if (firecrawlConfigured()) {
     const web = await firecrawlSearch(webQuery(company, particulars));
@@ -106,7 +111,7 @@ export async function backfillQuestion(
         questionId,
         particulars,
         company,
-        `WEB SEARCH RESULTS for ${company} (${ticker}):\n${web}`,
+        withFacts(`WEB SEARCH RESULTS for ${company} (${ticker}):\n${web}`),
         { web: true },
       );
       if (ans.available) return ans;
@@ -118,7 +123,7 @@ export async function backfillQuestion(
     try {
       const answer = await munsResearch(buildQuestionPrompt(questionId, particulars, company), ticker, company);
       if (answer.trim() && !answer.startsWith("[Error]")) {
-        const ans = await judgeEvidence(questionId, particulars, company, `MUNS RESEARCH on ${company} (${ticker}):\n${answer}`, { web: true });
+        const ans = await judgeEvidence(questionId, particulars, company, withFacts(`MUNS RESEARCH on ${company} (${ticker}):\n${answer}`), { web: true });
         if (ans.available) return ans;
       }
     } catch {

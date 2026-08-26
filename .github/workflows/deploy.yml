@@ -1,9 +1,14 @@
 name: Deploy to Cloudflare Workers
 
+# The live site deploys through Cloudflare's own Git build (connected to this
+# repo), not this workflow. This Action is kept only as a manual fallback and no
+# longer runs on push — on push it just failed on a missing CLOUDFLARE_API_TOKEN
+# and posted a misleading red "deploy failed" on every commit. Run it by hand
+# (Actions → Deploy to Cloudflare Workers → Run workflow) only if you ever want
+# GitHub to deploy, in which case set the CLOUDFLARE_API_TOKEN / _ACCOUNT_ID
+# secrets first.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   deploy:

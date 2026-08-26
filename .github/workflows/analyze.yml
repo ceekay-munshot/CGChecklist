@@ -52,34 +52,39 @@ jobs:
           name: cg-report-${{ inputs.ticker }}
           path: report-output/
           if-no-files-found: warn
-      # Publish the results straight into the dashboard's KV so the run is
-      # visible in the app. Writes report:<COUNTRY>:<TICKER> (India-only engine),
-      # reusing the Cloudflare deploy credentials — no new secrets required.
-      - name: Publish report to dashboard KV
+      # Publish the results into the dashboard so the run is visible. The Worker
+      # writes its own KV through its binding, so we just POST the results.json
+      # to /api/report/ingest with a shared token — no Cloudflare API token
+      # needed (this repo's Actions don't hold one; the site deploys via
+      # Cloudflare's own build). Set REPORT_INGEST_TOKEN as a repo secret AND as
+      # the same-named worker secret. REPORT_INGEST_URL overrides the site URL.
+      - name: Publish report to dashboard
         if: success()
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          KV_NAMESPACE_ID: "9044ac1b534e49ebb1d36ccfd40895bd"
+          REPORT_INGEST_TOKEN: ${{ secrets.REPORT_INGEST_TOKEN }}
+          REPORT_INGEST_URL: ${{ vars.REPORT_INGEST_URL }}
         run: |
           set -euo pipefail
           TICKER=$(echo "${{ inputs.ticker }}" | tr '[:lower:]' '[:upper:]')
           SRC="report-output/${TICKER}-results.json"
           if [ ! -f "$SRC" ]; then
-            echo "No results file at $SRC — skipping KV publish."
+            echo "No results file at $SRC — skipping publish."
             exit 0
           fi
-          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
-            echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping KV publish."
+          if [ -z "${REPORT_INGEST_TOKEN:-}" ]; then
+            echo "REPORT_INGEST_TOKEN not set — skipping publish (the dashboard run button / results won't update until it's set)."
             exit 0
           fi
-          # Stamp the value with storedAt + country so the dashboard read route
-          # (GET /api/report/get) can surface it exactly as it stores MUNS runs.
-          jq '. + {storedAt: (now * 1000 | floor), country: "INDIA"}' "$SRC" > report-output/kv-value.json
-          KEY="report:INDIA:${TICKER}"
-          echo "Publishing $KEY to KV namespace ${KV_NAMESPACE_ID}…"
-          npx --yes wrangler@4 kv key put "$KEY" \
-            --path report-output/kv-value.json \
-            --namespace-id "$KV_NAMESPACE_ID" \
-            --remote
-          echo "Published $KEY."
+          BASE="${REPORT_INGEST_URL:-https://cgchecklist.amazon-review-radar-489675.workers.dev}"
+          echo "Publishing ${TICKER} to ${BASE}/api/report/ingest…"
+          CODE=$(curl -sS -o /tmp/ingest-resp.json -w "%{http_code}" \
+            -X POST "${BASE}/api/report/ingest" \
+            -H "Authorization: Bearer ${REPORT_INGEST_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary "@${SRC}")
+          echo "HTTP ${CODE}: $(cat /tmp/ingest-resp.json)"
+          if [ "$CODE" != "200" ]; then
+            echo "Publish failed (HTTP ${CODE})."
+            exit 1
+          fi
+          echo "Published ${TICKER} to the dashboard."

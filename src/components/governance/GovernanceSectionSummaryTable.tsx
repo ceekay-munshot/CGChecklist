@@ -35,7 +35,6 @@ export function GovernanceSectionSummaryTable({
             <th className="px-3 py-2.5 text-right">Score %</th>
             <th className="px-3 py-2.5">Rating</th>
             <th className="px-3 py-2.5 text-right">Red Flags</th>
-            <th className="px-3 py-2.5 text-right">Low Confidence</th>
           </tr>
         </thead>
         <tbody>
@@ -93,16 +92,6 @@ export function GovernanceSectionSummaryTable({
                 data-numeric
               >
                 {s.redFlags}
-              </td>
-              <td
-                className={`px-3 py-2.5 text-right ${
-                  s.lowConfidence > 0
-                    ? "text-[var(--color-risk-700)] font-semibold"
-                    : "text-[var(--color-fg-muted)]"
-                }`}
-                data-numeric
-              >
-                {s.lowConfidence}
               </td>
             </tr>
           ))}

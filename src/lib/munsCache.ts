@@ -136,6 +136,9 @@ export interface StoredReport {
   max: number;
   rows: GovernanceRow[];
   harvestNote?: string;
+  /** Identity of the source this was built from (the artifact's created_at), so
+   *  a read can tell when a newer engine run exists and refresh the cache. */
+  sourceStamp?: string;
   storedAt: number; // epoch milliseconds
 }
 
@@ -168,6 +171,7 @@ export const getReport = async (
       max: typeof parsed.max === "number" ? parsed.max : 0,
       rows: parsed.rows as GovernanceRow[],
       harvestNote: parsed.harvestNote,
+      sourceStamp: parsed.sourceStamp,
       storedAt: typeof parsed.storedAt === "number" ? parsed.storedAt : Date.now(),
     };
   } catch {

@@ -822,13 +822,13 @@ function buildMethodologySheet(wb: Workbook) {
   const sections: Array<{ heading: string; entries: Array<[string, string]> }> =
     [
       {
-        heading: "Score scale",
+        heading: "Score scale (out of 0.5)",
         entries: [
           [
-            "2",
+            "0.5",
             "Strong evidence — disclosure or control fully meets the criterion.",
           ],
-          ["1", "Partial evidence — meets some but not all aspects."],
+          ["0.25", "Partial evidence — meets some but not all aspects."],
           [
             "0",
             "Absent / red flag — disclosure missing or fails the criterion.",

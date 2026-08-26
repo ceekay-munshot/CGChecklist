@@ -83,14 +83,14 @@ async function main() {
         const bf = await backfillQuestion(q.questionId, q.particulars, company, ticker);
         if (bf.available) {
           ans = bf;
-          source = "MUNS research";
+          source = "Web research";
         }
       } catch (e) {
         console.warn(`  [${q.questionId}] backfill error: ${(e as Error).message}`);
       }
     }
 
-    if (ans.available && source.startsWith("MUNS")) backfilled++;
+    if (ans.available && source === "Web research") backfilled++;
     else if (ans.available) filled++;
     else missing++;
     console.log(`  [${q.questionId}] ${ans.available ? source : "NOT RETRIEVED"} → ${ans.verdict} (${ans.score})`);
@@ -111,7 +111,7 @@ async function main() {
 
   const total = rows.reduce((s, r) => s + r.score, 0);
   const max = rows.reduce((s, r) => s + r.maxScore, 0);
-  console.log(`\nCoverage: ${filled} from filings, ${backfilled} from MUNS, ${missing} not retrieved.`);
+  console.log(`\nCoverage: ${filled} from filings, ${backfilled} from web, ${missing} not retrieved.`);
   console.log(`Score: ${total.toFixed(2)} / ${max.toFixed(1)} (${((total / max) * 100).toFixed(1)}%)`);
 
   mkdirSync(OUT_DIR, { recursive: true });

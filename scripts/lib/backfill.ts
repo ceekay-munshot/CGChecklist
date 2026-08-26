@@ -6,6 +6,7 @@
 import { MUNS_CHAT_API_URL, MUNS_CHAT_CONTEXT_EMAIL } from "@/lib/munsConfig";
 import { buildQuestionPrompt } from "@/lib/engine/questionPrompts";
 import { judgeEvidence, type EngineAnswer } from "./answer";
+import { firecrawlSearch, firecrawlConfigured } from "./firecrawl";
 
 const MUNS_LOOKBACK_YEARS = 15;
 
@@ -62,9 +63,9 @@ async function munsResearch(task: string, ticker: string, company: string): Prom
       },
       autoAddUpcoming: false,
     }),
-    // MUNS does live web research + AR reading per question, which can run
-    // well past two minutes; the first Capillary run timed out at 120s.
-    signal: AbortSignal.timeout(240_000),
+    // MUNS is now only a last-resort fallback behind Firecrawl (it timed out on
+    // every call from GitHub Actions), so cap it tighter to keep runs fast.
+    signal: AbortSignal.timeout(90_000),
   });
 
   const body = await res.text();
@@ -72,18 +73,56 @@ async function munsResearch(task: string, ticker: string, company: string): Prom
   return extractAns(body);
 }
 
+const NOT_RETRIEVED: EngineAnswer = {
+  excelAnswer: "Not retrieved",
+  score: 0,
+  verdict: "Unclear",
+  available: false,
+};
+
+function webQuery(company: string, particulars: string): string {
+  const q = particulars.replace(/\?/g, "").replace(/\s+/g, " ").trim();
+  return `${company} ${q} India`.slice(0, 200);
+}
+
+/**
+ * Answer a filing-gap question from the web. Firecrawl search is primary (it
+ * responds reliably from CI); MUNS chat is a last-resort fallback (it timed out
+ * on every call from GitHub Actions). Either answer is judged by the same Claude
+ * grader and anchored to the target company.
+ */
 export async function backfillQuestion(
   questionId: string,
   particulars: string,
   company: string,
   ticker: string,
 ): Promise<EngineAnswer> {
-  const task = buildQuestionPrompt(questionId, particulars, company);
-  const answer = await munsResearch(task, ticker, company);
-  if (!answer.trim() || answer.startsWith("[Error]")) {
-    return { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false };
+  // 1) Firecrawl web search.
+  if (firecrawlConfigured()) {
+    const web = await firecrawlSearch(webQuery(company, particulars));
+    if (web.trim()) {
+      const ans = await judgeEvidence(
+        questionId,
+        particulars,
+        company,
+        `WEB SEARCH RESULTS for ${company} (${ticker}):\n${web}`,
+      );
+      if (ans.available) return ans;
+    }
   }
-  // Anchor the identity: never accept an answer that drifted to another company.
-  const evidence = `MUNS RESEARCH on ${company} (${ticker}):\n${answer}`;
-  return judgeEvidence(questionId, particulars, company, evidence);
+
+  // 2) MUNS chat — last resort.
+  if (process.env.MUNS_TOKEN?.trim()) {
+    try {
+      const answer = await munsResearch(buildQuestionPrompt(questionId, particulars, company), ticker, company);
+      if (answer.trim() && !answer.startsWith("[Error]")) {
+        const ans = await judgeEvidence(questionId, particulars, company, `MUNS RESEARCH on ${company} (${ticker}):\n${answer}`);
+        if (ans.available) return ans;
+      }
+    } catch {
+      // fall through to not-retrieved
+    }
+  }
+
+  return NOT_RETRIEVED;
 }

@@ -36,14 +36,14 @@ const keywords = (text: string): string[] =>
 // receivables ageing, auditor remuneration, …), so it gets a big retrieval
 // boost — plain keyword overlap alone was missing these notes.
 const NOTE_HINTS: Record<string, string[]> = {
-  "FINANCIALS-1": ["contingent liabilit", "commitments", "claims not acknowledged", "notes to"],
+  "FINANCIALS-1": ["contingent liabilit", "commitments", "claims not acknowledged", "not acknowledged as debt", "notes to"],
   "FINANCIALS-3": ["trade receivables", "receivables outstanding", "ageing", "unbilled", "credit period"],
   "FINANCIALS-8": ["cash flow from operating", "cash generated from operations", "cash flow statement"],
   "FINANCIALS-9": ["provision", "expected credit loss", "allowance for", "impairment", "doubtful"],
-  "FINANCIALS-15": ["contingent liabilit", "net worth", "commitments", "guarantee"],
-  "OTHER_REGULATORY-1": ["contingent liabilit", "commitments", "claims not acknowledged", "disputed", "guarantee"],
+  "FINANCIALS-15": ["contingent liabilit", "not acknowledged as debt", "net worth", "commitments", "guarantee", "claims against"],
+  "OTHER_REGULATORY-1": ["contingent liabilit", "not acknowledged as debt", "commitments", "claims against", "disputed", "guarantee"],
   "AUDIT-3": ["basis for opinion", "qualified opinion", "emphasis of matter", "auditor's report", "adverse"],
-  "AUDIT-4": ["payment to auditor", "auditor's remuneration", "remuneration to auditor", "audit fee"],
+  "AUDIT-4": ["audit fee", "payments to auditor", "auditors' remuneration", "auditor's remuneration", "remuneration to auditor", "tax audit"],
   "AUDIT-5": ["auditor", "appointed", "reappoint", "resignation", "rotation"],
   "FINANCIALS-7": ["related party", "related-party", "aoc-2"],
   "INDUSTRY_PROMOTER-3": ["related party", "subsidiaries", "group entities"],

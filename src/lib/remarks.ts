@@ -17,18 +17,22 @@ export function splitRemarkBullets(remarks: string): string[] {
 
 // The engine hands us an opaque source string, e.g. "Annual report, p.147, p.148",
 // "Screener financials", "Web research — https://…", or "Not retrieved". Split the
-// document label from the page references so the UI can render a clean citation
-// ("Annual report · pp.147, 148") instead of a comma-joined run-on. Page tokens
-// must carry a dot ("p.147" / "pp.147") so URLs and stray letters aren't mistaken
-// for pages.
-export function formatSource(raw: string): { doc: string; pages: string[] } {
+// document label from the page references and any URL so the UI can render a clean,
+// clickable citation ("Annual report · pp.147, 148") instead of a comma-joined
+// run-on. Page tokens must carry a dot ("p.147" / "pp.147") so URLs and stray
+// letters aren't mistaken for pages.
+export function formatSource(raw: string): { doc: string; pages: string[]; url?: string } {
+  const input = raw ?? "";
+  const urlMatch = input.match(/https?:\/\/[^\s)]+/);
+  const url = urlMatch ? urlMatch[0] : undefined;
+
   const pages: string[] = [];
-  const doc = (raw ?? "")
+  const doc = (url ? input.replace(url, "") : input)
     .replace(/\bpp?\.\s*(\d+)/gi, (_m, n: string) => {
       pages.push(n);
       return "";
     })
-    .replace(/[\s,;·|]+/g, " ")
+    .replace(/[\s,;·|—-]+/g, " ")
     .trim();
-  return { doc, pages: Array.from(new Set(pages)) };
+  return { doc: doc || (url ? "Web research" : ""), pages: Array.from(new Set(pages)), url };
 }

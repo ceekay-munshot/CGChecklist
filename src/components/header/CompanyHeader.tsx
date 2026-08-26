@@ -10,13 +10,29 @@ import type {
 } from "@/lib/types/company";
 
 export function CompanyHeader() {
-  const { state, setIdentity } = useCompany();
+  const { state, setIdentity, lockDashboard } = useCompany();
   const { identity, lastRefreshedAt } = state;
 
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
       <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
+          <button
+            type="button"
+            onClick={lockDashboard}
+            className="focus-ring group mb-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-fg-muted)] transition hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5" fill="none">
+              <path
+                d="M10 3L5 8l5 5"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Back to search
+          </button>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
             Buy-side analytics
           </p>

@@ -37,9 +37,31 @@ export type GovernanceSectionId =
   | "OTHER_REGULATORY"
   | "FINANCIALS";
 
+/**
+ * Where the PRIMARY answer for an item should come from. Drives engine routing
+ * (ported from cgchecklist2.0's evidence strategy): `financials` items are
+ * computed deterministically from the financial statements / Screener data,
+ * `annual_report` items are extracted from harvested filings/concalls with a
+ * citation, `exchange` items come from shareholding/exchange disclosures, and
+ * `web` items are the ones MUNS backfill / web research answers.
+ */
+export type GovernanceSourceHint =
+  | "financials"
+  | "annual_report"
+  | "exchange"
+  | "web";
+
 export interface GovernanceChecklistItem {
   questionId: string;
   particulars: string;
+  /** Expected answer shape, e.g. "% independent", "Yes/No", "D/E ratio". */
+  outputFormat: string;
+  /** Natural-language condition that earns full marks (green band). */
+  greenFlag: string;
+  /** Natural-language condition that is a governance concern (red band). */
+  redFlag: string;
+  /** Primary source class the engine should answer this item from. */
+  sourceHint: GovernanceSourceHint;
 }
 
 export interface GovernanceChecklistSection {

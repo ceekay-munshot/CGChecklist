@@ -1,27 +1,39 @@
 import { NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getMunsKv, getReport, reportCacheKey } from "@/lib/munsCache";
+import { getMunsKv, getReport, putReport, reportCacheKey } from "@/lib/munsCache";
 import { resolveCountry } from "@/lib/munsConfig";
+import { listLatestArtifact, downloadArtifactReport } from "@/lib/githubArtifacts";
 
-// Reads live KV, so never statically optimize.
+// Reads live KV + GitHub, so never statically optimize.
 export const dynamic = "force-dynamic";
 
+/** Read a string binding/env, Cloudflare first then process.env. */
+function readEnv(name: string): string | undefined {
+  try {
+    const bindings = getCloudflareContext().env as Record<string, unknown>;
+    const v = bindings[name];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  } catch {
+    // no Cloudflare context
+  }
+  const p = process.env[name];
+  return p && p.trim() ? p.trim() : undefined;
+}
+
 /**
- * Return the source-first engine report (GovernanceRow[]) for a ticker, if the
- * GitHub Actions engine has ingested one into KV under `report:<COUNTRY>:<TICKER>`.
- * A miss returns `{ ok: true, found: false }` so the client can fall back to the
- * legacy MUNS render path.
+ * Return the source-first engine report for a ticker. The result is read from KV
+ * cache, but the cache is populated straight from the analyze.yml GitHub Actions
+ * artifact using the same PAT the "Run" button needs — so no extra secret is
+ * required, and a newer engine run automatically refreshes what's shown.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const ticker = url.searchParams.get("ticker")?.trim();
   if (!ticker) {
-    return NextResponse.json(
-      { ok: false, error: "ticker is required." },
-      { status: 400 },
-    );
+    return NextResponse.json({ ok: false, error: "ticker is required." }, { status: 400 });
   }
   const country = resolveCountry(url.searchParams.get("country"));
+  const key = reportCacheKey({ ticker, country });
 
   let kv = null;
   try {
@@ -31,21 +43,62 @@ export async function GET(request: Request) {
     kv = getMunsKv(null);
   }
 
-  const report = await getReport(reportCacheKey({ ticker, country }), kv);
-  if (!report) {
-    return NextResponse.json({ ok: true, found: false });
+  const cached = await getReport(key, kv);
+
+  // Look for the newest engine artifact and pull it if we haven't cached it yet
+  // (or a newer run has replaced it). This needs the one GITHUB_DISPATCH_TOKEN
+  // PAT — the same one the Run button uses.
+  const token = readEnv("GITHUB_DISPATCH_TOKEN");
+  const repo = readEnv("GITHUB_REPO") ?? "ceekay-munshot/CGChecklist";
+
+  if (token) {
+    const latest = await listLatestArtifact(ticker, token, repo);
+    if (latest && (!cached || cached.sourceStamp !== latest.createdAt)) {
+      const pulled = await downloadArtifactReport(latest.id, token, repo);
+      if (pulled) {
+        await putReport(
+          key,
+          {
+            ticker: pulled.ticker || ticker.toUpperCase(),
+            company: pulled.company,
+            total: pulled.total,
+            max: pulled.max,
+            rows: pulled.rows,
+            harvestNote: pulled.harvestNote ?? undefined,
+            sourceStamp: latest.createdAt,
+          },
+          kv,
+        );
+        return NextResponse.json({
+          ok: true,
+          found: true,
+          ticker: pulled.ticker || ticker.toUpperCase(),
+          company: pulled.company,
+          country,
+          total: pulled.total,
+          max: pulled.max,
+          rows: pulled.rows,
+          harvestNote: pulled.harvestNote,
+          storedAt: new Date().toISOString(),
+        });
+      }
+    }
   }
 
-  return NextResponse.json({
-    ok: true,
-    found: true,
-    ticker: report.ticker,
-    company: report.company,
-    country,
-    total: report.total,
-    max: report.max,
-    rows: report.rows,
-    harvestNote: report.harvestNote ?? null,
-    storedAt: new Date(report.storedAt).toISOString(),
-  });
+  if (cached) {
+    return NextResponse.json({
+      ok: true,
+      found: true,
+      ticker: cached.ticker,
+      company: cached.company,
+      country,
+      total: cached.total,
+      max: cached.max,
+      rows: cached.rows,
+      harvestNote: cached.harvestNote ?? null,
+      storedAt: new Date(cached.storedAt).toISOString(),
+    });
+  }
+
+  return NextResponse.json({ ok: true, found: false });
 }

@@ -27,12 +27,12 @@ function readEnv(name: string): string | undefined {
 /**
  * Trigger the source-first analysis engine for a company by dispatching the
  * `analyze.yml` GitHub Actions workflow. The engine harvests Screener + the
- * annual report, answers all 51 questions with citations, and ingests the
- * result into KV (`report:<COUNTRY>:<TICKER>`), which the dashboard then reads
- * via /api/report/get.
+ * annual report, answers all 51 questions with citations, and uploads the
+ * result as an Actions artifact, which the dashboard reads back via
+ * /api/report/get (using the same token below).
  *
  * Config (worker secrets / vars):
- *   GITHUB_DISPATCH_TOKEN — a PAT with Actions: write on the repo (secret)
+ *   GITHUB_DISPATCH_TOKEN — a PAT with Actions: read & write on the repo (secret)
  *   GITHUB_REPO           — "owner/repo" (var; defaults to the known repo)
  */
 export async function POST(request: Request) {

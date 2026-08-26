@@ -45,6 +45,9 @@ jobs:
         run: npx -y playwright@1.62.1 install --with-deps chromium
       - name: Analyze
         run: npx tsx --tsconfig tsconfig.json scripts/analyze.ts "${{ inputs.ticker }}" "${{ inputs.company }}"
+      # The dashboard reads this artifact directly (Worker → GitHub API, using the
+      # same GITHUB_DISPATCH_TOKEN the Run button uses), so there's nothing to
+      # publish here — just upload it under a stable, per-ticker name.
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,39 +55,3 @@ jobs:
           name: cg-report-${{ inputs.ticker }}
           path: report-output/
           if-no-files-found: warn
-      # Publish the results into the dashboard so the run is visible. The Worker
-      # writes its own KV through its binding, so we just POST the results.json
-      # to /api/report/ingest with a shared token — no Cloudflare API token
-      # needed (this repo's Actions don't hold one; the site deploys via
-      # Cloudflare's own build). Set REPORT_INGEST_TOKEN as a repo secret AND as
-      # the same-named worker secret. REPORT_INGEST_URL overrides the site URL.
-      - name: Publish report to dashboard
-        if: success()
-        env:
-          REPORT_INGEST_TOKEN: ${{ secrets.REPORT_INGEST_TOKEN }}
-          REPORT_INGEST_URL: ${{ vars.REPORT_INGEST_URL }}
-        run: |
-          set -euo pipefail
-          TICKER=$(echo "${{ inputs.ticker }}" | tr '[:lower:]' '[:upper:]')
-          SRC="report-output/${TICKER}-results.json"
-          if [ ! -f "$SRC" ]; then
-            echo "No results file at $SRC — skipping publish."
-            exit 0
-          fi
-          if [ -z "${REPORT_INGEST_TOKEN:-}" ]; then
-            echo "REPORT_INGEST_TOKEN not set — skipping publish (the dashboard run button / results won't update until it's set)."
-            exit 0
-          fi
-          BASE="${REPORT_INGEST_URL:-https://cgchecklist.amazon-review-radar-489675.workers.dev}"
-          echo "Publishing ${TICKER} to ${BASE}/api/report/ingest…"
-          CODE=$(curl -sS -o /tmp/ingest-resp.json -w "%{http_code}" \
-            -X POST "${BASE}/api/report/ingest" \
-            -H "Authorization: Bearer ${REPORT_INGEST_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data-binary "@${SRC}")
-          echo "HTTP ${CODE}: $(cat /tmp/ingest-resp.json)"
-          if [ "$CODE" != "200" ]; then
-            echo "Publish failed (HTTP ${CODE})."
-            exit 1
-          fi
-          echo "Published ${TICKER} to the dashboard."

@@ -44,22 +44,20 @@ OPENAI_API_KEY=
 # Firecrawl API key — required once the server-side data layer is wired up.
 # FIRECRAWL_API_KEY=
 
-# GitHub PAT with Actions: write on this repo — lets the dashboard trigger the
-# source-first engine (analyze.yml) for any company via POST /api/report/run.
-# Without it, "Run analysis" returns a clear "not configured" message. Set in
-# production via:
+# THE ONE KEY. A GitHub fine-grained PAT with "Actions: Read and write" on this
+# repo. This single token powers everything source-first:
+#   - the dashboard "Run" button dispatches analyze.yml (Actions: write), and
+#   - the dashboard reads each run's results straight from its Actions artifact
+#     (Actions: read) — so results show up with no second secret and no
+#     Cloudflare API token.
+# Set it once, in the Cloudflare dashboard (Workers & Pages → cgchecklist →
+# Settings → Variables and Secrets, type Secret) or via:
 #   npx wrangler secret put GITHUB_DISPATCH_TOKEN
+# Until it's set, "Run" returns a clear "not configured" message and engine
+# results won't appear. It is one-time server config — never a per-user password.
 # GITHUB_DISPATCH_TOKEN=
 
-# The "owner/repo" the dashboard dispatches the analyze.yml workflow against.
-# Non-secret; the default lives in wrangler.jsonc (vars.GITHUB_REPO). Override
-# here only for local testing against a fork.
+# The "owner/repo" the dashboard dispatches/reads the analyze.yml workflow
+# against. Non-secret; the default lives in wrangler.jsonc (vars.GITHUB_REPO).
+# Override here only for local testing against a fork.
 # GITHUB_REPO=ceekay-munshot/CGChecklist
-
-# Shared password that lets the analyze.yml GitHub Actions run publish its
-# results into the dashboard (POST /api/report/ingest → KV). Set the SAME value
-# in two places: (1) here / as a worker secret
-#   npx wrangler secret put REPORT_INGEST_TOKEN
-# and (2) as a GitHub Actions repo secret named REPORT_INGEST_TOKEN. Any strong
-# random string works. Until it's set, engine runs won't appear on the dashboard.
-# REPORT_INGEST_TOKEN=

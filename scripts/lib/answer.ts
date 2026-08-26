@@ -71,7 +71,7 @@ export interface RetrievedAr {
 // the item's note heading first (big boost), then keyword overlap. We never feed
 // a 300-page report to the model. Each kept passage is tagged with its page
 // number so the model can cite it back (mirrors cgchecklist2.0's page markers).
-function relevantArPages(
+export function relevantArPages(
   arText: string,
   terms: string[],
   noteHints: string[],
@@ -141,11 +141,13 @@ export async function answerFromFilings(
   particulars: string,
   company: string,
   harvest: HarvestResult,
+  facts = "",
 ): Promise<EngineAnswer> {
   const terms = keywords(`${particulars} ${questionId}`);
   const ar = relevantArPages(harvest.annualReportText, terms, NOTE_HINTS[questionId] ?? []);
 
   const evidence = [
+    facts,
     harvest.screenerText ? `SCREENER FINANCIALS (${harvest.name ?? company}):\n${harvest.screenerText}` : "",
     ar.text ? `ANNUAL REPORT EXCERPTS (each passage is tagged with its page number):\n${ar.text}` : "",
   ]
@@ -201,9 +203,14 @@ export async function judgeEvidence(
   const prompt =
     `${buildQuestionPrompt(questionId, particulars, company)}\n\n` +
     `EVIDENCE (use ONLY this):\n${evidence}\n\n` +
+    `RULES:\n` +
+    `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the ANNUAL REPORT EXCERPTS for the specifics of THIS question.\n` +
+    `- Every monetary figure in the evidence is already in INR mn. Report money in INR mn to one decimal and NEVER rescale a figure (no ×10, no ÷10): if the fact sheet shows a net loss of -74.0, write -74.0, never -740.\n` +
+    `- excel_answer MUST begin with exactly ONE verdict word (Yes / No / High / Low / Adequate / Unclear) followed by a period, then the explanation — never two verdict words, never a verdict that contradicts the rest of the sentence.\n` +
+    `- Score the SUBSTANCE, not disclosure completeness: a favourable / low-risk finding (no material contingent liabilities, no litigation, a clean audit opinion, a non-executive chair) scores 0.5 — or 0.25 if genuinely borderline — even when some supporting detail is undisclosed. Use 0 only for a real red flag, or when the item cannot be assessed either way (then also set available=false).\n\n` +
     `Return STRICT JSON only, no prose outside it, shaped exactly:\n` +
-    `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, verdict first, exact INR mn figures>",` +
-    `"score":<0|0.25|0.5 — 0.5 = good / low-risk / compliant; 0.25 = partial, borderline, or acceptable-but-not-ideal (e.g. a credible top-tier non-Big-4 auditor, an elevated-but-not-alarming metric, a mostly-good finding with one caveat); 0 = clear red flag / genuinely bad>,` +
+    `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, single verdict first, exact INR mn figures>",` +
+    `"score":<0|0.25|0.5 per the scoring rule above>,` +
     `"verdict":"<Yes|No|High|Low|Adequate|Unclear>",` +
     `"available":<true if the evidence answered it, false if it did not>,` +
     `"cited_pages":<array of the ANNUAL REPORT page numbers (from the "[Annual report, p.NN]" tags) you actually used, e.g. [147,148]; [] if you answered from Screener financials or web results only>,` +

@@ -13,6 +13,7 @@ import { harvestCompany } from "./lib/harvest";
 import { answerFromFilings, type EngineAnswer } from "./lib/answer";
 import { backfillQuestion } from "./lib/backfill";
 import { buildCompanyFacts } from "./lib/facts";
+import { reviewRun } from "./lib/review";
 
 const CONCURRENCY = Number(process.env.ANALYZE_CONCURRENCY) || 4;
 const OUT_DIR = "report-output";
@@ -122,6 +123,24 @@ async function main() {
     };
     return row;
   });
+
+  // Final self-audit (ported from cgchecklist2.0): read the whole report back
+  // and safely correct cross-question contradictions, mis-scaled figures, and
+  // false-alarm zeros that the isolated per-question pass can't see. Softening
+  // only — it can raise a false-alarm score or fix a wrong figure, never lower a
+  // score, so a correct answer is never regressed.
+  console.log("Reviewing report for consistency…");
+  try {
+    const reviewed = await reviewRun(rows, facts, company);
+    for (const c of reviewed.corrections) {
+      console.log(
+        `  [QA ${c.questionId}] ${c.scoreFrom}→${c.scoreTo}${c.remarkChanged ? " +remark" : ""}: ${c.issue}`,
+      );
+    }
+    console.log(`Review: ${reviewed.corrections.length} correction(s).`);
+  } catch (e) {
+    console.warn(`  review error: ${(e as Error).message}`);
+  }
 
   const total = rows.reduce((s, r) => s + r.score, 0);
   const max = rows.reduce((s, r) => s + r.maxScore, 0);

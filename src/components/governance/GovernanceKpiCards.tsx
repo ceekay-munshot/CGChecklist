@@ -10,7 +10,7 @@ const RATING_TONE: Record<GovernanceRating, "good" | "warn" | "risk" | "info"> =
 
 export function GovernanceKpiCards({ totals }: { totals: GovernanceTotals }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Kpi
         label="Overall Governance Score"
         value={`${totals.overallScorePercent.toFixed(1)}%`}
@@ -23,7 +23,6 @@ export function GovernanceKpiCards({ totals }: { totals: GovernanceTotals }) {
         {totals.rating}
       </KpiBadge>
       <Kpi label="Red Flag Rows" value={String(totals.redFlagRows)} />
-      <Kpi label="Low Confidence Rows" value={String(totals.lowConfidenceRows)} />
     </div>
   );
 }

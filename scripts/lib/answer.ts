@@ -207,7 +207,11 @@ export async function judgeEvidence(
     `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the ANNUAL REPORT EXCERPTS for the specifics of THIS question.\n` +
     `- Every monetary figure in the evidence is already in INR mn. Report money in INR mn to one decimal and NEVER rescale a figure (no ×10, no ÷10): if the fact sheet shows a net loss of -74.0, write -74.0, never -740.\n` +
     `- excel_answer MUST begin with exactly ONE verdict word (Yes / No / High / Low / Adequate / Unclear) followed by a period, then the explanation — never two verdict words, never a verdict that contradicts the rest of the sentence.\n` +
-    `- Score the SUBSTANCE, not disclosure completeness: a favourable / low-risk finding (no material contingent liabilities, no litigation, a clean audit opinion, a non-executive chair) scores 0.5 — or 0.25 if genuinely borderline — even when some supporting detail is undisclosed. Use 0 only for a real red flag, or when the item cannot be assessed either way (then also set available=false).\n\n` +
+    `- Scoring — calibrate like a discerning buy-side analyst, NOT a lenient one. Do not default to 0.5.\n` +
+    `  • 0.5 — genuinely good / low-risk AND positively evidenced: a clear positive backed by disclosure (a majority-independent board, a clean audit opinion with figures, low leverage shown with numbers, a confirmed non-executive chair).\n` +
+    `  • 0.25 — acceptable-but-not-ideal, borderline or mixed, OR a favourable read that rests only on the ABSENCE of adverse disclosure ("no litigation found", "no cases disclosed", a reputation with no adverse record on the web, an item that merely meets the bare minimum) — treat these as "adequate, corroborate", not a clean bill.\n` +
+    `  • 0 — a clear red flag / genuinely bad finding, or an item that cannot be assessed either way (then also set available=false).\n` +
+    `  Most "nothing adverse found" answers are 0.25, not 0.5. Reserve 0.5 for a well-evidenced positive.\n\n` +
     `Return STRICT JSON only, no prose outside it, shaped exactly:\n` +
     `{"excel_answer":"<the Excel-cell version: 2-3 dense sentences, single verdict first, exact INR mn figures>",` +
     `"score":<0|0.25|0.5 per the scoring rule above>,` +

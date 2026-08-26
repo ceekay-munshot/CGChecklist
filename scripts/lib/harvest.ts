@@ -23,7 +23,10 @@ const LOGIN_URL = `${SCREENER_BASE}/login/`;
 const SEARCH_API = `${SCREENER_BASE}/api/company/search/`;
 const MIN_REQUEST_INTERVAL_MS = 1500;
 const NAV_TIMEOUT_MS = 45_000;
-const MAX_AR_CHARS = 600_000;
+// Keep the whole annual report in play: the financial-statement notes (auditor
+// remuneration, contingent liabilities) sit in the back of a 200-400pp report,
+// and a 600k cap truncated them before retrieval could reach them.
+const MAX_AR_CHARS = 2_500_000;
 const MAX_SCREENER_TEXT = 40_000;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));

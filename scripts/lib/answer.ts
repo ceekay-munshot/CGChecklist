@@ -201,6 +201,49 @@ function snapScore(n: unknown): HalfScore {
   return 0;
 }
 
+// How many times each question is judged before a score is fixed. An LLM at
+// temperature 0 is still not bit-for-bit deterministic, so a borderline item
+// (0.25 vs 0.5) can flip between runs — the single biggest source of run-to-run
+// score drift. Judging N times and taking the agreed score makes the number
+// reproducible. The samples run concurrently, so wall-clock is ~unchanged.
+const JUDGE_SAMPLES = Math.max(1, Number(process.env.ANALYZE_JUDGE_SAMPLES) || 3);
+
+// Consensus of several judge reads: the score 2+ reads agree on (the mode); if
+// all disagree, the conservative middle. This is what kills the cross-run swing.
+function consensusScore(scores: HalfScore[]): HalfScore {
+  const counts = new Map<HalfScore, number>();
+  for (const s of scores) counts.set(s, (counts.get(s) ?? 0) + 1);
+  const maxN = Math.max(...counts.values());
+  const tied = [...counts.entries()].filter(([, n]) => n === maxN).map(([s]) => s);
+  if (tied.length === 1) return tied[0]; // a clear majority read wins
+  const sorted = [...scores].sort((a, b) => a - b); // tie → conservative lower-middle
+  return sorted[Math.floor((sorted.length - 1) / 2)];
+}
+
+// Judge the same evidence JUDGE_SAMPLES times (concurrently) and return one
+// stable answer: the consensus score, with the remark/verdict/source taken from
+// a read that landed on that score. available is decided by majority.
+async function judgeConsensus(
+  questionId: string,
+  particulars: string,
+  company: string,
+  evidence: string,
+  opts: { candidatePages?: number[]; hasScreener?: boolean; web?: boolean },
+): Promise<EngineAnswer> {
+  if (JUDGE_SAMPLES <= 1) return judgeEvidence(questionId, particulars, company, evidence, opts);
+  const reads = await Promise.all(
+    Array.from({ length: JUDGE_SAMPLES }, () => judgeEvidence(questionId, particulars, company, evidence, opts)),
+  );
+  const available = reads.filter((r) => r.available);
+  // Majority must find it answerable; otherwise route to backfill as before.
+  if (available.length < Math.ceil(JUDGE_SAMPLES / 2)) {
+    return reads.find((r) => !r.available) ?? reads[0];
+  }
+  const score = consensusScore(available.map((r) => r.score));
+  const pick = available.find((r) => r.score === score) ?? available[0];
+  return { ...pick, score };
+}
+
 export async function answerFromFilings(
   questionId: string,
   particulars: string,
@@ -229,7 +272,7 @@ export async function answerFromFilings(
     return { excelAnswer: "Not retrieved", score: 0, verdict: "Unclear", available: false, source: "Not retrieved" };
   }
 
-  return judgeEvidence(questionId, particulars, company, evidence, {
+  return judgeConsensus(questionId, particulars, company, evidence, {
     candidatePages: ev.allPages,
     hasScreener: !!harvest.screenerText,
   });

@@ -34,6 +34,9 @@ jobs:
       # Don't run the OpenNext/Cloudflare build on install for this job.
       SKIP_POSTINSTALL_BUILD: "1"
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      # Each question is now judged 3× for a stable consensus score, so cap the
+      # question pool at 3 (→ ~9 concurrent Bedrock calls) to stay under rate limits.
+      ANALYZE_CONCURRENCY: "3"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

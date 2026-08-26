@@ -63,6 +63,19 @@ const NOTE_HINTS: Record<string, string[]> = {
   "AUDIT-2": ["subsidiary", "component auditor", "other auditors"],
 };
 
+// Questions where an earnings-call transcript is a legitimate PRIMARY source —
+// the call itself, or facts management typically discloses only on the call.
+// Concalls are management commentary (promotional by nature), so every OTHER
+// question stays anchored to the audited annual report + financials: we don't
+// want a rosy call softening the forensic red-flag items (receivables,
+// contingent liabilities, leverage, related-party). See answerFromFilings.
+const CONCALL_ELIGIBLE = new Set<string>([
+  "INDUSTRY_PROMOTER-13", // transparency on analyst calls — the transcript IS the evidence
+  "EMPLOYEE-1", // employee attrition — usually quantified on the call, not the AR
+  "STOCK_EXCHANGE-4", // analyst / research coverage — who covers and attends the call
+  "INDUSTRY_PROMOTER-8", // quality of the second-level team — named and drawn out on calls
+]);
+
 export interface RetrievedEvidence {
   /** Passages, each prefixed with "[<Document>, p.NN]". */
   text: string;
@@ -196,7 +209,13 @@ export async function answerFromFilings(
   facts = "",
 ): Promise<EngineAnswer> {
   const terms = keywords(`${particulars} ${questionId}`);
-  const ev = relevantPassages(harvest.documents, terms, NOTE_HINTS[questionId] ?? []);
+  // Feed concall transcripts only to the items where the call is genuinely the
+  // source; keep every forensic red-flag item on the audited filings so
+  // management's optimistic call commentary can't soften the scrutiny.
+  const docs = CONCALL_ELIGIBLE.has(questionId)
+    ? harvest.documents
+    : harvest.documents.filter((d) => d.kind !== "concall");
+  const ev = relevantPassages(docs, terms, NOTE_HINTS[questionId] ?? []);
 
   const evidence = [
     facts,

@@ -21,6 +21,20 @@ const BOARD_HINTS = [
   "non-executive", "statutory auditor", "chartered accountants",
 ];
 
+// Balance-sheet + P&L pages — so the leverage inputs the ratios need (cash &
+// bank, finance costs, depreciation, profit before tax) reach the extractor.
+// Screener's rendered balance sheet folds cash into "Other Assets", so without
+// these AR pages cash & bank comes back null and net debt / EBITDA can't compute.
+const FIN_TERMS = [
+  "cash", "bank", "balances", "equivalents", "borrowings", "finance", "cost",
+  "depreciation", "amortisation", "profit", "before", "tax", "equity",
+];
+const FIN_HINTS = [
+  "cash and cash equivalents", "bank balances", "balance sheet",
+  "finance costs", "depreciation and amortisation", "profit before tax",
+  "statement of profit and loss", "total equity",
+];
+
 const SYSTEM =
   "You are a precise financial-data extraction engine. Extract ONLY what the " +
   "evidence states — never guess. Convert EVERY monetary figure to INR mn " +
@@ -183,9 +197,11 @@ export async function buildCompanyFacts(company: string, harvest: HarvestResult)
   if (!harvest.screenerText && !harvest.annualReportText) return "";
 
   const board = relevantArPages(harvest.annualReportText, BOARD_TERMS, BOARD_HINTS, 6, 9000);
+  const fin = relevantArPages(harvest.annualReportText, FIN_TERMS, FIN_HINTS, 8, 12000);
   const evidence = [
     harvest.screenerText ? `SCREENER FINANCIALS (${harvest.name ?? company}):\n${harvest.screenerText}` : "",
     board.text ? `ANNUAL REPORT (board / auditor / shareholding):\n${board.text}` : "",
+    fin.text ? `ANNUAL REPORT (balance sheet / P&L — cash & bank, borrowings, finance costs, depreciation, PBT):\n${fin.text}` : "",
   ]
     .filter(Boolean)
     .join("\n\n---\n\n");
@@ -195,6 +211,7 @@ export async function buildCompanyFacts(company: string, harvest: HarvestResult)
     `Company: ${company}\n\nEVIDENCE (use ONLY this):\n${evidence}\n\n` +
     `Return STRICT JSON only, shaped exactly as below. Every monetary value in INR mn ` +
     `(crore ×10, lakh ×0.1). Give the latest 3 financial years, newest last. Use null when a value is absent.\n` +
+    `Prefer CONSOLIDATED figures. For cash_and_bank, sum cash & cash equivalents plus other bank balances (exclude investments); finance_costs is finance costs / interest expense; depreciation is depreciation & amortisation; profit_before_tax is PBT. These four feed the leverage ratios, so extract them for each year whenever the statements show them.\n` +
     `{"board":{"total":<int|null>,"independent":<int|null>,"executive":<int|null>,"chairman":"<name|null>","chairman_role":"<Executive|Non-Executive|null>"},` +
     `"auditor":"<statutory auditor firm|null>","auditor_big4":<true|false|null>,` +
     `"market_cap_inr_mn":<number|null>,` +

@@ -6,7 +6,7 @@ export const EMPTY_ALTMAN: AltmanScore = {
     verdict: "unknown",
     label: "Awaiting data",
     description:
-      "Refresh data to compute the Altman Z-Score using the variant most appropriate for this company.",
+      "Run a new analysis to compute the Altman Z-Score using the variant most appropriate for this company.",
   },
   variant: "original",
   ratios: [

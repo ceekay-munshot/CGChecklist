@@ -84,10 +84,10 @@ export function RefreshProgressModal() {
       aria-modal="true"
       aria-label={
         isLoading
-          ? "Refreshing governance analysis"
+          ? "Running governance analysis"
           : completion?.outcome === "success"
-            ? "Refresh complete"
-            : "Refresh failed"
+            ? "Analysis complete"
+            : "Analysis failed"
       }
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
     >
@@ -132,7 +132,7 @@ function LoadingFrame({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
-            Refreshing governance analysis
+            Running governance analysis
           </p>
           <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--color-fg)]">
             {companyName || "Company"}
@@ -250,6 +250,10 @@ function CompletionFrame({
   onClose: () => void;
 }) {
   const isSuccess = completion.outcome === "success";
+  // A sub-second "success" wasn't a real run — it's the saved report served from
+  // cache. Label it as such instead of "Completed in 00:00", which reads like a
+  // fresh run that finished instantly.
+  const instant = isSuccess && completion.totalElapsedMs < 1500;
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -265,22 +269,29 @@ function CompletionFrame({
       </span>
 
       <h2 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-fg)]">
-        {isSuccess ? "Refresh complete" : "Refresh failed"}
+        {!isSuccess ? "Analysis failed" : instant ? "Saved report loaded" : "Analysis complete"}
       </h2>
       <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
         {companyName || "Company"}
         {ticker ? <span className="ml-1.5">· {ticker}</span> : null}
       </p>
 
-      <p
-        className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]"
-        data-numeric
-      >
-        {isSuccess ? "Completed in" : "Stopped after"}{" "}
-        {formatElapsed(completion.totalElapsedMs)}
-      </p>
+      {instant ? (
+        <p className="mt-3 max-w-xs text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+          Showing the last saved analysis — nothing was re-run. Use{" "}
+          <strong>Run new analysis</strong> for a fresh one (~10 min).
+        </p>
+      ) : (
+        <p
+          className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]"
+          data-numeric
+        >
+          {isSuccess ? "Completed in" : "Stopped after"}{" "}
+          {formatElapsed(completion.totalElapsedMs)}
+        </p>
+      )}
 
-      {isSuccess && completion.diff ? (
+      {isSuccess && !instant && completion.diff ? (
         <DiffStats diff={completion.diff} />
       ) : null}
 

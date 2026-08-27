@@ -154,6 +154,31 @@ const DETAILED_PROMPTS: Record<string, string> = {
     "“No — irregular dividend history,” or “No — no meaningful " +
     "dividend payout,” and briefly explain the reasoning with the key " +
     "numbers and trend over the three-year period.",
+  // INDUSTRY_PROMOTER-15 — "Leverage — High/Low?" (client's own ChatGPT brief)
+  "INDUSTRY_PROMOTER-15":
+    "Review the company's latest three financial years of CONSOLIDATED financial " +
+    "statements and assess leverage as High, Moderate or Low by calculating three " +
+    "ratios for EACH of the latest three financial years: (a) debt-to-equity = " +
+    "total borrowings / total equity; (b) interest coverage = EBIT / finance " +
+    "costs, where EBIT = profit before tax + finance costs; and (c) net " +
+    "debt-to-EBITDA = (total borrowings minus cash and bank balances) / EBITDA, " +
+    "where EBITDA = profit before tax + finance costs + depreciation. Report each " +
+    "ratio to two decimals and ATTACH THE YEAR TO EVERY NUMBER — never write " +
+    "'5.10x vs 4.41x and 3.04x' where the reader cannot tell which year is which; " +
+    "write '5.10x in FY25 from 4.41x in FY24 and 3.04x in FY23'. Where net debt is " +
+    "negative, call it net cash. Double-check every figure against the statements " +
+    "and never round away a real difference (write 0.35x, not 0.3x). Judge leverage " +
+    "from all three ratios AND their combined three-year trend (increasing, " +
+    "decreasing or stable) rather than any single year, and where useful compare " +
+    "with 2-5 named closest listed peers on the same basis. Deliver one " +
+    "Excel-pasteable cell (no table), leading with the verdict, in this shape: " +
+    "'Leverage appears [High/Moderate/Low]. Debt-to-equity was x.xx in FYxx from " +
+    "x.xx in FYxx and x.xx in FYxx; interest coverage was x.xx in FYxx from x.xx in " +
+    "FYxx and x.xx in FYxx; and net debt-to-EBITDA was x.xx in FYxx from x.xx in " +
+    "FYxx and x.xx in FYxx. Overall, leverage has [increased/decreased/remained " +
+    "stable] over the period, indicating [high/moderate/low] balance-sheet risk.' " +
+    "If the fact sheet provides a Computed Ratios block, use those exact ratio " +
+    "values rather than recomputing them.",
 };
 
 // Worked "Excel-cell version" answers from the client's own ChatGPT sessions
@@ -215,6 +240,12 @@ const EXAMPLE_OUTPUTS: Record<string, string> = {
     "needs. Verdict: No — dividend payout is not consistently established over " +
     "the latest three years; low payout, but capital-allocation optics are " +
     "mixed rather than clearly shareholder-friendly.",
+  "INDUSTRY_PROMOTER-15":
+    "Leverage appears Low. Debt-to-equity improved to 0.11x in FY25 from 0.35x in " +
+    "FY24 and 1.37x in FY23; interest coverage improved to 5.10x in FY25 from 4.41x " +
+    "in FY24 and 3.04x in FY23; and net debt-to-EBITDA improved to net cash / " +
+    "-1.31x in FY25 from 0.65x in FY24 and 2.79x in FY23. Overall, leverage has " +
+    "materially decreased over the period, indicating low balance-sheet risk.",
 };
 
 // Per-section forensic lens used when a question has no bespoke prompt, so the

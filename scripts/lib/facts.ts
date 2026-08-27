@@ -35,6 +35,13 @@ interface FinancialYear {
   borrowings?: number | null;
   net_worth?: number | null;
   operating_cash_flow?: number | null;
+  // Added for the leverage ratios (interest coverage, net debt / EBITDA), which
+  // the client computes as EBIT = PBT + finance costs and EBITDA = PBT + finance
+  // costs + depreciation, with net debt = borrowings − cash & bank.
+  profit_before_tax?: number | null;
+  finance_costs?: number | null;
+  depreciation?: number | null;
+  cash_and_bank?: number | null;
 }
 
 interface FactsShape {
@@ -80,6 +87,21 @@ function computeRatios(fin: FinancialYear[]): string[] {
   const out = [
     // D/E only where net worth is positive (a negative denominator is meaningless).
     series("Debt/Equity", (y) => (y.net_worth && y.net_worth > 0 ? safeDiv(y.borrowings, y.net_worth) : null)),
+    // Interest coverage = EBIT / finance costs, EBIT = PBT + finance costs.
+    series("Interest coverage", (y) => {
+      const fc = y.finance_costs;
+      const pbt = y.profit_before_tax;
+      if (fc == null || fc === 0 || pbt == null) return null;
+      return (pbt + fc) / fc;
+    }),
+    // Net debt / EBITDA — EBITDA = PBT + finance costs + depreciation; net debt =
+    // borrowings − cash & bank (a negative ratio means net cash).
+    series("Net debt / EBITDA", (y) => {
+      const { profit_before_tax: pbt, finance_costs: fc, depreciation: dep, borrowings: b, cash_and_bank: cash } = y;
+      if (pbt == null || fc == null || dep == null || b == null || cash == null) return null;
+      const ebitda = pbt + fc + dep;
+      return ebitda > 0 ? (b - cash) / ebitda : null;
+    }),
     // Cash conversion — not reported by Screener; a core cash-quality signal.
     series("CFO / net profit", (y) => safeDiv(y.operating_cash_flow, y.net_profit)),
     series(
@@ -126,7 +148,9 @@ function formatFacts(company: string, f: FactsShape): string {
     for (const y of fin) {
       lines.push(
         `  ${y.period}: revenue ${num(y.revenue)}, net profit ${num(y.net_profit)}, ` +
-          `operating profit ${num(y.operating_profit)}, borrowings ${num(y.borrowings)}, ` +
+          `operating profit ${num(y.operating_profit)}, PBT ${num(y.profit_before_tax)}, ` +
+          `finance costs ${num(y.finance_costs)}, depreciation ${num(y.depreciation)}, ` +
+          `borrowings ${num(y.borrowings)}, cash & bank ${num(y.cash_and_bank)}, ` +
           `net worth ${num(y.net_worth)}, operating cash flow ${num(y.operating_cash_flow)}`,
       );
     }
@@ -174,7 +198,7 @@ export async function buildCompanyFacts(company: string, harvest: HarvestResult)
     `{"board":{"total":<int|null>,"independent":<int|null>,"executive":<int|null>,"chairman":"<name|null>","chairman_role":"<Executive|Non-Executive|null>"},` +
     `"auditor":"<statutory auditor firm|null>","auditor_big4":<true|false|null>,` +
     `"market_cap_inr_mn":<number|null>,` +
-    `"financials":[{"period":"<e.g. FY25>","revenue":<n|null>,"net_profit":<n|null>,"operating_profit":<n|null>,"borrowings":<n|null>,"net_worth":<n|null>,"operating_cash_flow":<n|null>}],` +
+    `"financials":[{"period":"<e.g. FY25>","revenue":<n|null>,"net_profit":<n|null>,"operating_profit":<n|null>,"borrowings":<n|null>,"net_worth":<n|null>,"operating_cash_flow":<n|null>,"profit_before_tax":<n|null>,"finance_costs":<n|null>,"depreciation":<n|null>,"cash_and_bank":<n|null>}],` +
     `"promoter_holding":[{"period":"<e.g. Mar-25>","pct":<n|null>}],"promoter_pledge_pct":<n|null>}`;
 
   try {

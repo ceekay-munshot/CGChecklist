@@ -76,6 +76,27 @@ const CONCALL_ELIGIBLE = new Set<string>([
   "INDUSTRY_PROMOTER-8", // quality of the second-level team — named and drawn out on calls
 ]);
 
+// Questions that must also see the RECENT-EVENTS block (post-annual-report
+// corporate announcements + news + insider/bulk deals). These are the red-flag,
+// reputation and event-driven items where a fraud, a lawsuit, a SEBI action, a
+// KMP resignation or a promoter block deal — none of which is in the filings —
+// decides the answer. Everything else stays on the filings so routine news can't
+// move a score. See answerFromFilings.
+const EVENTS_ELIGIBLE = new Set<string>([
+  "FINANCIALS-1", // material red flags in notes / contingent liabilities (fraud, litigation)
+  "FINANCIALS-11", // other notable red flags
+  "INDUSTRY_PROMOTER-11", // cases from ED / SEBI / other institutions
+  "STAKEHOLDERS-2", // recent PE / HNI entry & exit (block / bulk deals)
+  "INDUSTRY_PROMOTER-2", // promoter stake trend (block / bulk deals)
+  "INDUSTRY_PROMOTER-4", // is the business run by a professional CEO (CEO change)
+  "INDUSTRY_PROMOTER-5", // view on CEO
+  "INDUSTRY_PROMOTER-7", // vintage of the top management team (KMP resignations)
+  "INDUSTRY_PROMOTER-9", // family dynamics — disputes surface in news
+  "BOARD-5", // reputation of the directors
+  "AUDIT-5", // last change in auditors (resignation announcements)
+  "STOCK_EXCHANGE-1", // SEBI compliance — penalties / strictures are announcements
+]);
+
 export interface RetrievedEvidence {
   /** Passages, each prefixed with "[<Document>, p.NN]". */
   text: string;
@@ -201,6 +222,22 @@ function snapScore(n: unknown): HalfScore {
   return 0;
 }
 
+// The model occasionally opens with two contradictory verdict words ("No. Yes.
+// Three subsidiaries…", "Yes. No. Consolidated assets…"). Collapse a run of two
+// leading "Word." verdicts to the single canonical verdict. Only fires when
+// there are genuinely two standalone verdict words up front, so normal answers
+// ("Low. …", "High, in a short history") are left untouched.
+const VERDICT_LEAD = /^(Yes|No|High|Low|Adequate|Unclear)[.:]\s+/i;
+function fixDoubleVerdict(answer: string, verdict: string): string {
+  let s = answer.trim();
+  let n = 0;
+  while (n < 2 && VERDICT_LEAD.test(s)) {
+    s = s.replace(VERDICT_LEAD, "");
+    n++;
+  }
+  return n >= 2 ? `${(verdict || "Unclear").trim()}. ${s}`.trim() : answer.trim();
+}
+
 // How many times each question is judged before a score is fixed. An LLM at
 // temperature 0 is still not bit-for-bit deterministic, so a borderline item
 // (0.25 vs 0.5) can flip between runs — the single biggest source of run-to-run
@@ -260,8 +297,16 @@ export async function answerFromFilings(
     : harvest.documents.filter((d) => d.kind !== "concall");
   const ev = relevantPassages(docs, terms, NOTE_HINTS[questionId] ?? []);
 
+  // Post-annual-report events for the red-flag / reputation items only. Framed as
+  // LEADS to verify, not proven fact — a routine announcement or a stray news
+  // headline must not flip a score.
+  const events = EVENTS_ELIGIBLE.has(questionId) ? (harvest.recentEvents ?? "").trim() : "";
+
   const evidence = [
     facts,
+    events
+      ? `RECENT EVENTS, ANNOUNCEMENTS & NEWS — dated AFTER the annual report. These are LEADS, not proven facts: some are routine, stale, or unrelated. Treat an item as a red flag ONLY if it is material AND corroborated (an exchange filing, the company's own disclosure, or multiple sources); ignore routine/administrative announcements and unrelated news; do NOT flip a score on a single unconfirmed headline. When you DO rely on one, name it and set cited_doc to "Recent announcements & news".\n${events}`
+      : "",
     harvest.screenerText ? `SCREENER FINANCIALS (${harvest.name ?? company}):\n${harvest.screenerText}` : "",
     ev.text ? `SOURCE DOCUMENTS (each passage is tagged with its document and page):\n${ev.text}` : "",
   ]
@@ -289,6 +334,8 @@ function sanitizeDoc(cd?: string): string {
     return p ? `Concall ${p[1].replace(/\s+/g, " ")}` : "Concall";
   }
   if (/investor|presentation|\bppt\b/i.test(s)) return "Investor presentation";
+  if (/announcement|news|insider|bulk\s*deal|block\s*deal|corporate\s*action|exchange\s*filing/i.test(s))
+    return "Recent announcements & news";
   // Unrecognised — the model sometimes echoes the fact-sheet header or the
   // company name ("VERIFIED FACT SHEET", "CAPILLARY TECHNOLOGIES") as the cited
   // document. Don't pass that through as a source label; return empty so
@@ -314,6 +361,8 @@ function buildSourceLabel(
 
   let doc = sanitizeDoc(opts.citedDoc);
   if (doc === "Screener financials") return "Screener financials";
+  // The events block carries no page numbers — cite it as-is.
+  if (doc === "Recent announcements & news") return doc;
   if (!doc) doc = uniq.length ? "Annual report" : opts.hasScreener ? "Screener financials" : "Annual report";
   if (doc === "Screener financials") return "Screener financials";
   return uniq.length ? `${doc}, ${uniq.map((p) => `p.${p}`).join(", ")}` : doc;
@@ -339,9 +388,10 @@ export async function judgeEvidence(
     `${buildQuestionPrompt(questionId, particulars, company)}\n\n` +
     `EVIDENCE (use ONLY this):\n${evidence}\n\n` +
     `RULES:\n` +
-    `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the SOURCE DOCUMENTS for the specifics of THIS question. Answer from whichever document actually holds it — the annual report OR a concall transcript — not only the annual report.\n` +
+    `- If a VERIFIED FACT SHEET appears at the top of the evidence, take the board size, financial figures, and promoter data from it VERBATIM so your answer stays consistent with every other question; use the SOURCE DOCUMENTS for the specifics of THIS question. Answer from whichever source actually holds it — the annual report, a concall transcript, OR the RECENT EVENTS / announcements / news block — not only the annual report. A material, corroborated post-annual-report event (a fraud, a lawsuit, a SEBI action, a KMP resignation, a promoter block deal) is a genuine red flag; a routine announcement or an unverified headline is not.\n` +
     `- Every monetary figure in the evidence is already in INR mn. Report money in INR mn to one decimal and NEVER rescale a figure (no ×10, no ÷10): if the fact sheet shows a net loss of -74.0, write -74.0, never -740.\n` +
     `- excel_answer MUST begin with exactly ONE verdict word (Yes / No / High / Low / Adequate / Unclear) followed by a period, then the explanation — never two verdict words, never a verdict that contradicts the rest of the sentence.\n` +
+    `- "Big-4" means ONLY Deloitte, PwC, EY or KPMG. Grant Thornton (which includes Walker Chandiok & Co), BDO, and other national firms are credible top-tier auditors but are NOT Big-4 — never label them Big-4.\n` +
     `- Scoring — calibrate like a discerning buy-side analyst, NOT a lenient one. Do not reflexively default to 0.5.\n` +
     `  • 0.5 — a genuinely good, POSITIVELY-EVIDENCED finding: a clear positive backed by the disclosure you actually read (a majority-independent board, a clean audit opinion, low leverage shown with numbers, a confirmed non-executive chair, a contingent-liabilities/RPT note you checked that is genuinely clean). Award 0.5 whenever you verified the real disclosure and it is sound.\n` +
     `  • 0.25 — acceptable-but-not-ideal, borderline, mixed, or bare-minimum compliance; OR — for REPUTATION / INTEGRITY / LITIGATION / REGULATORY-HISTORY items (director or promoter reputation, ED/SEBI/other cases, political links, analyst-call transparency, second-tier team quality) — a favourable read that rests only on NOT FINDING adverse information, which silence cannot fully confirm ("no cases disclosed", "no adverse record found"). Corroborate, not a clean bill.\n` +
@@ -352,7 +402,7 @@ export async function judgeEvidence(
     `"score":<0|0.25|0.5 per the scoring rule above>,` +
     `"verdict":"<Yes|No|High|Low|Adequate|Unclear>",` +
     `"available":<true if the evidence answered it, false if it did not>,` +
-    `"cited_doc":"<the document you actually used, copied from the passage tag: e.g. "Annual report", "Concall Aug 2025", or "Screener financials"; empty if web only>",` +
+    `"cited_doc":"<the source you actually used: e.g. "Annual report", "Concall Aug 2025", "Recent announcements & news", or "Screener financials"; empty if web only>",` +
     `"cited_pages":<array of the page numbers (from the "[<Document>, p.NN]" tags) you actually used, e.g. [147,148]; [] if you answered from Screener financials or web results only>,` +
     `"source_note":"<the single most specific source you used: for web, the URL; for a document, the note/section name>"}`;
 
@@ -370,10 +420,12 @@ export async function judgeEvidence(
   const source = available
     ? buildSourceLabel(out.cited_pages, { ...opts, sourceNote: out.source_note, citedDoc: out.cited_doc })
     : "Not retrieved";
+  const verdict = (out.verdict ?? "Unclear").trim() || "Unclear";
+  const answerText = (out.excel_answer ?? "").trim() || "Not retrieved";
   return {
-    excelAnswer: (out.excel_answer ?? "").trim() || "Not retrieved",
+    excelAnswer: available ? fixDoubleVerdict(answerText, verdict) : answerText,
     score: available ? snapScore(out.score) : 0,
-    verdict: (out.verdict ?? "Unclear").trim() || "Unclear",
+    verdict,
     available,
     source,
   };

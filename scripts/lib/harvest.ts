@@ -53,6 +53,13 @@ export interface HarvestResult {
    * name/URL for citation.
    */
   documents: HarvestedDoc[];
+  /**
+   * Recent corporate announcements + news + insider/bulk deals (last ~18 months)
+   * — the post-annual-report events (fraud, litigation, SEBI action, KMP exits,
+   * promoter block deals) that the filings can't contain. Fed to the red-flag /
+   * reputation questions. Populated by the orchestrator, not the Screener harvest.
+   */
+  recentEvents?: string;
 }
 
 export interface HarvestedDoc {

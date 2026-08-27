@@ -13,6 +13,7 @@ import { harvestCompany, type HarvestResult } from "./lib/harvest";
 import { answerFromFilings, type EngineAnswer } from "./lib/answer";
 import { backfillQuestion } from "./lib/backfill";
 import { buildCompanyFacts } from "./lib/facts";
+import { harvestRecentEvents } from "./lib/events";
 import { reviewRun } from "./lib/review";
 
 const CONCURRENCY = Number(process.env.ANALYZE_CONCURRENCY) || 4;
@@ -85,6 +86,25 @@ async function main() {
   console.log(`  company: ${company} | loggedIn: ${harvest.loggedIn} | screener: ${harvest.screenerText.length} chars | AR: ${harvest.annualReportText.length} chars`);
   console.log(`  documents (${harvest.documents.length}): ${harvest.documents.map((d) => `${d.name} [${(d.text.length / 1000).toFixed(0)}k]`).join(", ") || "none"}`);
   if (harvest.note) console.log(`  note: ${harvest.note}`);
+
+  // Recent events, announcements and news (last ~18 months) — the post-annual-
+  // report material events (fraud, litigation, SEBI action, KMP resignations,
+  // promoter block deals) the filings can't contain. Fed to the red-flag /
+  // reputation questions so they surface instead of being scored "clean".
+  console.log("Fetching recent events (corporate announcements, news, insider/bulk deals)…");
+  const events = await harvestRecentEvents(ticker, company).catch((e) => {
+    console.warn(`  recent events failed: ${(e as Error).message}`);
+    return { text: "", sources: [] as string[] };
+  });
+  harvest.recentEvents = events.text;
+  if (events.text) {
+    console.log(`  recent events: ${(events.text.length / 1000).toFixed(1)}k chars from ${events.sources.join(", ")}`);
+    // Preview so the API output can be cross-checked in the run log — do NOT
+    // trust it blindly; confirm the events are real and material before relying.
+    console.log(`  --- recent-events preview ---\n${events.text.slice(0, 1200).replace(/^/gm, "  | ")}\n  --- end preview ---`);
+  } else {
+    console.log("  recent events: (none — no MUNS_TOKEN or all sources empty)");
+  }
 
   // Extract one verified fact sheet (board, 3-yr P&L, promoter holding — all in
   // INR mn) and inject it into every question so figures stay consistent and

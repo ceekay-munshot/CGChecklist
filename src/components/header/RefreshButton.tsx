@@ -17,22 +17,24 @@ export function RefreshButton() {
         tone: "warning",
         title: "Company details required",
         description:
-          "Please choose a company and confirm its ticker before refreshing.",
+          "Please choose a company and confirm its ticker before loading or running an analysis.",
       });
       return false;
     }
     return true;
   };
 
-  // Serves the stored engine report if one exists, otherwise dispatches a run.
-  const handleRefresh = () => {
+  // "Load saved report" — shows the last stored run instantly; only runs the
+  // engine if no report exists yet. Does NOT recompute.
+  const handleLoad = () => {
     if (!ensureIdentity()) return;
     setPending("refresh");
     void runEngineAnalysis();
   };
 
-  // Forces a fresh engine run as of today, bypassing the stored report.
-  const handleUpdate = () => {
+  // "Run new analysis" — forces a fresh engine run as of today (~10 min),
+  // ignoring the stored report.
+  const handleRun = () => {
     if (!ensureIdentity()) return;
     setPending("update");
     void runEngineAnalysis({ force: true });
@@ -42,33 +44,34 @@ export function RefreshButton() {
     <div className="flex items-center gap-2">
       <button
         type="button"
-        onClick={handleRefresh}
+        onClick={handleLoad}
         disabled={isLoading}
-        className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-fg-inverse)] shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+        title="Show the last saved analysis instantly (does not re-run)"
+        className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-fg)] shadow-sm transition hover:bg-[var(--color-mist-50)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading && pending === "refresh" ? (
           <>
             <Spinner />
-            Refreshing
+            Loading
           </>
         ) : (
-          <>Refresh data</>
+          <>Load saved report</>
         )}
       </button>
       <button
         type="button"
-        onClick={handleUpdate}
+        onClick={handleRun}
         disabled={isLoading}
-        title="Re-run the analysis as of today, ignoring the cached run"
-        className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-fg)] shadow-sm transition hover:bg-[var(--color-mist-50)] disabled:cursor-not-allowed disabled:opacity-60"
+        title="Run a fresh analysis as of today (~10 min), ignoring the saved report"
+        className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-fg-inverse)] shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading && pending === "update" ? (
           <>
             <Spinner />
-            Updating
+            Running
           </>
         ) : (
-          <>Update to today</>
+          <>Run new analysis</>
         )}
       </button>
     </div>

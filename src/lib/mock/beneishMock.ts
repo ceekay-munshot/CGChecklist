@@ -6,7 +6,7 @@ export const EMPTY_BENEISH: BeneishScore = {
     verdict: "unknown",
     label: "Awaiting data",
     description:
-      "Refresh data to compute the eight-variable Beneish M-Score earnings-manipulation indicator.",
+      "Run a new analysis to compute the eight-variable Beneish M-Score earnings-manipulation indicator.",
   },
   variables: [
     { id: "DSRI", label: "Days Sales in Receivables Index", description: "Receivables vs sales growth", value: null, contribution: null },

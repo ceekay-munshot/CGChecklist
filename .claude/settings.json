@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "munshot": {
+      "source": { "source": "github", "repo": "ceekay-munshot/sectornewsdash" }
+    }
+  },
+  "enabledPlugins": {
+    "munshot@munshot": true
+  }
+}

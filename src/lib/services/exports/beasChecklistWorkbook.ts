@@ -12,7 +12,7 @@ const SCORE_FMT = "0.##";
  * downloaded and pasted straight into their stage order. Reproduces their sheet
  * from the Capillary Technologies reference file: one "CG Checklist" sheet,
  * columns Particulars | Score | Max Score | Remarks, section banner rows, item
- * rows scored out of 0.5, and Total / Overall rows driven by live formulas.
+ * rows scored out of 0.5, and Total / Overall rows as pre-computed values.
  * Fonts, sizes, colours and column widths are copied from that file.
  */
 
@@ -85,7 +85,8 @@ export async function buildBeasChecklistWorkbook(
   });
 
   let r = 5;
-  const itemRowNumbers: number[] = [];
+  let totalScoreVal = 0;
+  let totalMaxVal = 0;
 
   for (const section of GOVERNANCE_CHECKLIST) {
     // Section banner row — title in column A, fill spans A:D.
@@ -129,35 +130,36 @@ export async function buildBeasChecklistWorkbook(
 
       // No fixed row height: leave the wrapped Particulars/Remarks cells eligible
       // for Excel's auto-fit so long evidence isn't clipped to one line.
-      itemRowNumbers.push(r);
+      totalScoreVal += row ? row.score : 0;
+      totalMaxVal += row ? row.maxScore : 0.5;
       r += 1;
     }
   }
 
-  // Total Score + Overall Governance Score, as live formulas over the item block
-  // (section banner rows have blank Score/Max cells, so they sum to zero).
-  const firstItem = itemRowNumbers[0];
-  const lastItem = itemRowNumbers[itemRowNumbers.length - 1];
-
+  // Total Score + Overall Governance Score, written as pre-computed VALUES rather
+  // than Excel formulas. A formula saved without a cached result renders blank in
+  // any viewer that doesn't recalc — WhatsApp/mobile preview, Excel Protected View
+  // before "Enable Editing" — which made the totals look missing to recipients.
+  // Plain numbers display everywhere. (Only item rows are summed; section banner
+  // rows contribute nothing.)
   ws.getCell(r, 1).value = "Total Score";
   ws.getCell(r, 1).font = { name: BODY_FONT, size: 9, bold: true };
   const totalScore = ws.getCell(r, 2);
-  totalScore.value = { formula: `SUM(B${firstItem}:B${lastItem})` };
+  totalScore.value = Number(totalScoreVal.toFixed(2));
   totalScore.font = { name: BODY_FONT, size: 9, bold: true };
   totalScore.alignment = { horizontal: "center" };
   totalScore.numFmt = SCORE_FMT;
   const totalMax = ws.getCell(r, 3);
-  totalMax.value = { formula: `SUM(C${firstItem}:C${lastItem})` };
+  totalMax.value = Number(totalMaxVal.toFixed(2));
   totalMax.font = { name: BODY_FONT, size: 9, bold: true };
   totalMax.alignment = { horizontal: "center" };
   totalMax.numFmt = SCORE_FMT;
-  const totalRow = r;
   r += 1;
 
   ws.getCell(r, 1).value = "Overall Governance Score";
   ws.getCell(r, 1).font = { name: BODY_FONT, size: 9, bold: true };
   const overall = ws.getCell(r, 3);
-  overall.value = { formula: `B${totalRow}/C${totalRow}` };
+  overall.value = totalMaxVal > 0 ? totalScoreVal / totalMaxVal : 0;
   overall.font = { name: BODY_FONT, size: 9, bold: true };
   overall.alignment = { horizontal: "center" };
   overall.numFmt = "0.0%";

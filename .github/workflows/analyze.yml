@@ -15,11 +15,6 @@ on:
       company:
         description: "Company name (optional — helps MUNS resolve the right entity)"
         required: false
-      use_extended_prompts:
-        description: "Use in-house drafted prompts for the 25 not-yet-client questions (A/B vs default; off = current behaviour)"
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   analyze:
@@ -52,11 +47,6 @@ jobs:
       - name: Install Chromium for Playwright
         run: npx -y playwright@1.62.1 install --with-deps chromium
       - name: Analyze
-        env:
-          # OFF by default. Check the "use_extended_prompts" box when dispatching
-          # to run the 25 in-house prompts instead of the generic default, for an
-          # A/B against a default run. The client's 26 are unaffected either way.
-          USE_EXTENDED_PROMPTS: ${{ inputs.use_extended_prompts }}
         run: npx tsx --tsconfig tsconfig.json scripts/analyze.ts "${{ inputs.ticker }}" "${{ inputs.company }}"
       # The dashboard reads this artifact directly (Worker → GitHub API, using the
       # same GITHUB_DISPATCH_TOKEN the Run button uses), so there's nothing to

@@ -155,7 +155,9 @@ function makeQueryContext(
     COUNTRY: [],
     CONTEXT_EMAIL: MUNS_CHAT_CONTEXT_EMAIL,
     CONTEXT_COMPANY_NAME: [companyName],
-    GET_ANNOUNCEMENTS_ENABLED: false,
+    // Enabled per the MUNS backend to pair with autoAddUpcoming's "auto data"
+    // flow (the company's announcements are pulled into the cached dataset).
+    GET_ANNOUNCEMENTS_ENABLED: true,
     chatHistory,
     mode: "expert",
   };

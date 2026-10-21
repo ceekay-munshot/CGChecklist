@@ -131,7 +131,10 @@ payload = {
         "chatHistory": json.loads(os.environ["HIST"]),
         "mode": "expert",
     },
-    "autoAddUpcoming": False,
+    # "auto data" ON: agent reads each doc once and reuses it across questions
+    # instead of re-scraping the same PDF per question (that burned ~31.5k
+    # Firecrawl credits on one company). Backend: autoAddUpcoming True = cached.
+    "autoAddUpcoming": True,
 }
 
 if os.environ.get("CHAT_ID"):

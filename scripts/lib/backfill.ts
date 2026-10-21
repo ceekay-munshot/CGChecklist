@@ -61,7 +61,11 @@ async function munsResearch(task: string, ticker: string, company: string): Prom
         chatHistory: [],
         mode: "expert",
       },
-      autoAddUpcoming: false,
+      // "auto data" ON: the agent reads each source document once and reuses it
+      // across questions instead of re-scraping the same PDF per question (that
+      // burned ~31.5k Firecrawl credits on one company). Per the MUNS backend,
+      // autoAddUpcoming:true enables the cached "auto data" flow.
+      autoAddUpcoming: true,
     }),
     // MUNS is now only a last-resort fallback behind Firecrawl (it timed out on
     // every call from GitHub Actions), so cap it tighter to keep runs fast.

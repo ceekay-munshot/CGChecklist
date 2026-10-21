@@ -57,7 +57,8 @@ async function munsResearch(task: string, ticker: string, company: string): Prom
         COUNTRY: [],
         CONTEXT_EMAIL: MUNS_CHAT_CONTEXT_EMAIL,
         CONTEXT_COMPANY_NAME: [company],
-        GET_ANNOUNCEMENTS_ENABLED: false,
+        // Enabled per the MUNS backend to pair with autoAddUpcoming's "auto data" flow.
+        GET_ANNOUNCEMENTS_ENABLED: true,
         chatHistory: [],
         mode: "expert",
       },

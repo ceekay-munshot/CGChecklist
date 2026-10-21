@@ -127,7 +127,8 @@ payload = {
         "COUNTRY": [],
         "CONTEXT_EMAIL": "ceekay@muns.io",
         "CONTEXT_COMPANY_NAME": [os.environ["COMPANY"]],
-        "GET_ANNOUNCEMENTS_ENABLED": False,
+        # Enabled per the MUNS backend to pair with autoAddUpcoming's "auto data" flow.
+        "GET_ANNOUNCEMENTS_ENABLED": True,
         "chatHistory": json.loads(os.environ["HIST"]),
         "mode": "expert",
     },

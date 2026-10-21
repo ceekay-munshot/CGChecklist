@@ -297,7 +297,12 @@ async function sendMessage(
       fromDate,
       toDate,
     ),
-    autoAddUpcoming: false,
+    // "auto data" ON: the MUNS agent reads each source document once and reuses
+    // it for every question in the chat, instead of re-scraping the same PDF per
+    // question. With this false, a single company run re-read the same prospectus
+    // + annual report ~150x and burned ~31.5k Firecrawl credits. Per the MUNS
+    // backend, autoAddUpcoming:true enables the cached "auto data" flow.
+    autoAddUpcoming: true,
   };
   if (chatId) payload.chat_id = chatId;
 

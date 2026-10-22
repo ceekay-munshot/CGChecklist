@@ -1,0 +1,57 @@
+name: analyze-metered
+
+# Same engine as analyze.yml (produces the Beas-format report), but wrapped with
+# an automatic Firecrawl credit meter + hard cap: it prints the credit balance
+# before/after (so the cost is visible with no one watching) and kills the run
+# if usage crosses CREDIT_CAP. Built for safely testing SME companies.
+#
+# Actions -> analyze-metered -> Run workflow -> ticker, company, credit_cap.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "NSE/BSE ticker (Screener symbol), e.g. OBSCP"
+        required: true
+      company:
+        description: "Company name (optional)"
+        required: false
+      credit_cap:
+        description: "Auto-kill the run if it uses more than this many credits"
+        required: false
+        default: "3000"
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CLAUDE_BEDROCK_API_KEY: ${{ secrets.TEMP_CLAUDE_TOKEN }}
+      CLAUDE_BEDROCK_REGION: ${{ vars.CLAUDE_BEDROCK_REGION }}
+      CLAUDE_BEDROCK_MODEL_ID: ${{ vars.CLAUDE_BEDROCK_MODEL_ID }}
+      SCREENER_EMAIL: ${{ secrets.SCREENER_EMAIL }}
+      SCREENER_PASSWORD: ${{ secrets.SCREENER_PASSWORD }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      MUNS_TOKEN: ${{ secrets.MUNS_TOKEN }}
+      SKIP_POSTINSTALL_BUILD: "1"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      ANALYZE_CONCURRENCY: "3"
+      CREDIT_CAP: ${{ inputs.credit_cap }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx -y playwright@1.62.1 install --with-deps chromium
+      - name: Analyze (credit-metered)
+        run: bash scripts/metered-run.sh "${{ inputs.ticker }}" "${{ inputs.company }}"
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cg-report-${{ inputs.ticker }}
+          path: report-output/
+          if-no-files-found: warn

@@ -1,0 +1,51 @@
+name: run-governance
+
+# Runs a SLICE of the 51-question governance checklist for one company, mirroring
+# the dashboard's chat flow (mega-prompt priming + session reuse) so answers come
+# out complete. Used to complete the checklist in credit-watched batches. Answers
+# are printed in the log and uploaded as an artifact.
+#
+# Actions -> run-governance -> Run workflow -> ticker, company, offset, count.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "Ticker/symbol (e.g. OBSCP)"
+        required: true
+      company:
+        description: "Company name (e.g. OBSC Perfection Ltd)"
+        required: true
+      offset:
+        description: "0-based start question index (0 = Q1)"
+        required: true
+        default: "0"
+      count:
+        description: "How many questions in this slot"
+        required: true
+        default: "5"
+      lanes:
+        description: "Parallel sessions (1 = cheapest/most faithful)"
+        required: false
+        default: "1"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run slot
+        env:
+          MUNS_TOKEN: ${{ secrets.MUNS_TOKEN }}
+        run: node scripts/run-governance.mjs "${{ inputs.ticker }}" "${{ inputs.company }}" "${{ inputs.offset }}" "${{ inputs.count }}" "${{ inputs.lanes }}"
+      - name: Upload answers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: answers-${{ inputs.offset }}-${{ inputs.count }}
+          path: out/
+          if-no-files-found: warn

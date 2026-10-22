@@ -1,0 +1,29 @@
+name: credit-smoke-test
+
+# Tiny Firecrawl-credit test for the MUNS "auto data" fix. Sends 3 annual-report
+# questions for one company in one chat session with autoAddUpcoming +
+# GET_ANNOUNCEMENTS_ENABLED = true. Watch the Firecrawl dashboard credits
+# before/after: a few hundred = the fix works; ~1k+ = it does not.
+#
+# Actions -> credit-smoke-test -> Run workflow -> enter a ticker + company.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "Ticker of a company NOT run recently (e.g. POLYCAB)"
+        required: true
+      company:
+        description: "Company name (e.g. Polycab India Ltd)"
+        required: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 3-question credit test
+        env:
+          MUNS_TOKEN: ${{ secrets.MUNS_TOKEN }}
+        run: bash scripts/credit-smoke-test.sh "${{ inputs.ticker }}" "${{ inputs.company }}"

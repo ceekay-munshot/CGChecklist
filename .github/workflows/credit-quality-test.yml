@@ -1,0 +1,47 @@
+name: credit-quality-test
+
+# Runs N governance questions for one company across parallel chat sessions with
+# the "auto data" fix on, captures each answer (for quality review) and prints
+# per-question HTTP + time. Watch Firecrawl credits before/after: a few hundred =
+# fixed; thousands = re-reading. Answers are uploaded as an artifact.
+#
+# Actions -> credit-quality-test -> Run workflow -> ticker + company (+ count/lanes).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "Ticker (e.g. TITAN)"
+        required: true
+      company:
+        description: "Company name (e.g. Titan Company Ltd)"
+        required: true
+      count:
+        description: "How many questions (default 20)"
+        required: false
+        default: "20"
+      lanes:
+        description: "Parallel sessions (default 4)"
+        required: false
+        default: "4"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run questions
+        env:
+          MUNS_TOKEN: ${{ secrets.MUNS_TOKEN }}
+        run: node scripts/credit-quality-test.mjs "${{ inputs.count }}" "${{ inputs.ticker }}" "${{ inputs.company }}" "${{ inputs.lanes }}"
+      - name: Upload answers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: answers
+          path: out/
+          if-no-files-found: warn
